@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 		}
 	
 	if (usage) {
-		printf("Usage: gobpack [-u] <file> [palette.pcx] <\n\t-u to unpack the gob\n");
+		printf("Usage: gobpack [-u] <file> [palette.pcx]\n\t-u to unpack the gob\n");
 		return 1;
 	}
 
