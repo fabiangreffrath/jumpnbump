@@ -7,6 +7,15 @@ static int vinited = 0;
 static unsigned char screen_buffer[JNB_WIDTH*JNB_HEIGHT*2];
 
 
+char *get_vgaptr(int page, int x, int y)
+{
+	if (page == 1)
+		return &screen_buffer[JNB_WIDTH*JNB_HEIGHT+((y * JNB_WIDTH) + x)];
+	else
+		return &screen_buffer[(y * JNB_WIDTH) + x];
+}
+
+
 void open_screen(void)
 {
 	int lval = 0;
@@ -67,6 +76,18 @@ void clear_lines(int page, int y, int count, int color)
 }
 
 
+int get_pixel(int page, int x, int y)
+{
+	return *(char *) get_vgaptr(page, x, y);
+}
+
+
+void set_pixel(int page, int x, int y, int color)
+{
+	*(char *) get_vgaptr(page, x, y) = color;
+}
+
+
 void flippage(int page)
 {
 	int h;
@@ -90,15 +111,6 @@ void flippage(int page)
         }
         SDL_UnlockSurface(jnb_surface);
 	SDL_Flip(jnb_surface);
-}
-
-
-char *get_vgaptr(int page, int x, int y)
-{
-	if (page == 1)
-		return &screen_buffer[JNB_WIDTH*JNB_HEIGHT+((y * JNB_WIDTH) + x)];
-	else
-		return &screen_buffer[(y * JNB_WIDTH) + x];
 }
 
 
@@ -359,11 +371,7 @@ void put_pob(int page, int x, int y, int image, char *pob_data, int mask, char *
 	pob_ptr = &pob_data[pob_offset];
 
 
-#ifndef USE_SDL
-	vga_ptr = (char *) (0xa0000 + (long) (page << 15) + (long) y * 100L + ((x + c3) >> 2) + __djgpp_conventional_base);
-#else
 	vga_ptr = get_vgaptr(page, x, y);
-#endif
 	mask_ptr = (char *) (mask_pic + (y * 400) + x);
 	for (c1 = 0; c1 < draw_height; c1++) {
 		for (c2 = 0; c2 < draw_width; c2++) {

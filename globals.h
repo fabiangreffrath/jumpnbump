@@ -33,6 +33,9 @@
 # endif
 #endif
 
+#define JNB_WIDTH 400
+#define JNB_HEIGHT 256
+
 #ifndef USE_SDL
 #define KEY_PL1_LEFT 0xcb
 #define KEY_PL1_RIGHT	0xcd
@@ -223,6 +226,8 @@ void wait_vrt(int mix);
 void flippage(int page);
 void clear_page(int page, int color);
 void clear_lines(int page, int y, int count, int color);
+int get_pixel(int page, int x, int y);
+void set_pixel(int page, int x, int y, int color);
 void setpalette(int index, int count, char *palette);
 void fillpalette(int red, int green, int blue);
 #ifdef DOS
@@ -248,7 +253,6 @@ int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal);
 long filelength(int handle);
 #endif
 void fs_toggle();
-char *get_vgaptr(int, int, int);
 int intr_sysupdate();
 #endif
 

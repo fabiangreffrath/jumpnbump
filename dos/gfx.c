@@ -74,6 +74,20 @@ void clear_lines(int page, int y, int count, int color)
 			memset((char *) (0xa0000 + (i+y) * 100 + __djgpp_conventional_base), 0, 100);
 }
 
+int get_pixel(int page, int x, int y)
+{
+	outportw(0x3ce, (((x) & 3) << 8) + 0x04);
+	//outportw(0x3c4, ((1 << ((x) & 3)) << 8) + 0x02);
+	return *(char *) (0xa0000 + (y * 100 + (x >> 2)) + ((long) page << 15) - __djgpp_base_address);
+}
+
+void set_pixel(int page, int x, int y, int color)
+{
+	//outportw(0x3ce, (((x) & 3) << 8) + 0x04);
+	outportw(0x3c4, ((1 << ((x) & 3)) << 8) + 0x02);
+	*(char *) (0xa0000 + (y * 100 + (x >> 2)) + ((long) page << 15) - __djgpp_base_address) = color;
+}
+
 void flippage(int page)
 {
 	outportw(0x3d4, (page << 23) + 0x0d);

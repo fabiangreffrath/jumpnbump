@@ -1560,32 +1560,14 @@ int add_pob(int page, int x, int y, int image, char *pob_data)
 
 void draw_flies(int page)
 {
-	char *ptr1;
-	int c1,c2;
+	int c2;
 
-#ifdef DOS
-	ptr1 = (char *) (0xa0000 + ((long) main_info.draw_page << 15) - __djgpp_base_address);
-	for (c1 = 0; c1 < 4; c1++) {
-		outportw(0x3ce, (c1 << 8) + 0x04);
-		outportw(0x3c4, ((1 << c1) << 8) + 0x02);
-		for (c2 = 0; c2 < NUM_FLIES; c2++) {
-			if ((flies[c2].x & 3) == c1) {
-				flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2));
-				flies[c2].back_defined[main_info.draw_page] = 1;
-				if (mask_pic[flies[c2].y * 400 + flies[c2].x] == 0)
-					*(char *) (ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2)) = 0;
-			}
-		}
-	}
-#else
-	ptr1 = (char *) get_vgaptr(main_info.draw_page, 0, 0);
 	for (c2 = 0; c2 < NUM_FLIES; c2++) {
-		flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x));
+		flies[c2].back[main_info.draw_page] = get_pixel(main_info.draw_page, flies[c2].x, flies[c2].y);
 		flies[c2].back_defined[main_info.draw_page] = 1;
 		if (mask_pic[(flies[c2].y * JNB_WIDTH) + flies[c2].x] == 0)
-			*(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x)) = 0;
+			set_pixel(main_info.draw_page, flies[c2].x, flies[c2].y, 0);
 	}
-#endif
 }
 
 void draw_pobs(int page)
@@ -1607,24 +1589,12 @@ void draw_pobs(int page)
 
 void redraw_flies_background(int page)
 {
-	char *ptr1;
-	int c1,c2;
-#ifdef DOS
-	ptr1 = (char *) (0xa0000 + ((long) page << 15) - __djgpp_base_address);
-	for (c1 = 0; c1 < 4; c1++) {
-		outportw(0x3c4, ((1 << c1) << 8) + 0x02);
-		for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
-			if ((flies[c2].old_x & 3) == c1 && flies[c2].back_defined[page] == 1)
-				*(char *) (ptr1 + flies[c2].old_y * 100 + (flies[c2].old_x >> 2)) = flies[c2].back[page];
-		}
-	}
-#else
-	ptr1 = (char *) get_vgaptr(page, 0, 0);
+	int c2;
+
 	for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
 		if (flies[c2].back_defined[page] == 1)
-			*(char *) (ptr1 + flies[c2].old_y * JNB_WIDTH + (flies[c2].old_x)) = flies[c2].back[page];
+			set_pixel(page, flies[c2].old_x, flies[c2].old_y, flies[c2].back[page]);
 	}
-#endif
 }
 
 

@@ -68,12 +68,7 @@ void fireworks(void)
 		stars[c1].x = stars[c1].old_x = (s1 << 16);
 		stars[c1].y = stars[c1].old_y = (s2 << 16);
 		stars[c1].col = s3;
-#ifdef DOS
-		outportw(0x3ce, ((s1 & 3) << 8) + 0x04);
-		stars[c1].back[0] = stars[c1].back[1] = *(char *) (0xa0000 + s2 * 100 + (s1 >> 2) - __djgpp_base_address);
-#else
-		stars[c1].back[0] = stars[c1].back[1] = *(char *) get_vgaptr(0, s1, s2);
-#endif
+		stars[c1].back[0] = stars[c1].back[1] = get_pixel(0, s1, s2);
 	}
 
 	dj_set_nosound(0);
@@ -178,15 +173,8 @@ void fireworks(void)
 		update_objects();
 
 		for (c1 = 0; c1 < 300; c1++) {
-#ifdef DOS
-			outportw(0x3ce, (((stars[c1].x >> 16) & 3) << 8) + 0x04);
-			outportw(0x3c4, ((1 << ((stars[c1].x >> 16) & 3)) << 8) + 0x02);
-			stars[c1].back[main_info.draw_page] = *(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address);
-			*(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address) = stars[c1].col;
-#else
-			stars[c1].back[main_info.draw_page] = *(char *) get_vgaptr(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16);
-			*(char *) get_vgaptr(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16) = stars[c1].col;
-#endif
+			stars[c1].back[main_info.draw_page] = get_pixel(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16);
+			set_pixel(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16, stars[c1].col);
 		}
 
 		dj_mix();
@@ -206,12 +194,7 @@ void fireworks(void)
 		intr_sysupdate();
 
 		for (c1 = 299; c1 >= 0; c1--) {
-#ifdef DOS
-			outportw(0x3c4, ((1 << ((stars[c1].old_x >> 16) & 3)) << 8) + 0x02);
-			*(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].old_y >> 16) * 100 + (stars[c1].old_x >> 18) - __djgpp_base_address) = stars[c1].back[main_info.draw_page];
-#else
-			*(char *) get_vgaptr(main_info.draw_page, stars[c1].old_x >> 16, stars[c1].old_y >> 16) = stars[c1].back[main_info.draw_page];
-#endif
+			set_pixel(main_info.draw_page, stars[c1].old_x >> 16, stars[c1].old_y >> 16, stars[c1].back[main_info.draw_page]);
 		}
 
 	}
