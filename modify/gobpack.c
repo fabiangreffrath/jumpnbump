@@ -174,17 +174,18 @@ int main(int argc, char **argv)
 	gob_t gob;
 	char *filename = NULL;
 
-	if (argc < 2) {
+	if (argc < 2)
 		usage = 1;
-	}
-	if (argv[1][0] == '-') {
-		if (argv[1][1] == 'u') {
-			if (argc < 3)
+
+	if (argc > 1)
+		if (argv[1][0] == '-') {
+			if (argv[1][1] == 'u') {
+				if (argc < 3)
+					usage = 1;
+				unpack = 1;
+			} else
 				usage = 1;
-			unpack = 1;
-		} else
-			usage = 1;
-	}
+		}
 	
 	if (usage) {
 		printf("Usage: gobpack [-u] <file> [palette.pcx] <\n\t-u to unpack the gob\n");
