@@ -314,7 +314,6 @@ void dj_play_sfx(unsigned char sfx_num, unsigned short freq, char volume, char p
 {
 	int slot;
 
-	SDL_LockAudio();
 	if (channel<0) {
 		for (slot=0; slot<MAX_CHANNELS; slot++)
 			if (channelinfo[slot].data==NULL)
@@ -324,6 +323,7 @@ void dj_play_sfx(unsigned char sfx_num, unsigned short freq, char volume, char p
 	} else
 		slot = channel;
 
+	SDL_LockAudio();
 	addsfx((short *)sounds[sfx_num].buf, sounds[sfx_num].length, sounds[sfx_num].loop, freq, slot);
 	updateSoundParams(slot, volume*2);
 	SDL_UnlockAudio();
