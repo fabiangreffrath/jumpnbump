@@ -7,26 +7,29 @@ LIBS = -lm $(shell sdl-config --libs) -lSDL_mixer
 
 .PHONY: data
 
-all: $(TARGET) pack unpack data
+all: $(TARGET) jnbpack jnbunpack data
 
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
 
-pack: modify/pack.o
-	$(CC) $(LFLAGS) -o pack modify/pack.o $(LIBS)
+jnbpack: modify/jnbpack.o
+	$(CC) $(LFLAGS) -o jnbpack modify/jnbpack.o $(LIBS)
 
-unpack: modify/unpack.o
-	$(CC) $(LFLAGS) -o unpack modify/unpack.o $(LIBS)
+jnbunpack: modify/jnbunpack.o
+	$(CC) $(LFLAGS) -o jnbunpack modify/jnbunpack.o $(LIBS)
 
-data: pack
+data: jnbpack
 	$(MAKE) -C data
 
 clean:
-	rm -f $(TARGET) pack unpack *.o sdl/*.o *~ log modify/*.o
+	rm -f $(TARGET) jnbpack jnbunpack *.o sdl/*.o *~ log modify/*.o
 	$(MAKE) -C data clean
 
 install:
 	mkdir -p $(DESTDIR)/usr/games/
 	mkdir -p $(DESTDIR)/usr/share/jumpnbump/
-	install -o root -g games -m 755 $(TARGET) $(DESTDIR)/usr/games/$(TARGET)
+	install -o root -g games -m 755 $(TARGET) jumpnbump.svgalib jnbpack jnbunpack jnbmenu.tcl $(DESTDIR)/usr/games/
 	install -o root -g games -m 644 data/jumpbump.dat $(DESTDIR)/usr/share/jumpnbump/jumpbump.dat
+
+uninstall:
+	rm /usr/games/jnbpack /usr/games/jnbunpack /usr/games/jumpnbump /usr/games/jnbmenu.tcl
