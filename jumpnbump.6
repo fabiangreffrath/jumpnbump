@@ -1,4 +1,4 @@
-.TH jumpnbump 6 "June 6th, 2002"
+.TH jumpnbump 6 "June 9th, 2002"
 .SH NAME
 jumpnbump \- Cute multiplayer platform game with bunnies
 .SH SYNOPSIS
@@ -66,6 +66,21 @@ lordoftheflies - the flies are attracted
 bloodisthickerthanwater - water turns to blood
 .SH LEVELS
 There are two programs to help you make your own levels: pack and unpack.
+.br
+pack -o /tmp/newlevel.dat <file1> <file2> <file3> etc
+.br
+or you can just put all the files in a dir, cd to that dir and do
+.br
+pack -o /tmp/newlevel.dat *
+.br
+and it will put all the files in the current dir inside the packfile.
+Don't try things like pack -o stuff.dat ../file.c because it will add
+"../file.c" as the filename in the packfile, which won't work.
+.br
+.br
+unpack level.dat
+.br
+will unpack it in the current directory.
 .SH AUTHORS
 .PP
 Chuck Mason <cemason@users.sourceforge.net>, Jon Atkins <jcatki@home.com>,
@@ -80,3 +95,4 @@ the original program does not have a manual page.
 .PP
 This manual page was written by Joe Wreschnig <piman@sacredchao.net>, for the
 Debian GNU/Linux system (but may be used by others).
+
