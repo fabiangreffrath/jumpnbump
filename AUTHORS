@@ -29,5 +29,8 @@ Joe Wreschnig <piman@sacredchao.net>
 Jon Atkins <jcatki@home.com>
   The network code of the Linux version.
 
+Gürkan Sengün <tarzeau@space.ch>
+  Made the website http://jumpbump.mine.nu/ and hosts it. Promotion.
+
 Florian Schulze <crow@icculus.org>
   Cleaned up code. Added scaling graphics mode (800x512). Fixed sound.
