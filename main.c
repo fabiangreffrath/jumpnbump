@@ -1,0 +1,2722 @@
+#include "globals.h"
+
+
+__dpmi_regs regs;
+
+char *object_gobs;
+char *number_gobs;
+
+char pal[768];
+char cur_pal[768];
+
+char ban_map[17][22] = {
+1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,
+1,0,0,0,1,1,1,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,
+1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,1,
+1,1,1,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+1,1,1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
+1,0,0,0,0,0,0,0,0,0,0,0,3,1,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,3,1,1,1,0,0,0,0,0,0,1,
+1,0,1,1,1,1,0,0,0,0,3,1,1,1,1,1,1,1,1,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,1,3,3,3,1,1,1,
+2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+
+struct {
+	int num_frames;
+  int restart_frame;
+  struct {
+  	int image;
+    int ticks;
+  } frame[10];
+} object_anims[8] = {6, 0, 0, 3, 1, 3, 2, 3, 3, 3, 4, 3, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+										 9, 0, 6, 2, 7, 2, 8, 2, 9, 2,10, 2,11, 2,12, 2,13, 2,14, 2, 0, 0,
+										 5, 0,15, 3,16, 3,16, 3,17, 3,18, 3,19, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+										10, 0,20, 2,21, 2,22, 2,23, 2,24, 2,25, 2,24, 2,23, 2,22, 2,21, 2,
+										10, 0,26, 2,27, 2,28, 2,29, 2,30, 2,31, 2,30, 2,29, 2,28, 2,27, 2,
+										10, 0,32, 2,33, 2,34, 2,35, 2,36, 2,37, 2,36, 2,35, 2,34, 2,33, 2,
+										10, 0,38, 2,39, 2,40, 2,41, 2,42, 2,43, 2,42, 2,41, 2,40, 2,39, 2,
+										 4, 0,76, 4,77, 4,78, 4,79, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+/*} object_anims[4] = {5, 0, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 0, 0,
+										 6, 0, 5, 5, 6, 5, 7, 5, 8, 5, 9, 5,10, 5,
+										 6, 0,11, 3,12, 3,13, 3,14, 3,15, 3,16, 0x7fff,
+										 5, 0,17, 2,18, 2,19, 2,20, 2,21, 2, 0, 0};*/
+
+struct {
+	int x, y;
+	int old_x, old_y;
+	char back[2], back_defined[2];
+} flies[NUM_FLIES];
+
+struct {
+	struct {
+		short num_pobs;
+		struct {
+			int x, y;
+			int image;
+			char *pob_data;
+		} pobs[NUM_LEFTOVERS];
+	} page[2];
+} leftovers;
+
+char pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_than_water;
+
+
+char main(int argc, char *argv[]) {
+	FILE *handle;
+	int c1, c2, c3, c4;
+  int l1, l2;
+  int s1, s2, s3, s4;
+	int closest_player, dist, cur_dist;
+	char end_loop_flag, fade_flag;
+	char mod_vol, sfx_vol, mod_fade_direction;
+	sfx_data fly;
+	char *ptr1;
+	char str1[100];
+
+  if (init_program(argc, argv) != 0)
+  	deinit_program();
+
+	if (main_info.fireworks == 1) {
+		fireworks();
+		deinit_program();
+	}
+
+  while (1) {
+
+  	if (menu() != 0)
+    	deinit_program();
+
+		if (key_pressed(1) == 1)
+    	break;
+
+    if (init_level(0) != 0) {
+    	deinit_level();
+    	deinit_program();
+    }
+
+	  outportb(0x3c8, 0);
+  	for (c1 = 0; c1 < 768; c1++)
+  		outportb(0x3c9, cur_pal[c1]);
+
+		for (c1 = 0; c1 < 4; c1++) {
+			outportw(0x3c4, ( (1 << c1) << 8) + 0x02);
+			l1 = c1;
+	    for (l2 = 0; l2 < 25600; l2++) {
+  	  	*(char *)(0xa0000 + l2 + __djgpp_conventional_base) = *(char *)(background_pic + l1);
+    		*(char *)(0xa0000 + 32768 + l2 + __djgpp_conventional_base) = *(char *)(background_pic + l1);
+				l1 += 4;
+			}
+		}
+
+		s1 = rnd(250) + 50;
+		s2 = rnd(150) + 50;
+		for (c1 = 0; c1 < NUM_FLIES; c1++) {
+			while (1) {
+				flies[c1].x = s1 + rnd(101) - 50;
+				flies[c1].y = s2 + rnd(101) - 50;
+				if (ban_map[flies[c1].y >> 4][flies[c1].x >> 4] == 0)
+					break;
+			}
+			flies[c1].back_defined[0] = 0;
+			flies[c1].back_defined[1] = 0;
+		}
+
+		mod_vol = sfx_vol = 10;
+		mod_fade_direction = 1;
+    dj_ready_mod(MOD_GAME);
+		dj_set_mod_volume(mod_vol);
+		dj_set_sfx_volume(mod_vol);
+	  dj_start_mod();
+		dj_play_sfx(SFX_FLY, SFX_FLY_FREQ, 0, 0, 0, 4);
+		dj_set_nosound(0);
+
+		lord_of_the_flies = bunnies_in_space = jetpack = pogostick = blood_is_thicker_than_water = 0;
+		end_loop_flag = 0;
+  	main_info.page_info[0].num_pobs = 0;
+	  main_info.page_info[1].num_pobs = 0;
+    main_info.view_page = 0;
+    main_info.draw_page = 1;
+
+    while (1) {
+
+			if (key_pressed(1) == 1) {
+				end_loop_flag = 1;
+				memset(pal, 0, 768);
+				mod_fade_direction = 0;
+			}
+
+			if (strncmp(last_keys, "kcitsogop", strlen("kcitsogop") ) == 0) {
+				pogostick ^= 1;
+				last_keys[0] = 0;
+			}
+			if (strncmp(last_keys, "ecapsniseinnub", strlen("ecapsniseinnub") ) == 0) {
+				bunnies_in_space ^= 1;
+				last_keys[0] = 0;
+			}
+			if (strncmp(last_keys, "kcaptej", strlen("kcaptej") ) == 0) {
+				jetpack ^= 1;
+				last_keys[0] = 0;
+			}
+			if (strncmp(last_keys, "seilfehtfodrol", strlen("seilfehtfodrol") ) == 0) {
+				lord_of_the_flies ^= 1;
+				last_keys[0] = 0;
+			}
+			if (strncmp(last_keys, "retawnahtrekcihtsidoolb", strlen("retawnahtrekcihtsidoolb") ) == 0) {
+				blood_is_thicker_than_water ^= 1;
+				if (blood_is_thicker_than_water == 1) {
+					pal[432] = 63;
+					pal[433] = 32;
+					pal[434] = 32;
+					pal[435] = 53;
+					pal[436] = 17;
+					pal[437] = 17;
+					pal[438] = 42;
+					pal[439] = 7;
+					pal[440] = 7;
+					pal[441] = 28;
+					pal[442] = 0;
+					pal[443] = 0;
+					pal[444] = 24;
+					pal[445] = 0;
+					pal[446] = 0;
+					pal[447] = 19;
+					pal[448] = 0;
+					pal[449] = 0;
+					pal[450] = 12;
+					pal[451] = 0;
+					pal[452] = 0;
+					pal[453] = 7;
+					pal[454] = 0;
+					pal[455] = 0;
+				}
+				else {
+					pal[432] = 63;
+					pal[433] = 63;
+					pal[434] = 63;
+					pal[435] = 40;
+					pal[436] = 53;
+					pal[437] = 62;
+					pal[438] = 19;
+					pal[439] = 42;
+					pal[440] = 60;
+					pal[441] = 0;
+					pal[442] = 33;
+					pal[443] = 60;
+					pal[444] = 3;
+					pal[445] = 32;
+					pal[446] = 46;
+					pal[447] = 3;
+					pal[448] = 26;
+					pal[449] = 33;
+					pal[450] = 3;
+					pal[451] = 19;
+					pal[452] = 21;
+					pal[453] = 1;
+					pal[454] = 8;
+					pal[455] = 8;
+				}
+				last_keys[0] = 0;
+			}
+
+    	steer_players();
+
+      dj_mix();
+
+      for (c3 = 0; c3 < 6; c3++) {
+      	if (c3 == 0) {
+        	c1 = 0;
+          c2 = 1;
+        }
+        else if (c3 == 1) {
+        	c1 = 0;
+          c2 = 2;
+        }
+        else if (c3 == 2) {
+        	c1 = 0;
+          c2 = 3;
+        }
+        else if (c3 == 3) {
+        	c1 = 1;
+          c2 = 2;
+        }
+        else if (c3 == 4) {
+        	c1 = 1;
+          c2 = 3;
+        }
+        else if (c3 == 5) {
+        	c1 = 2;
+          c2 = 3;
+        }
+       	if (player[c1].enabled == 1 && player[c2].enabled == 1) {
+        	if (labs(player[c1].x - player[c2].x) < (12L << 16) && labs(player[c1].y - player[c2].y) < (12L << 16) ) {
+   		    	if ( (labs(player[c1].y - player[c2].y) >> 16) > 5) {
+       		  	if (player[c1].y < player[c2].y) {
+	              if (player[c1].y_add >= 0) {
+//                  player[c1].y = player[c2].y - (16L << 16);
+  		            player[c1].y_add = -player[c1].y_add;
+                  if (player[c1].y_add > -262144L)
+                  	player[c1].y_add = -262144L;
+                  player[c1].jump_abort = 1;
+                  player[c2].dead_flag = 1;
+                  if (player[c2].anim != 6) {
+					 				  player[c2].anim = 6;
+						        player[c2].frame = 0;
+					  	      player[c2].frame_tick = 0;
+					  				player[c2].image = player_anims[player[c2].anim].frame[player[c2].frame].image + player[c2].direction * 9;
+										if (main_info.no_gore == 0) {
+											for (c4 = 0; c4 < 6; c4++)
+												add_object(OBJ_FUR, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c2 * 8);
+											for (c4 = 0; c4 < 6; c4++)
+												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
+											for (c4 = 0; c4 < 6; c4++)
+												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
+											for (c4 = 0; c4 < 8; c4++)
+												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
+											for (c4 = 0; c4 < 10; c4++)
+												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
+										}
+										dj_play_sfx(SFX_DEATH, SFX_DEATH_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+										player[c1].bumps++;
+										player[c1].bumped[c2]++;
+										s1 = player[c1].bumps % 100;
+										add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, number_gobs);
+										add_leftovers(1, 360, 34 + c1 * 64, s1 / 10, number_gobs);
+										add_leftovers(0, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, number_gobs);
+										add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, number_gobs);
+                  }
+                }
+                else {
+//                  player[c1].y = player[c2].y - (16L << 16);
+                  if (player[c2].y_add < 0)
+                  	player[c2].y_add = 0;
+                }
+   		        }
+       		    else {
+	              if (player[c2].y_add >= 0) {
+//                  player[c2].y = player[c1].y - (16L << 16);
+  		            player[c2].y_add = -player[c2].y_add;
+                  if (player[c2].y_add > -262144L)
+                  	player[c2].y_add = -262144L;
+                  player[c2].jump_abort = 1;
+                  player[c1].dead_flag = 1;
+                  if (player[c1].anim != 6) {
+					 				  player[c1].anim = 6;
+						        player[c1].frame = 0;
+					  	      player[c1].frame_tick = 0;
+					  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+										if (main_info.no_gore == 0) {
+											for (c4 = 0; c4 < 6; c4++)
+												add_object(OBJ_FUR, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c1 * 8);
+											for (c4 = 0; c4 < 6; c4++)
+												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
+											for (c4 = 0; c4 < 7; c4++)
+												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
+											for (c4 = 0; c4 < 8; c4++)
+												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
+											for (c4 = 0; c4 < 10; c4++)
+												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
+										}
+										dj_play_sfx(SFX_DEATH, SFX_DEATH_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+										player[c2].bumps++;
+										player[c2].bumped[c1]++;
+										s1 = player[c2].bumps % 100;
+										add_leftovers(0, 360, 34 + c2 * 64, s1 / 10, number_gobs);
+										add_leftovers(1, 360, 34 + c2 * 64, s1 / 10, number_gobs);
+										add_leftovers(0, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, number_gobs);
+										add_leftovers(1, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, number_gobs);
+                  }
+                }
+                else {
+//                  player[c2].y = player[c1].y - (16L << 16);
+                  if (player[c1].y_add < 0)
+                  	player[c1].y_add = 0;
+                }
+       		    }
+	          }
+   		      else {
+   		      	if (player[c1].x < player[c2].x) {
+              	if (player[c1].x_add > 0)
+	       		    	player[c1].x = player[c2].x - (12L << 16);
+                else if (player[c2].x_add < 0)
+	       		    	player[c2].x = player[c1].x + (12L << 16);
+                else {
+    		         	player[c1].x -= player[c1].x_add;
+		             	player[c2].x -= player[c2].x_add;
+                }
+	 	    		  	l1 = player[c2].x_add;
+  	      			player[c2].x_add = player[c1].x_add;
+	  	          player[c1].x_add = l1;
+           		  if (player[c1].x_add > 0)
+             			player[c1].x_add = -player[c1].x_add;
+	              if (player[c2].x_add < 0)
+   		          	player[c2].x_add = -player[c2].x_add;
+       		    }
+           		else {
+              	if (player[c1].x_add > 0)
+		            	player[c2].x = player[c1].x - (12L << 16);
+                else if (player[c2].x_add < 0)
+		            	player[c1].x = player[c2].x + (12L << 16);
+                else {
+    		         	player[c1].x -= player[c1].x_add;
+		             	player[c2].x -= player[c2].x_add;
+                }
+	 	    		  	l1 = player[c2].x_add;
+  	      			player[c2].x_add = player[c1].x_add;
+	  	          player[c1].x_add = l1;
+   		          if (player[c1].x_add < 0)
+       		      	player[c1].x_add = -player[c1].x_add;
+           		  if (player[c2].x_add > 0)
+             			player[c2].x_add = -player[c2].x_add;
+	            }
+   		      }
+       		}
+        }
+ 	    }
+
+      dj_mix();
+
+      main_info.page_info[main_info.draw_page].num_pobs = 0;
+			for (c1 = 0; c1 < 4; c1++) {
+				if (player[c1].enabled == 1)
+		      main_info.page_info[main_info.draw_page].num_pobs++;
+			}
+
+      update_objects();
+
+      dj_mix();
+
+			s1 = s2 = 0;
+			for (c1 = 0; c1 < NUM_FLIES; c1++) {
+				s1 += flies[c1].x;
+				s2 += flies[c1].y;
+			}
+			s1 /= NUM_FLIES;
+			s2 /= NUM_FLIES;
+
+			dist = 0x7fff;
+			for (c1 = 0; c1 < 4; c1++) {
+				if (player[c1].enabled == 1) {
+					cur_dist = sqrt( (s1 - ( (player[c1].x >> 16) + 8) ) * (s1 - ( (player[c1].x >> 16) + 8) ) + (s2 - ( (player[c1].y >> 16) + 8) ) * (s2 - ( (player[c1].y >> 16) + 8) ) );
+					if (cur_dist < dist) {
+						closest_player = c1;
+						dist = cur_dist;
+					}
+				}
+			}
+			s3 = 32 - dist / 3;
+			if (s3 < 0)
+				s3 = 0;
+			dj_set_sfx_channel_volume(4, s3);
+
+			for (c1 = 0; c1 < NUM_FLIES; c1++) {
+				dist = 0x7fff;
+				for (c2 = 0; c2 < 4; c2++) {
+					if (player[c2].enabled == 1) {
+						cur_dist = sqrt( (flies[c1].x - ( (player[c2].x >> 16) + 8) ) * (flies[c1].x - ( (player[c2].x >> 16) + 8) ) + (flies[c1].y - ( (player[c2].y >> 16) + 8) ) * (flies[c1].y - ( (player[c2].y >> 16) + 8) ) );
+						if (cur_dist < dist) {
+							closest_player = c2;
+							dist = cur_dist;
+						}
+					}
+				}
+				flies[c1].old_x = flies[c1].x;
+				flies[c1].old_y = flies[c1].y;
+				s3 = 0;
+				if ( (s1 - flies[c1].x) > 30)
+					s3 += 1;
+				else if ( (s1 - flies[c1].x) < -30)
+					s3 -= 1;
+				if (dist < 30) {
+					if ( ( (player[closest_player].x >> 16) + 8) > flies[c1].x) {
+						if (lord_of_the_flies == 0)
+							s3 -= 1;
+						else
+							s3 += 1;
+					}
+					else {
+						if (lord_of_the_flies == 0)
+							s3 += 1;
+						else
+							s3 -= 1;
+					}
+				}
+				s4 = rnd(3) - 1 + s3;
+				if ( (flies[c1].x + s4) < 16)
+					s4 = 0;
+				if ( (flies[c1].x + s4) > 351)
+					s4 = 0;
+				if (ban_map[flies[c1].y >> 4][(flies[c1].x + s4) >> 4] != 0)
+					s4 = 0;
+				flies[c1].x += s4;
+				s3 = 0;
+				if ( (s2 - flies[c1].y) > 30)
+					s3 += 1;
+				else if ( (s2 - flies[c1].y) < -30)
+					s3 -= 1;
+				if (dist < 30) {
+					if ( ( (player[closest_player].y >> 16) + 8) > flies[c1].y) {
+						if (lord_of_the_flies == 0)
+							s3 -= 1;
+						else
+							s3 += 1;
+					}
+					else {
+						if (lord_of_the_flies == 0)
+							s3 += 1;
+						else
+							s3 -= 1;
+					}
+				}
+				s4 = rnd(3) - 1 + s3;
+				if ( (flies[c1].y + s4) < 0)
+					s4 = 0;
+				if ( (flies[c1].y + s4) > 239)
+					s4 = 0;
+				if (ban_map[(flies[c1].y + s4) >> 4][flies[c1].x >> 4] != 0)
+					s4 = 0;
+				flies[c1].y += s4;
+			}
+
+      dj_mix();
+
+			s1 = 0;
+	    for (c1 = 0; c1 < 4; c1++) {
+      	if (player[c1].enabled == 1) {
+					main_info.page_info[main_info.draw_page].pobs[s1].x = player[c1].x >> 16;
+					main_info.page_info[main_info.draw_page].pobs[s1].y = player[c1].y >> 16;
+					main_info.page_info[main_info.draw_page].pobs[s1].image = player[c1].image + c1 * 18;
+					main_info.page_info[main_info.draw_page].pobs[s1].pob_data = rabbit_gobs;
+					s1++;
+				}
+      }
+
+      draw_pobs(main_info.draw_page);
+
+      dj_mix();
+
+			ptr1 = (char *)(0xa0000 + ( (long)main_info.draw_page << 15) - __djgpp_base_address);
+			for (c1 = 0; c1 < 4; c1++) {
+				outportw(0x3ce, (c1 << 8) + 0x04);
+				outportw(0x3c4, ( (1 << c1) << 8) + 0x02);
+				for (c2 = 0; c2 < NUM_FLIES; c2++) {
+					if ( (flies[c2].x & 3) == c1) {
+						flies[c2].back[main_info.draw_page] = *(char *)(ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2) );
+						flies[c2].back_defined[main_info.draw_page] = 1;
+						if (mask_pic[flies[c2].y * 400 + flies[c2].x] == 0)
+							*(char *)(ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2) ) = 0;
+					}
+				}
+			}
+
+			if (mod_fade_direction == 1) {
+				if (mod_vol < 30) {
+					mod_vol++;
+					dj_set_mod_volume(mod_vol);
+				}
+			}
+			else {
+				if (mod_vol > 0) {
+					mod_vol--;
+					dj_set_mod_volume(mod_vol);
+				}
+			}
+
+			if (mod_fade_direction == 1) {
+				if (sfx_vol < 64) {
+					sfx_vol++;
+					dj_set_sfx_volume(sfx_vol);
+				}
+			}
+			else {
+				if (sfx_vol > 0) {
+					sfx_vol--;
+					dj_set_sfx_volume(sfx_vol);
+				}
+			}
+
+			fade_flag = 0;
+			for (c1 = 0; c1 < 768; c1++) {
+				if (cur_pal[c1] < pal[c1]) {
+					cur_pal[c1]++;
+					fade_flag = 1;
+				}
+				else if (cur_pal[c1] > pal[c1]) {
+					cur_pal[c1]--;
+					fade_flag = 1;
+				}
+			}
+			if (fade_flag == 0 && end_loop_flag == 1)
+				break;
+
+      main_info.draw_page ^= 1;
+      main_info.view_page ^= 1;
+
+			outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
+			outportw(0x3d4, ( (main_info.view_page << 15) & 0xff00) + 0x0c);
+
+		 	while( (inportb(0x3da) & 8) == 0)
+				dj_mix();
+		  while( (inportb(0x3da) & 8) == 8)
+				dj_mix();
+
+			if (fade_flag == 1) {
+	  		outportb(0x3c8, 0);
+ 				for (c1 = 0; c1 < 768; c1++)
+			 		outportb(0x3c9, cur_pal[c1]);
+			}
+
+			ptr1 = (char *)(0xa0000 + ( (long)main_info.draw_page << 15) - __djgpp_base_address);
+			for (c1 = 0; c1 < 4; c1++) {
+				outportw(0x3c4, ( (1 << c1) << 8) + 0x02);
+				for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
+					if ( (flies[c2].old_x & 3) == c1 && flies[c2].back_defined[main_info.draw_page] == 1)
+						*(char *)(ptr1 + flies[c2].old_y * 100 + (flies[c2].old_x >> 2) ) = flies[c2].back[main_info.draw_page];
+				}
+			}
+
+			redraw_pob_backgrounds(main_info.draw_page);
+
+      draw_leftovers(main_info.draw_page);
+
+    }
+
+		dj_stop_sfx_channel(4);
+
+    deinit_level();
+
+		memset(mask_pic, 0, 102400L);
+
+		outportw(0x3c4, 0x0f02);
+	  memset( (char *)(0xa0000 + (long)(main_info.view_page << 15) + __djgpp_conventional_base), 0, 32768);
+		put_text(main_info.view_page, 100, 50, "DOTT", 2);
+		put_text(main_info.view_page, 160, 50, "JIFFY", 2);
+		put_text(main_info.view_page, 220, 50, "FIZZ", 2);
+		put_text(main_info.view_page, 280, 50, "MIJJI", 2);
+		put_text(main_info.view_page, 40, 80, "DOTT", 2);
+		put_text(main_info.view_page, 40, 110, "JIFFY", 2);
+		put_text(main_info.view_page, 40, 140, "FIZZ", 2);
+		put_text(main_info.view_page, 40, 170, "MIJJI", 2);
+		for (c1 = 0; c1 < 4; c1++) {
+			for (c2 = 0; c2 < 4; c2++) {
+				if (c2 != c1) {
+					itoa(player[c1].bumped[c2], str1, 10);
+					put_text(main_info.view_page, 100 + c2 * 60, 80 + c1 * 30, str1, 2);
+				}
+				else
+					put_text(main_info.view_page, 100 + c2 * 60, 80 + c1 * 30, "-", 2);
+			}
+			itoa(player[c1].bumps, str1, 10);
+			put_text(main_info.view_page, 350, 80 + c1 * 30, str1, 2);
+		}
+		put_text(main_info.view_page, 200, 230, "Press ESC to continue", 2);
+
+	  if ( (handle = dat_open("menu.pcx", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
+			return 1;
+		}
+  	if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
+			strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
+			return 1;
+		}
+		fclose(handle);
+
+		memset(cur_pal, 0, 768);
+
+	  outportb(0x3c8, 0);
+ 		for (c1 = 0; c1 < 768; c1++)
+			outportb(0x3c9, cur_pal[c1]);
+
+		mod_vol = 0;
+    dj_ready_mod(MOD_SCORES);
+		dj_set_mod_volume(mod_vol);
+	  dj_start_mod();
+		dj_set_nosound(0);
+
+		while (key_pressed(1) == 0) {
+			if (mod_vol < 35)
+				mod_vol++;
+			dj_set_mod_volume(mod_vol);
+			for (c1 = 0; c1 < 768; c1++) {
+				if (cur_pal[c1] < pal[c1])
+					cur_pal[c1]++;
+			}
+			dj_mix();
+			wait_vrt();
+			outportb(0x3c8, 0);
+			for (c1 = 0; c1 < 768; c1++)
+				outportb(0x3c9, cur_pal[c1]);
+		}
+		while (key_pressed(1) == 1)
+			dj_mix();
+
+		memset(pal, 0, 768);
+
+		while (mod_vol > 0) {
+			mod_vol--;
+			dj_set_mod_volume(mod_vol);
+			for (c1 = 0; c1 < 768; c1++) {
+				if (cur_pal[c1] > pal[c1])
+					cur_pal[c1]--;
+			}
+			dj_mix();
+			wait_vrt();
+			outportb(0x3c8, 0);
+			for (c1 = 0; c1 < 768; c1++)
+				outportb(0x3c9, cur_pal[c1]);
+		}
+
+	  outportb(0x3c8, 0);
+ 		for (c1 = 0; c1 < 768; c1++)
+			outportb(0x3c9, 0);
+
+		dj_set_nosound(1);
+	  dj_stop_mod();
+
+  }
+
+  deinit_program();
+
+}
+
+
+void steer_players(void) {
+	int c1, c2;
+  int s1, s2;
+
+	if (main_info.mouse_enabled == 1)
+		read_mouse();
+	if (main_info.joy_enabled == 1)
+		read_joy();
+
+  for (c1 = 0; c1 < 4; c1++) {
+
+  	if (player[c1].enabled == 1) {
+
+    	if (player[c1].dead_flag == 0) {
+
+    	if ( (c1 == 0 && ( (key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1) ) ) || (c1 == 1 && ( (key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1) ) ) || (c1 == 2 && ( (joy.x < -512 && joy.x > 512) ) ) || (c1 == 3 && ( (mouse.but1 == 1 && mouse.but2 == 1) ) ) ) {
+				if (player[c1].direction == 0) {
+					if ( (c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && joy.x > 512) || (c1 == 3 && mouse.but2 == 1) ) {
+	     			s1 = (player[c1].x >> 16);
+  			   	s2 = (player[c1].y >> 16);
+		        if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+	  	  			if (player[c1].x_add < 0)
+	  			   		player[c1].x_add += 1024;
+		      		else
+		  			   	player[c1].x_add += 768;
+    		    }
+		        else if ( (ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1) ) {
+	  	  			if (player[c1].x_add > 0)
+	  			   		player[c1].x_add += 1024;
+		      		else
+		  	   			player[c1].x_add += 768;
+        		}
+    		    else {
+			  	  	if (player[c1].x_add < 0) {
+	  	   				player[c1].x_add += 16384;
+		 				    if (player[c1].x_add < 98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+  				      	add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
+		          }
+      				else
+				  	   	player[c1].x_add += 12288;
+		        }
+      			if (player[c1].x_add > 98304L)
+    		   		player[c1].x_add = 98304L;
+			      player[c1].direction = 0;
+        		if (player[c1].anim == 0) {
+    		    	player[c1].anim = 1;
+		          player[c1].frame = 0;
+        		  player[c1].frame_tick = 0;
+  						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+		        }
+					}
+				}
+				else {
+					if ( (c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && joy.x < -512) || (c1 == 3 && mouse.but1 == 1) ) {
+	     			s1 = (player[c1].x >> 16);
+  			   	s2 = (player[c1].y >> 16);
+		        if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+	  	  			if (player[c1].x_add > 0)
+	  			   		player[c1].x_add -= 1024;
+		      		else
+		  	   			player[c1].x_add -= 768;
+        		}
+    		    else if ( (ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1) ) {
+			  	  	if (player[c1].x_add > 0)
+	  	   				player[c1].x_add -= 1024;
+      				else
+				  	   	player[c1].x_add -= 768;
+		        }
+    		    else {
+			  	  	if (player[c1].x_add > 0) {
+	  	   				player[c1].x_add -= 16384;
+		 				    if (player[c1].x_add > -98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+  				      	add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
+		          }
+      				else
+				  	   	player[c1].x_add -= 12288;
+		        }
+ 		    		if (player[c1].x_add < -98304L)
+ 	  			   	player[c1].x_add = -98304L;
+			      player[c1].direction = 1;
+        		if (player[c1].anim == 0) {
+    		    	player[c1].anim = 1;
+		          player[c1].frame = 0;
+        		  player[c1].frame_tick = 0;
+  						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+		        }
+					}
+				}
+			}
+	   	else if ( (c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && joy.x < -512) || (c1 == 3 && mouse.but1 == 1) ) {
+	     	s1 = (player[c1].x >> 16);
+  	   	s2 = (player[c1].y >> 16);
+        if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+	  	  	if (player[c1].x_add > 0)
+	  	   		player[c1].x_add -= 1024;
+      		else
+		  	   	player[c1].x_add -= 768;
+        }
+        else if ( (ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1) ) {
+	  	  	if (player[c1].x_add > 0)
+	  	   		player[c1].x_add -= 1024;
+      		else
+		  	   	player[c1].x_add -= 768;
+        }
+        else {
+	  	  	if (player[c1].x_add > 0) {
+	  	   		player[c1].x_add -= 16384;
+		 		    if (player[c1].x_add > -98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+  		      	add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
+          }
+      		else
+		  	   	player[c1].x_add -= 12288;
+        }
+ 		    if (player[c1].x_add < -98304L)
+ 	  	   	player[c1].x_add = -98304L;
+	      player[c1].direction = 1;
+        if (player[c1].anim == 0) {
+        	player[c1].anim = 1;
+          player[c1].frame = 0;
+          player[c1].frame_tick = 0;
+  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+        }
+  	  }
+   		else if ( (c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && joy.x > 512) || (c1 == 3 && mouse.but2 == 1) ) {
+	     	s1 = (player[c1].x >> 16);
+  	   	s2 = (player[c1].y >> 16);
+        if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+	  	  	if (player[c1].x_add < 0)
+	  	   		player[c1].x_add += 1024;
+      		else
+		  	   	player[c1].x_add += 768;
+        }
+        else if ( (ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1) ) {
+	  	  	if (player[c1].x_add > 0)
+	  	   		player[c1].x_add += 1024;
+      		else
+		  	   	player[c1].x_add += 768;
+        }
+        else {
+	  	  	if (player[c1].x_add < 0) {
+	  	   		player[c1].x_add += 16384;
+		 		    if (player[c1].x_add < 98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+  		      	add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
+          }
+      		else
+		  	   	player[c1].x_add += 12288;
+        }
+      	if (player[c1].x_add > 98304L)
+       		player[c1].x_add = 98304L;
+	      player[c1].direction = 0;
+        if (player[c1].anim == 0) {
+        	player[c1].anim = 1;
+          player[c1].frame = 0;
+          player[c1].frame_tick = 0;
+  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+        }
+  	  }
+//    	if ( (c1 == 0 && ( (key_pressed(KEY_PL1_LEFT) == 0 && key_pressed(KEY_PL1_RIGHT) == 0) || (key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1) ) ) || (c1 == 1 && ( (key_pressed(KEY_PL2_LEFT) == 0 && key_pressed(KEY_PL2_RIGHT) == 0) || (key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1) ) ) || (c1 == 2 && ( (joy.x >= -512 && joy.x <= 512) || (joy.x < -512 && joy.x > 512) ) ) || (c1 == 3 && ( (mouse.but1 == 0 && mouse.but2 == 0) || (mouse.but1 == 1 && mouse.but2 == 1) ) ) ) {
+    	else if ( (c1 == 0 && ( (key_pressed(KEY_PL1_LEFT) == 0 && key_pressed(KEY_PL1_RIGHT) == 0) ) ) || (c1 == 1 && ( (key_pressed(KEY_PL2_LEFT) == 0 && key_pressed(KEY_PL2_RIGHT) == 0) ) ) || (c1 == 2 && ( (joy.x >= -512 && joy.x <= 512) ) ) || (c1 == 3 && ( (mouse.but1 == 0 && mouse.but2 == 0) ) ) ) {
+	     	s1 = (player[c1].x >> 16);
+  	   	s2 = (player[c1].y >> 16);
+    	  if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 4 || ( ( (ban_map[(s2 + 16) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 16) >> 4][s1 >> 4] == 4) && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] != 3 && (ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 4) ) ) ) {
+     			if (player[c1].x_add < 0) {
+ 	  		  	player[c1].x_add += 16384;
+  			    if (player[c1].x_add > 0)
+ 		 	  	  	player[c1].x_add = 0;
+		      }
+ 	    		else {
+   			  	player[c1].x_add -= 16384;
+  		  	  if (player[c1].x_add < 0)
+ 		 	    		player[c1].x_add = 0;
+		      }
+	 		    if (player[c1].x_add != 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+	 	      	add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
+        }
+        if (player[c1].anim == 1) {
+        	player[c1].anim = 0;
+          player[c1].frame = 0;
+          player[c1].frame_tick = 0;
+  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+        }
+//				if (c1 == 3 && main_info.num_mouse_buttons == 2)
+//					player[c1].jump_abort = 1;
+  	  }
+/*
+//			if ( (player[c1].y >> 16) >= 208 && (player[c1].x >> 16) >= 136 && (player[c1].x >> 16) < 160) {
+    	if (ban_map[( (player[c1].y >> 16) + 15) >> 4][( (player[c1].x >> 16) + 8) >> 4] == 4) {
+				player[c1].y = ( (player[c1].y >> 16) & 0xfff0) << 16;
+   	   	player[c1].y_add = -400000L;
+       	player[c1].anim = 2;
+ 	      player[c1].frame = 0;
+   	    player[c1].frame_tick = 0;
+				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+ 	  		player[c1].jump_ready = 0;
+        player[c1].jump_abort = 0;
+//        objects[0].frame = 0;
+//	      objects[0].ticks = object_anims[objects[0].anim].frame[objects[0].frame].ticks;
+//   		  objects[0].image = object_anims[objects[0].anim].frame[objects[0].frame].image;
+				dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+      }*/
+
+			if (jetpack == 0) {
+
+//   		if (pogostick == 1 || (player[c1].jump_ready == 1 && ( (c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && joy.but1 == 1)  || (c1 == 3 && mouse.but3 == 1) ) ) ) {
+   		if (pogostick == 1 || (player[c1].jump_ready == 1 && ( (c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && joy.but1 == 1)  || (c1 == 3 && ( (main_info.num_mouse_buttons == 2 && mouse.but1 == 1 && mouse.but2 == 1) || (main_info.num_mouse_buttons == 3 && mouse.but3 == 1) ) ) ) ) ) {
+     		s1 = (player[c1].x >> 16);
+	     	s2 = (player[c1].y >> 16);
+	      if (s2 < -16)
+        	s2 = -16;
+  	   	if (ban_map[(s2 + 16) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) {
+    	   	player[c1].y_add = -280000L;
+	       	player[c1].anim = 2;
+  	      player[c1].frame = 0;
+    	    player[c1].frame_tick = 0;
+ 					player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+  	  		player[c1].jump_ready = 0;
+//					if (c1 == 3 && main_info.num_mouse_buttons == 2)
+//		        player[c1].jump_abort = 0;
+//					else
+		        player[c1].jump_abort = 1;
+					if (pogostick == 0)
+						dj_play_sfx(SFX_JUMP, SFX_JUMP_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+					else
+						dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+	      }
+  	   	if ( (ban_map[(s2 + 7) >> 4][s1 >> 4] == 0 || ban_map[(s2 + 7) >> 4][(s1 + 15) >> 4] == 0) && (ban_map[(s2 + 8) >> 4][s1 >> 4] == 2 || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == 2) ) {
+    	   	player[c1].y_add = -196608L;
+          player[c1].in_water = 0;
+	       	player[c1].anim = 2;
+  	      player[c1].frame = 0;
+    	    player[c1].frame_tick = 0;
+ 					player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+  	  		player[c1].jump_ready = 0;
+//					if (c1 == 3 && main_info.num_mouse_buttons == 2)
+//		        player[c1].jump_abort = 0;
+//					else
+		        player[c1].jump_abort = 1;
+					if (pogostick == 0)
+						dj_play_sfx(SFX_JUMP, SFX_JUMP_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+					else
+						dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+        }
+    	}
+//	   	if (pogostick == 0 && ( (c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && joy.but1 == 0) || (c1 == 3 && mouse.but3 == 0) ) ) {
+	   	if (pogostick == 0 && ( (c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && joy.but1 == 0) || (c1 == 3 && ( (main_info.num_mouse_buttons == 2 && (mouse.but1 == 0 && mouse.but2 == 0) ) || (main_info.num_mouse_buttons == 3 && mouse.but3 == 0) ) ) ) ) {
+  	  	player[c1].jump_ready = 1;
+	   	  if (player[c1].in_water == 0 && player[c1].y_add < 0 && player[c1].jump_abort == 1) {
+					if (bunnies_in_space == 0)
+	  	 			player[c1].y_add += 32768;
+					else
+	  	 			player[c1].y_add += 16384;
+  		  	if (player[c1].y_add > 0)
+ 		  			player[c1].y_add = 0;
+		   	}
+      }
+			if (c1 == 3 && main_info.num_mouse_buttons == 2 && (mouse.but1 == 0 || mouse.but2 == 0) )
+  	  	player[c1].jump_ready = 1;
+
+			}
+			else {
+
+	   		if ( ( (c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && joy.but1 == 1)  || (c1 == 3 && mouse.but3 == 1) ) ) {
+    	   	player[c1].y_add -= 16384;
+	  	  	if (player[c1].y_add < -400000L)
+  	  	  	player[c1].y_add = -400000L;
+	  	   	if ( (ban_map[(s2 + 7) >> 4][s1 >> 4] == 0 || ban_map[(s2 + 7) >> 4][(s1 + 15) >> 4] == 0) && (ban_map[(s2 + 8) >> 4][s1 >> 4] == 2 || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == 2) )
+						player[c1].in_water = 0;
+					if (rnd(100) <  50)
+		      	add_object(OBJ_SMOKE, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 10 + rnd(5), 0, 16384 + rnd(8192), OBJ_ANIM_SMOKE, 0);
+				}
+
+			}
+
+    	player[c1].x += player[c1].x_add;
+ 	    if ( (player[c1].x >> 16) < 0) {
+   	  	player[c1].x = 0;
+ 	  	 	player[c1].x_add = 0;
+      }
+ 	    if ( (player[c1].x >> 16) + 15 > 351) {
+   	  	player[c1].x = 336L << 16;
+ 	  	 	player[c1].x_add = 0;
+      }
+      if (player[c1].y > 0) {
+//	    if (player[c1].x_add < 0) {
+  	   	s1 = (player[c1].x >> 16);
+    	 	s2 = (player[c1].y >> 16);
+      	if (ban_map[s2 >> 4][s1 >> 4] == 1 || ban_map[s2 >> 4][s1 >> 4] == 3 || ban_map[s2 >> 4][s1 >> 4] == 4 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 4) {
+       		player[c1].x = ( ( (s1 + 16) & 0xfff0) ) << 16;
+	       	player[c1].x_add = 0;
+  	    }
+//    	}
+//	    else {
+  	   	s1 = (player[c1].x >> 16);
+    	 	s2 = (player[c1].y >> 16);
+	      if (ban_map[s2 >> 4][(s1 + 15) >> 4] == 1 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 3 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 4 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+  	     	player[c1].x = ( ( (s1 + 16) & 0xfff0) - 16) << 16;
+    	   	player[c1].x_add = 0;
+      	}
+//	    }
+			}
+			else {
+  	   	s1 = (player[c1].x >> 16);
+    	 	s2 = 0;
+      	if (ban_map[s2 >> 4][s1 >> 4] == 1 || ban_map[s2 >> 4][s1 >> 4] == 3 || ban_map[s2 >> 4][s1 >> 4] == 4 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 4) {
+       		player[c1].x = ( ( (s1 + 16) & 0xfff0) ) << 16;
+	       	player[c1].x_add = 0;
+  	    }
+  	   	s1 = (player[c1].x >> 16);
+    	 	s2 = 0;
+	      if (ban_map[s2 >> 4][(s1 + 15) >> 4] == 1 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 3 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 4 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+  	     	player[c1].x = ( ( (s1 + 16) & 0xfff0) - 16) << 16;
+    	   	player[c1].x_add = 0;
+      	}
+      }
+
+	    player[c1].y += player[c1].y_add;
+
+ 	   	s1 = (player[c1].x >> 16);
+   	 	s2 = (player[c1].y >> 16);
+    	if (ban_map[(s2 + 15) >> 4][(s1 + 8) >> 4] == 4 || ( (ban_map[(s2 + 15) >> 4][s1 >> 4] == 4 && ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] != 1) || (ban_map[(s2 + 15) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) ) ) {
+				player[c1].y = ( (player[c1].y >> 16) & 0xfff0) << 16;
+   	   	player[c1].y_add = -400000L;
+       	player[c1].anim = 2;
+ 	      player[c1].frame = 0;
+   	    player[c1].frame_tick = 0;
+				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+ 	  		player[c1].jump_ready = 0;
+        player[c1].jump_abort = 0;
+				for (c2 = 0; c2 < 300; c2++) {
+					if (objects[c2].used == 1 && objects[c2].type == OBJ_SPRING) {
+						if (ban_map[(s2 + 15) >> 4][(s1 + 8) >> 4] == 4) {
+	 						if ( (objects[c2].x >> 20) == ( (s1 + 8) >> 4) && (objects[c2].y >> 20) == ( (s2 + 15) >> 4) ) {
+		  		      objects[c2].frame = 0;
+	  				    objects[c2].ticks = object_anims[objects[c2].anim].frame[objects[c2].frame].ticks;
+  		 		  		objects[c2].image = object_anims[objects[c2].anim].frame[objects[c2].frame].image;
+								break;
+							}
+						}
+						else {
+							if (ban_map[(s2 + 15) >> 4][s1 >> 4] == 4) {
+	 							if ( (objects[c2].x >> 20) == (s1 >> 4) && (objects[c2].y >> 20) == ( (s2 + 15) >> 4) ) {
+		  			      objects[c2].frame = 0;
+	  					    objects[c2].ticks = object_anims[objects[c2].anim].frame[objects[c2].frame].ticks;
+  			 		  		objects[c2].image = object_anims[objects[c2].anim].frame[objects[c2].frame].image;
+									break;
+								}
+							}
+							else if (ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+	 							if ( (objects[c2].x >> 20) == ( (s1 + 15) >> 4) && (objects[c2].y >> 20) == ( (s2 + 15) >> 4) ) {
+		  			      objects[c2].frame = 0;
+	  					    objects[c2].ticks = object_anims[objects[c2].anim].frame[objects[c2].frame].ticks;
+  			 		  		objects[c2].image = object_anims[objects[c2].anim].frame[objects[c2].frame].image;
+									break;
+								}
+							}
+						}
+					}
+				}
+				dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+      }
+
+/* 	    if ( (player[c1].y >> 16) < 0) {
+   	  	player[c1].y = 0;
+ 	  	 	player[c1].y_add = 0;
+      }*/
+// 	    if ( (player[c1].y >> 16) + 15 > 255) {
+//   	  	player[c1].y = 240L << 16;
+// 	  	 	player[c1].y_add = 0;
+/*       	player[c1].anim = 2;
+        player[c1].frame = 0;
+        player[c1].frame_tick = 0;*/
+//      }
+//	    if (player[c1].y_add < 0) {
+    	 	s1 = (player[c1].x >> 16);
+     		s2 = (player[c1].y >> 16);
+	      if (s2 < 0)
+        	s2 = 0;
+	      if (ban_map[s2 >> 4][s1 >> 4] == 1 || ban_map[s2 >> 4][s1 >> 4] == 3 || ban_map[s2 >> 4][s1 >> 4] == 4 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 1 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 3 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 4) {
+  	     	player[c1].y = ( ( (s2 + 16) & 0xfff0) ) << 16;
+    	   	player[c1].y_add = 0;
+        	player[c1].anim = 0;
+          player[c1].frame = 0;
+          player[c1].frame_tick = 0;
+  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+      	}
+//    	}
+//    	if (player[c1].y_add > 0) {
+	     	s1 = (player[c1].x >> 16);
+  	   	s2 = (player[c1].y >> 16);
+	      if (s2 < 0)
+        	s2 = 0;
+//        if (ban_map[(s2 + 8) >> 4][s1 >> 4] == 2 || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == 2) {
+        if (ban_map[(s2 + 8) >> 4][(s1 + 8) >> 4] == 2) {
+        	if (player[c1].in_water == 0) {
+				  	player[c1].in_water = 1;
+	 				  player[c1].anim = 4;
+		        player[c1].frame = 0;
+  		      player[c1].frame_tick = 0;
+  					player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+						if (player[c1].y_add >= 32768) {
+	 	    	  	add_object(OBJ_SPLASH, (player[c1].x >> 16) + 8, ( (player[c1].y >> 16) & 0xfff0) + 15, 0, 0, OBJ_ANIM_SPLASH, 0);
+							if (blood_is_thicker_than_water == 0)
+								dj_play_sfx(SFX_SPLASH, SFX_SPLASH_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+							else
+								dj_play_sfx(SFX_SPLASH, SFX_SPLASH_FREQ + rnd(2000) - 5000, 64, 0, 0, -1);
+						}
+          }
+        	player[c1].y_add -= 1536;
+          if (player[c1].y_add < 0 && player[c1].anim != 5) {
+	 				  player[c1].anim = 5;
+		        player[c1].frame = 0;
+  		      player[c1].frame_tick = 0;
+  					player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+          }
+        	if (player[c1].y_add < -65536L)
+            player[c1].y_add = -65536L;
+        	if (player[c1].y_add > 65535L)
+            player[c1].y_add = 65535L;
+/* 				  player[c1].anim = 2;
+	        player[c1].frame = 0;
+  	      player[c1].frame_tick = 0;
+  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;*/
+    		  if (ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3) {
+    	   		player[c1].y = ( ( (s2 + 16) & 0xfff0) - 16) << 16;
+		       	player[c1].y_add = 0;
+	  	    }
+        }
+    	  else if (ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 4 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+					player[c1].in_water = 0;
+       		player[c1].y = ( ( (s2 + 16) & 0xfff0) - 16) << 16;
+	       	player[c1].y_add = 0;
+          if (player[c1].anim != 0 && player[c1].anim != 1) {
+      		  player[c1].anim = 0;
+	  	      player[c1].frame = 0;
+  		      player[c1].frame_tick = 0;
+	  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+//						dj_play_sfx(SFX_LAND, SFX_LAND_FREQ, 64, 0, 0, -1);
+          }
+  	    }
+        else {
+        	if (player[c1].in_water == 0) {
+						if (bunnies_in_space == 0)
+				  	  player[c1].y_add += 12288;
+						else
+				  	  player[c1].y_add += 6144;
+		  	  	if (player[c1].y_add > 327680L)
+	  	  	  	player[c1].y_add = 327680L;
+          }
+          else {
+          	player[c1].y = (player[c1].y & 0xffff0000) + 0x10000;
+			  	  player[c1].y_add = 0;
+          }
+					player[c1].in_water = 0;
+        }
+	  	 	if (player[c1].y_add > 36864 && player[c1].anim != 3 && player[c1].in_water == 0) {
+ 				  player[c1].anim = 3;
+	        player[c1].frame = 0;
+  	      player[c1].frame_tick = 0;
+  				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+        }
+//	    }
+
+				}
+
+ 	  	 	player[c1].frame_tick++;
+  	    if (player[c1].frame_tick >= player_anims[player[c1].anim].frame[player[c1].frame].ticks) {
+	      	player[c1].frame++;
+	   			if (player[c1].frame >= player_anims[player[c1].anim].num_frames) {
+          	if (player[c1].anim != 6)
+					  	player[c1].frame = player_anims[player[c1].anim].restart_frame;
+            else
+            	position_player(c1);
+          }
+		      player[c1].frame_tick = 0;
+	      }
+ 				player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+
+    }
+
+  }
+
+}
+
+
+void position_player(short player_num) {
+	int c1;
+  int s1, s2;
+
+  while (1) {
+    while (1) {
+	  	s1 = rnd(22);
+ 			s2 = rnd(16);
+      if (ban_map[s2][s1] == 0 && (ban_map[s2 + 1][s1] == 1 || ban_map[s2 + 1][s1] == 3) )
+       	break;
+    }
+	  for (c1 = 0; c1 < 4; c1++) {
+  		if (c1 != player_num && player[c1].enabled == 1) {
+      	if (abs( (s1 << 4) - (player[c1].x >> 16) ) < 32 && abs( (s2 << 4) - (player[c1].y >> 16) ) < 32)
+        	break;
+      }
+	  }
+    if (c1 == 4) {
+      player[player_num].dead_flag = 0;
+		  player[player_num].x = (long)s1 << 20;
+	 		player[player_num].y = (long)s2 << 20;
+		  player[player_num].x_add = player[player_num].y_add = 0;
+	  	player[player_num].direction = 0;
+  		player[player_num].jump_ready = 1;
+  		player[player_num].in_water = 0;
+      player[player_num].anim = 0;
+      player[player_num].frame = 0;
+      player[player_num].frame_tick = 0;
+      player[player_num].image = player_anims[player[player_num].anim].frame[player[player_num].frame].image;
+    	break;
+    }
+  }
+
+}
+
+
+void fireworks(void) {
+	FILE *handle;
+	int c1, c2;
+	int s1, s2, s3;
+	struct {
+		char used, direction, colour;
+		int x, y;
+		int x_add, y_add;
+		int timer;
+	  int anim, frame, frame_tick, image;
+	} rabbits[20];
+	struct {
+		int x, y;
+		int old_x, old_y;
+		char col, back[2];
+	} stars[300];
+
+	outportw(0x3c4, 0x0f02);
+  memset( (char *)(0xa0000 - __djgpp_base_address), 0, 65535);
+
+  if ( (handle = dat_open("level.pcx", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
+		return;
+	}
+  read_pcx(handle, mask_pic, 102400, pal);
+	fclose(handle);
+
+	memset(mask_pic, 0, 102400);
+
+	memset(ban_map, 0, sizeof(ban_map) );
+
+  outportb(0x3c8, 0);
+ 	for (c1 = 0; c1 < 768; c1++)
+ 		outportb(0x3c9, 0);
+
+	for (c1 = 0; c1 < 4; c1++) {
+		outportw(0x3c4, ( (1 << c1) << 8) + 0x02);
+		for (c2 =	193; c2 < 256; c2++) {
+			memset( (void *)(0xa0000 + c2 * 100 - __djgpp_base_address), (c2 - 192) >> 2, 100);
+			memset( (void *)(0xa0000 + 32768 + c2 * 100 - __djgpp_base_address), (c2 - 192) >> 2, 100);
+		}
+	}
+
+  outportb(0x3c8, 0);
+ 	for (c1 = 0; c1 < 768; c1++)
+ 		outportb(0x3c9, pal[c1]);
+
+	for (c1 = 0; c1 < 20; c1++)
+		rabbits[c1].used = 0;
+
+	rabbits[0].used = 1;
+	rabbits[0].colour = rnd(4);
+	rabbits[0].x = (int)(150 + rnd(100) ) << 16;
+	rabbits[0].y = 256 << 16;
+	rabbits[0].x_add = ( (int)rnd(65535) << 1) - 65536;
+	if (rabbits[0].x_add > 0)
+		rabbits[0].direction = 0;
+	else
+		rabbits[0].direction = 1;
+	rabbits[0].y_add = -262144 + (rnd(16384) * 5);
+	rabbits[0].timer = 30 + rnd(150);
+ 	rabbits[0].anim = 2;
+  rabbits[0].frame = 0;
+  rabbits[0].frame_tick = 0;
+	rabbits[0].image = player_anims[rabbits[0].anim].frame[rabbits[0].frame].image + rabbits[0].colour * 18 + rabbits[0].direction * 9;
+
+	for (c1 = 0; c1 < 300; c1++) {
+		s1 = rnd(400);
+		s2 = rnd(256);
+		s3 = 30 - rnd(7);
+		stars[c1].x = stars[c1].old_x = (s1 << 16);
+		stars[c1].y = stars[c1].old_y = (s2 << 16);
+		stars[c1].col = s3;
+		outportw(0x3ce, ( (s1 & 3) << 8) + 0x04);
+		stars[c1].back[0] =	stars[c1].back[1] = *(char *)(0xa0000 + s2 * 100 + (s1 >> 2) - __djgpp_base_address);
+	}
+
+	dj_set_nosound(0);
+
+  main_info.page_info[0].num_pobs = 0;
+	main_info.page_info[1].num_pobs = 0;
+  main_info.view_page = 0;
+  main_info.draw_page = 1;
+
+	while (key_pressed(1) == 0) {
+
+		dj_mix();
+
+		for (c1 = 0; c1 < 300; c1++) {
+			stars[c1].old_x = stars[c1].x;
+			stars[c1].old_y = stars[c1].y;
+			stars[c1].y -= (int)(31 - stars[c1].col) * 16384;
+			if ( (stars[c1].y >> 16) < 0)
+				stars[c1].y += 256 << 16;;
+			if ( (stars[c1].y >> 16) >= 256)
+				stars[c1].y -= 256 << 16;;
+		}
+
+		for (c1 = 0, c2 = 0; c1 < 20; c1++) {
+			if (rabbits[c1].used == 1)
+				c2++;
+		}
+		if ( (c2 == 0 && rnd(10000) < 200) || (c2 == 1 && rnd(10000) < 150) || (c2 == 2 && rnd(10000) < 100) || (c2 == 3 && rnd(10000) < 50)) {
+			for (c1 = 0; c1 < 20; c1++) {
+				if (rabbits[c1].used == 0) {
+					rabbits[c1].used = 1;
+					rabbits[c1].colour = rnd(4);
+					rabbits[c1].x = (int)(150 + rnd(100) ) << 16;
+					rabbits[c1].y = 256 << 16;
+					rabbits[c1].x_add = ( (int)rnd(65535) << 1) - 65536;
+					if (rabbits[c1].x_add > 0)
+						rabbits[c1].direction = 0;
+					else
+						rabbits[c1].direction = 1;
+					rabbits[c1].y_add = -262144 + (rnd(16384) * 5);
+					rabbits[c1].timer = 30 + rnd(150);
+				 	rabbits[c1].anim = 2;
+			  	rabbits[c1].frame = 0;
+				  rabbits[c1].frame_tick = 0;
+					rabbits[c1].image = player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].image + rabbits[c1].colour * 18 + rabbits[c1].direction * 9;
+					break;
+				}
+			}
+		}
+
+		dj_mix();
+
+	  main_info.page_info[main_info.draw_page].num_pobs = 0;
+
+		for (c1 = 0; c1 < 20; c1++) {
+			if (rabbits[c1].used == 1) {
+				rabbits[c1].y_add += 2048;
+	  	 	if (rabbits[c1].y_add > 36864 && rabbits[c1].anim != 3) {
+ 				  rabbits[c1].anim = 3;
+	        rabbits[c1].frame = 0;
+  	      rabbits[c1].frame_tick = 0;
+					rabbits[c1].image = player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].image + rabbits[c1].colour * 18 + rabbits[c1].direction * 9;
+        }
+				rabbits[c1].x += rabbits[c1].x_add;
+				rabbits[c1].y += rabbits[c1].y_add;
+				if ( (rabbits[c1].x >> 16) < 16 || (rabbits[c1].x >> 16) > 400 || (rabbits[c1].y >> 16) > 256) {
+					rabbits[c1].used = 0;
+					continue;
+				}
+				rabbits[c1].timer--;
+				if (rabbits[c1].timer <= 0) {
+					rabbits[c1].used = 0;
+					for (c2 = 0; c2 < 6; c2++)
+						add_object(OBJ_FUR, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 44 + rabbits[c1].colour * 8);
+					for (c2 = 0; c2 < 6; c2++)
+						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 76);
+					for (c2 = 0; c2 < 6; c2++)
+						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 77);
+					for (c2 = 0; c2 < 8; c2++)
+						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 78);
+					for (c2 = 0; c2 < 10; c2++)
+						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 79);
+					dj_play_sfx(SFX_DEATH, SFX_DEATH_FREQ, 64, 0, 0, -1);
+					continue;
+				}
+ 	  	 	rabbits[c1].frame_tick++;
+  	    if (rabbits[c1].frame_tick >= player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].ticks) {
+	      	rabbits[c1].frame++;
+	   			if (rabbits[c1].frame >= player_anims[rabbits[c1].anim].num_frames)
+				  	rabbits[c1].frame = player_anims[rabbits[c1].anim].restart_frame;
+		      rabbits[c1].frame_tick = 0;
+	      }
+				rabbits[c1].image = player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].image + rabbits[c1].colour * 18 + rabbits[c1].direction * 9;
+				if (rabbits[c1].used == 1)
+					add_pob(main_info.draw_page, rabbits[c1].x >> 16, rabbits[c1].y >> 16, rabbits[c1].image, rabbit_gobs);
+			}
+		}
+
+		dj_mix();
+
+		update_objects();
+
+		for (c1 = 0; c1 < 300; c1++) {
+			outportw(0x3ce, ( ( (stars[c1].x >> 16) & 3) << 8) + 0x04);
+			outportw(0x3c4, ( (1 << ( (stars[c1].x >> 16) & 3) ) << 8) + 0x02);
+			stars[c1].back[main_info.draw_page] = *(char *)(0xa0000 + ( (int)main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address);
+			*(char *)(0xa0000 + ( (int)main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address) = stars[c1].col;
+		}
+
+		dj_mix();
+
+		draw_pobs(main_info.draw_page);
+
+/*		outportb(0x3c8, 0);
+		outportb(0x3c9, 0);
+		outportb(0x3c9, 0);
+		outportb(0x3c9, 0);*/
+
+    main_info.draw_page ^= 1;
+    main_info.view_page ^= 1;
+		outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
+		outportw(0x3d4, ( (main_info.view_page << 15) & 0xff00) + 0x0c);
+
+	 	while( (inportb(0x3da) & 8) == 0)
+			dj_mix();
+	  while( (inportb(0x3da) & 8) == 8)
+			dj_mix();
+
+/*		outportb(0x3c8, 0);
+		outportb(0x3c9, 0);
+		outportb(0x3c9, 63);
+		outportb(0x3c9, 0);*/
+
+		redraw_pob_backgrounds(main_info.draw_page);
+
+		dj_mix();
+
+		for (c1 = 299; c1 >= 0; c1--) {
+			outportw(0x3c4, ( (1 << ( (stars[c1].old_x >> 16) & 3) ) << 8) + 0x02);
+			*(char *)(0xa0000 + ( (int)main_info.draw_page << 15) + (stars[c1].old_y >> 16) * 100 + (stars[c1].old_x >> 18) - __djgpp_base_address) = stars[c1].back[main_info.draw_page];
+		}
+
+/*		for (c1 = 0; c1 < 20; c1++) {
+			if (rabbits[c1].used == 1)
+				break;
+		}
+		if (c1 == 20) {
+		  for (c1 = 0; c1 < NUM_OBJECTS; c1++) {
+  			if (objects[c1].used == 1)
+					break;
+			}
+			if (c1 == NUM_OBJECTS) {
+				for (c1 = 0; c1 < 4; c1++) {
+					outportw(0x3c4, ( (1 << c1) << 8) + 0x02);
+					memset( (void *)(0xa0000 + ( (int)main_info.draw_page << 15) - __djgpp_base_address), 0, 25600);
+				}
+			}
+		}*/
+
+	}
+
+	dj_set_nosound(1);
+
+}
+
+
+void add_object(char type, short x, short y, long x_add, long y_add, short anim, short frame) {
+	int c1;
+
+  for (c1 = 0; c1 < NUM_OBJECTS; c1++) {
+  	if (objects[c1].used == 0) {
+    	objects[c1].used = 1;
+      objects[c1].type = type;
+      objects[c1].x = (long)x << 16;
+      objects[c1].y = (long)y << 16;
+      objects[c1].x_add = x_add;
+      objects[c1].y_add = y_add;
+      objects[c1].x_acc = 0;
+      objects[c1].y_acc = 0;
+      objects[c1].anim = anim;
+      objects[c1].frame = frame;
+      objects[c1].ticks = object_anims[anim].frame[frame].ticks;
+      objects[c1].image = object_anims[anim].frame[frame].image;
+      break;
+    }
+  }
+
+}
+
+
+void update_objects(void) {
+	int c1;
+	int s1;
+
+	for (c1 = 0; c1 < NUM_OBJECTS; c1++) {
+  	if (objects[c1].used == 1) {
+    	switch (objects[c1].type) {
+        case OBJ_SPRING:
+  		    objects[c1].ticks--;
+	    	  if (objects[c1].ticks <= 0) {
+      		  objects[c1].frame++;
+    	    	if (objects[c1].frame >= object_anims[objects[c1].anim].num_frames) {
+  	        	objects[c1].frame--;
+              objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+            }
+		        else {
+  	        	objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+    	    	  objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+      		  }
+    	  	}
+	  	    if (objects[c1].used == 1)
+		      	add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+          break;
+				case OBJ_SPLASH:
+  		    objects[c1].ticks--;
+	    	  if (objects[c1].ticks <= 0) {
+	     		  objects[c1].frame++;
+  	 	    	if (objects[c1].frame >= object_anims[objects[c1].anim].num_frames)
+ 	  	      	objects[c1].used = 0;
+	    	    else {
+ 	      	  	objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+   	    		  objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+	     		  }
+					}
+	  	    if (objects[c1].used == 1)
+		      	add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					break;
+      	case OBJ_SMOKE:
+	    		objects[c1].x += objects[c1].x_add;
+  	  		objects[c1].y += objects[c1].y_add;
+  		    objects[c1].ticks--;
+	    	  if (objects[c1].ticks <= 0) {
+      		  objects[c1].frame++;
+    	    	if (objects[c1].frame >= object_anims[objects[c1].anim].num_frames)
+  	        	objects[c1].used = 0;
+		        else {
+  	        	objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+    	    	  objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+      		  }
+    	  	}
+	  	    if (objects[c1].used == 1)
+		      	add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+          break;
+				case OBJ_YEL_BUTFLY:
+				case OBJ_PINK_BUTFLY:
+					objects[c1].x_acc += rnd(128) - 64;
+					if (objects[c1].x_acc < -1024)
+						objects[c1].x_acc = -1024;
+					if (objects[c1].x_acc > 1024)
+						objects[c1].x_acc = 1024;
+					objects[c1].x_add += objects[c1].x_acc;
+					if (objects[c1].x_add < -32768)
+						objects[c1].x_add = -32768;
+					if (objects[c1].x_add > 32768)
+						objects[c1].x_add = 32768;
+	    		objects[c1].x += objects[c1].x_add;
+					if ( (objects[c1].x >> 16) < 16) {
+						objects[c1].x =	16 << 16;
+						objects[c1].x_add =	-objects[c1].x_add >> 2;
+						objects[c1].x_acc = 0;
+					}
+					else if ( (objects[c1].x >> 16) > 350) {
+						objects[c1].x =	350 << 16;
+						objects[c1].x_add =	-objects[c1].x_add >> 2;
+						objects[c1].x_acc = 0;
+					}
+					if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] != 0) {
+						if (objects[c1].x_add < 0) {
+							objects[c1].x =	( ( (objects[c1].x >> 16) + 16) & 0xfff0) << 16;
+						}
+						else {
+							objects[c1].x =	( ( ( (objects[c1].x >> 16) - 16) & 0xfff0) + 15) << 16;
+						}
+						objects[c1].x_add = -objects[c1].x_add >> 2;
+						objects[c1].x_acc = 0;
+					}
+					objects[c1].y_acc += rnd(64) - 32;
+					if (objects[c1].y_acc < -1024)
+						objects[c1].y_acc = -1024;
+					if (objects[c1].y_acc > 1024)
+						objects[c1].y_acc = 1024;
+					objects[c1].y_add += objects[c1].y_acc;
+					if (objects[c1].y_add < -32768)
+						objects[c1].y_add = -32768;
+					if (objects[c1].y_add > 32768)
+						objects[c1].y_add = 32768;
+	    		objects[c1].y += objects[c1].y_add;
+					if ( (objects[c1].y >> 16) < 0) {
+						objects[c1].y = 0;
+						objects[c1].y_add =	-objects[c1].y_add >> 2;
+						objects[c1].y_acc = 0;
+					}
+					else if ( (objects[c1].y >> 16) > 255) {
+						objects[c1].y =	255 << 16;
+						objects[c1].y_add =	-objects[c1].y_add >> 2;
+						objects[c1].y_acc = 0;
+					}
+					if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] != 0) {
+						if (objects[c1].y_add < 0) {
+							objects[c1].y =	( ( (objects[c1].y >> 16) + 16) & 0xfff0) << 16;
+						}
+						else {
+							objects[c1].y =	( ( ( (objects[c1].y >> 16) - 16) & 0xfff0) + 15) << 16;
+						}
+						objects[c1].y_add =	-objects[c1].y_add >> 2;
+						objects[c1].y_acc = 0;
+					}
+					if (objects[c1].type == OBJ_YEL_BUTFLY) {
+						if (objects[c1].x_add < 0 && objects[c1].anim != OBJ_ANIM_YEL_BUTFLY_LEFT) {
+			  	    objects[c1].anim = OBJ_ANIM_YEL_BUTFLY_LEFT;
+      				objects[c1].frame = 0;
+				      objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+  	    			objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+						}
+						else if (objects[c1].x_add > 0 && objects[c1].anim != OBJ_ANIM_YEL_BUTFLY_RIGHT) {
+			  	    objects[c1].anim = OBJ_ANIM_YEL_BUTFLY_RIGHT;
+      				objects[c1].frame = 0;
+				      objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+  	    			objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+						}
+					}
+					else {
+						if (objects[c1].x_add < 0 && objects[c1].anim != OBJ_ANIM_PINK_BUTFLY_LEFT) {
+			  	    objects[c1].anim = OBJ_ANIM_PINK_BUTFLY_LEFT;
+      				objects[c1].frame = 0;
+				      objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+  	    			objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+						}
+						else if (objects[c1].x_add > 0 && objects[c1].anim != OBJ_ANIM_PINK_BUTFLY_RIGHT) {
+			  	    objects[c1].anim = OBJ_ANIM_PINK_BUTFLY_RIGHT;
+      				objects[c1].frame = 0;
+				      objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+  	    			objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+						}
+					}
+  		    objects[c1].ticks--;
+	    	  if (objects[c1].ticks <= 0) {
+      		  objects[c1].frame++;
+    	    	if (objects[c1].frame >= object_anims[objects[c1].anim].num_frames)
+  	        	objects[c1].frame =	object_anims[objects[c1].anim].restart_frame;
+		        else {
+  	        	objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+    	    	  objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+      		  }
+    	  	}
+	  	    if (objects[c1].used == 1)
+		      	add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					break;
+				case OBJ_FUR:
+					if (rnd(100) < 30)
+						add_object(OBJ_FLESH_TRACE, objects[c1].x >> 16, objects[c1].y >> 16, 0, 0, OBJ_ANIM_FLESH_TRACE, 0);
+					if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 0) {
+						objects[c1].y_add += 3072;
+		  	  	if (objects[c1].y_add > 196608L)
+  		  	  	objects[c1].y_add = 196608L;
+					}
+					else if	(ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 2) {
+						if (objects[c1].x_add < 0) {
+							if (objects[c1].x_add < -65536L)
+								objects[c1].x_add = -65536L;
+							objects[c1].x_add += 1024;
+							if (objects[c1].x_add > 0)
+								objects[c1].x_add = 0;
+						}
+						else {
+							if (objects[c1].x_add > 65536L)
+								objects[c1].x_add = 65536L;
+							objects[c1].x_add -= 1024;
+							if (objects[c1].x_add < 0)
+								objects[c1].x_add = 0;
+						}
+						objects[c1].y_add += 1024;
+		  	  	if (objects[c1].y_add < -65536L)
+  		  	  	objects[c1].y_add = -65536L;
+		  	  	if (objects[c1].y_add > 65536L)
+  		  	  	objects[c1].y_add = 65536L;
+					}
+	    		objects[c1].x += objects[c1].x_add;
+					if ( (objects[c1].y >> 16) > 0 && (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 1 || ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 3) ) {
+						if (objects[c1].x_add < 0) {
+							objects[c1].x =	( ( (objects[c1].x >> 16) + 16) & 0xfff0) << 16;
+							objects[c1].x_add =	-objects[c1].x_add >> 2;
+						}
+						else {
+							objects[c1].x =	( ( ( (objects[c1].x >> 16) - 16) & 0xfff0) + 15) << 16;
+							objects[c1].x_add =	-objects[c1].x_add >> 2;
+						}
+					}
+	    		objects[c1].y += objects[c1].y_add;
+					if ( (objects[c1].x >> 16) < -5 ||	(objects[c1].x >> 16) > 405 || (objects[c1].y >> 16) > 260)
+						objects[c1].used = 0;
+					if ( (objects[c1].y >> 16) > 0 && (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] != 0) ) {
+						if (objects[c1].y_add < 0) {
+							if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] != 2) {
+								objects[c1].y =	( ( (objects[c1].y >> 16) + 16) & 0xfff0) << 16;
+								objects[c1].x_add >>= 2;
+								objects[c1].y_add =	-objects[c1].y_add >> 2;
+							}
+						}
+						else {
+							if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 1) {
+								if (objects[c1].y_add > 131072L) {
+									objects[c1].y =	( ( ( (objects[c1].y >> 16) - 16) & 0xfff0) + 15) << 16;
+									objects[c1].x_add >>= 2;
+									objects[c1].y_add =	-objects[c1].y_add >> 2;
+								}
+								else
+									objects[c1].used = 0;
+							}
+							else if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 3) {
+								objects[c1].y =	( ( ( (objects[c1].y >> 16) - 16) & 0xfff0) + 15) << 16;
+								if (objects[c1].y_add > 131072L)
+									objects[c1].y_add =	-objects[c1].y_add >> 2;
+								else
+									objects[c1].y_add = 0;
+							}
+						}
+					}
+					if (objects[c1].x_add < 0 && objects[c1].x_add > -16384)
+						objects[c1].x_add = -16384;
+					if (objects[c1].x_add > 0 && objects[c1].x_add < 16384)
+						objects[c1].x_add = 16384;
+	  	    if (objects[c1].used == 1) {
+						s1 = atan2(objects[c1].y_add, objects[c1].x_add) * 4 / M_PI;
+						if (s1 < 0)
+							s1 += 8;
+						if (s1 < 0)
+							s1 = 0;
+						if (s1 > 7)
+							s1 = 7;
+						add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].frame + s1, object_gobs);
+//						add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].frame, object_gobs);
+					}
+					break;
+				case OBJ_FLESH:
+					if (rnd(100) < 30) {
+						if (objects[c1].frame == 76)
+							add_object(OBJ_FLESH_TRACE, objects[c1].x >> 16, objects[c1].y >> 16, 0, 0, OBJ_ANIM_FLESH_TRACE, 1);
+						else if (objects[c1].frame == 77)
+							add_object(OBJ_FLESH_TRACE, objects[c1].x >> 16, objects[c1].y >> 16, 0, 0, OBJ_ANIM_FLESH_TRACE, 2);
+						else if (objects[c1].frame == 78)
+							add_object(OBJ_FLESH_TRACE, objects[c1].x >> 16, objects[c1].y >> 16, 0, 0, OBJ_ANIM_FLESH_TRACE, 3);
+					}
+					if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 0) {
+						objects[c1].y_add += 3072;
+		  	  	if (objects[c1].y_add > 196608L)
+  		  	  	objects[c1].y_add = 196608L;
+					}
+					else if	(ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 2) {
+						if (objects[c1].x_add < 0) {
+							if (objects[c1].x_add < -65536L)
+								objects[c1].x_add = -65536L;
+							objects[c1].x_add += 1024;
+							if (objects[c1].x_add > 0)
+								objects[c1].x_add = 0;
+						}
+						else {
+							if (objects[c1].x_add > 65536L)
+								objects[c1].x_add = 65536L;
+							objects[c1].x_add -= 1024;
+							if (objects[c1].x_add < 0)
+								objects[c1].x_add = 0;
+						}
+						objects[c1].y_add += 1024;
+		  	  	if (objects[c1].y_add < -65536L)
+  		  	  	objects[c1].y_add = -65536L;
+		  	  	if (objects[c1].y_add > 65536L)
+  		  	  	objects[c1].y_add = 65536L;
+					}
+	    		objects[c1].x += objects[c1].x_add;
+					if ( (objects[c1].y >> 16) > 0 && (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 1 || ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 3) ) {
+						if (objects[c1].x_add < 0) {
+							objects[c1].x =	( ( (objects[c1].x >> 16) + 16) & 0xfff0) << 16;
+							objects[c1].x_add =	-objects[c1].x_add >> 2;
+						}
+						else {
+							objects[c1].x =	( ( ( (objects[c1].x >> 16) - 16) & 0xfff0) + 15) << 16;
+							objects[c1].x_add =	-objects[c1].x_add >> 2;
+						}
+					}
+	    		objects[c1].y += objects[c1].y_add;
+					if ( (objects[c1].x >> 16) < -5 ||	(objects[c1].x >> 16) > 405 || (objects[c1].y >> 16) > 260)
+						objects[c1].used = 0;
+					if ( (objects[c1].y >> 16) > 0 && (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] != 0) ) {
+						if (objects[c1].y_add < 0) {
+							if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] != 2) {
+								objects[c1].y =	( ( (objects[c1].y >> 16) + 16) & 0xfff0) << 16;
+								objects[c1].x_add >>= 2;
+								objects[c1].y_add =	-objects[c1].y_add >> 2;
+							}
+						}
+						else {
+							if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 1) {
+								if (objects[c1].y_add > 131072L) {
+									objects[c1].y =	( ( ( (objects[c1].y >> 16) - 16) & 0xfff0) + 15) << 16;
+									objects[c1].x_add >>= 2;
+									objects[c1].y_add =	-objects[c1].y_add >> 2;
+								}
+								else {
+									if (rnd(100) < 10) {
+										s1 = rnd(4) - 2;
+										add_leftovers(0, objects[c1].x >> 16, (objects[c1].y >> 16) + s1, objects[c1].frame, object_gobs);
+										add_leftovers(1, objects[c1].x >> 16, (objects[c1].y >> 16) + s1, objects[c1].frame, object_gobs);
+									}
+									objects[c1].used = 0;
+								}
+							}
+							else if (ban_map[objects[c1].y >> 20][objects[c1].x >> 20] == 3) {
+								objects[c1].y =	( ( ( (objects[c1].y >> 16) - 16) & 0xfff0) + 15) << 16;
+								if (objects[c1].y_add > 131072L)
+									objects[c1].y_add =	-objects[c1].y_add >> 2;
+								else
+									objects[c1].y_add = 0;
+							}
+						}
+					}
+					if (objects[c1].x_add < 0 && objects[c1].x_add > -16384)
+						objects[c1].x_add = -16384;
+					if (objects[c1].x_add > 0 && objects[c1].x_add < 16384)
+						objects[c1].x_add = 16384;
+	  	    if (objects[c1].used == 1)
+						add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].frame, object_gobs);
+					break;
+				case OBJ_FLESH_TRACE:
+  		    objects[c1].ticks--;
+	    	  if (objects[c1].ticks <= 0) {
+      		  objects[c1].frame++;
+    	    	if (objects[c1].frame >= object_anims[objects[c1].anim].num_frames)
+  	        	objects[c1].used = 0;
+		        else {
+  	        	objects[c1].ticks = object_anims[objects[c1].anim].frame[objects[c1].frame].ticks;
+    	    	  objects[c1].image = object_anims[objects[c1].anim].frame[objects[c1].frame].image;
+      		  }
+    	  	}
+	  	    if (objects[c1].used == 1)
+		      	add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					break;
+      }
+    }
+  }
+
+}
+
+
+char add_pob(char page, short x, short y, short image, char *pob_data) {
+
+	if (main_info.page_info[page].num_pobs >= NUM_POBS)
+		return 1;
+
+	main_info.page_info[page].pobs[main_info.page_info[page].num_pobs].x = x;
+	main_info.page_info[page].pobs[main_info.page_info[page].num_pobs].y = y;
+	main_info.page_info[page].pobs[main_info.page_info[page].num_pobs].image = image;
+	main_info.page_info[page].pobs[main_info.page_info[page].num_pobs].pob_data = pob_data;
+	main_info.page_info[page].num_pobs++;
+
+	return 0;
+
+}
+
+
+void draw_pobs(char page) {
+	int c1;
+	int back_buf_ofs;
+
+	back_buf_ofs = 0;
+
+	for (c1 = main_info.page_info[page].num_pobs - 1; c1 >= 0; c1--) {
+		main_info.page_info[page].pobs[c1].back_buf_ofs = back_buf_ofs;
+		get_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), (char *)(main_info.pob_backbuf[page] + back_buf_ofs) );
+		back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data);
+		put_pob(page, main_info.page_info[page].pobs[c1].x, main_info.page_info[page].pobs[c1].y, main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data, 1, mask_pic);
+	}
+
+}
+
+
+void redraw_pob_backgrounds(char page) {
+	int c1;
+
+	for (c1 = 0; c1 < main_info.page_info[page].num_pobs; c1++)
+		put_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), (char *)(main_info.pob_backbuf[page] + main_info.page_info[page].pobs[c1].back_buf_ofs) );
+
+}
+
+
+char add_leftovers(char page, short x, short y, short image, char *pob_data) {
+
+	if (leftovers.page[page].num_pobs >= NUM_LEFTOVERS)
+		return 1;
+
+	leftovers.page[page].pobs[leftovers.page[page].num_pobs].x = x;
+	leftovers.page[page].pobs[leftovers.page[page].num_pobs].y = y;
+	leftovers.page[page].pobs[leftovers.page[page].num_pobs].image = image;
+	leftovers.page[page].pobs[leftovers.page[page].num_pobs].pob_data = pob_data;
+	leftovers.page[page].num_pobs++;
+
+	return 0;
+
+}
+
+
+void draw_leftovers(char page) {
+	int c1;
+	int back_buf_ofs;
+
+	for (c1 = leftovers.page[page].num_pobs - 1; c1 >= 0; c1--)
+		put_pob(page, leftovers.page[page].pobs[c1].x, leftovers.page[page].pobs[c1].y, leftovers.page[page].pobs[c1].image, leftovers.page[page].pobs[c1].pob_data, 1, mask_pic);
+
+	leftovers.page[page].num_pobs = 0;
+
+}
+
+
+char init_level(short level) {
+	FILE *handle;
+  int c1, c2;
+  int l1;
+  int s1, s2;
+
+  if ( (handle = dat_open("level.pcx", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
+		return 1;
+	}
+  if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
+		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
+		return 1;
+	}
+	fclose(handle);
+  if ( (handle = dat_open("mask.pcx", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'mask.pcx', aborting...\n");
+		return 1;
+	}
+  if (read_pcx(handle, mask_pic, 102400L, 0) != 0) {
+		strcpy(main_info.error_str, "Error loading 'mask.pcx', aborting...\n");
+		return 1;
+	}
+	fclose(handle);
+	memset(cur_pal, 0, 768);
+
+  for (c1 = 0; c1 < 4; c1++) {
+  	if (player[c1].enabled == 1) {
+			player[c1].bumps = 0;
+			player[c1].bumped[0] = 0;
+			player[c1].bumped[1] = 0;
+			player[c1].bumped[2] = 0;
+			player[c1].bumped[3] = 0;
+	    position_player(c1);
+		}
+  }
+
+	for (c1 = 0; c1 <	300; c1++)
+		objects[c1].used = 0;
+
+//	add_object(OBJ_SPRING, 144, 224, 0, 0, OBJ_ANIM_SPRING, 5);
+
+	for (c1 = 0; c1 < 16; c1++) {
+		for (c2 = 0; c2 < 22; c2++) {
+			if (ban_map[c1][c2] == 4)
+				add_object(OBJ_SPRING, c2 << 4, c1 << 4, 0, 0, OBJ_ANIM_SPRING, 5);
+		}
+	}
+
+	while (1) {
+		s1 = rnd(22);
+		s2 = rnd(16);
+		if (ban_map[s2][s1] == 0) {
+			add_object(OBJ_YEL_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
+			break;
+		}
+	}
+	while (1) {
+		s1 = rnd(22);
+		s2 = rnd(16);
+		if (ban_map[s2][s1] == 0) {
+			add_object(OBJ_YEL_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
+			break;
+		}
+	}
+	while (1) {
+		s1 = rnd(22);
+		s2 = rnd(16);
+		if (ban_map[s2][s1] == 0) {
+			add_object(OBJ_PINK_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
+			break;
+		}
+	}
+	while (1) {
+		s1 = rnd(22);
+		s2 = rnd(16);
+		if (ban_map[s2][s1] == 0) {
+			add_object(OBJ_PINK_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
+			break;
+		}
+	}
+
+  return 0;
+
+}
+
+
+void deinit_level(void) {
+	int c1, c2;
+
+	dj_set_nosound(1);
+  dj_stop_mod();
+
+}
+
+
+char init_program(int argc, char *argv[]) {
+	FILE *handle;
+	int c1, c2;
+	char load_flag;
+	char force2, force3;
+	sfx_data fly;
+	int player_anim_data[] = {1, 0, 0, 0x7fff, 0, 0, 0, 0, 0, 0,
+														4, 0, 0, 4, 1, 4, 2, 4, 3, 4,
+    		              			1, 0, 4, 0x7fff, 0, 0, 0, 0, 0, 0,
+	      		            		4, 2, 5, 8, 6, 10, 7, 3, 6, 3,
+  	        		        		1, 0, 6, 0x7fff, 0, 0, 0, 0, 0, 0,
+    	          		    		2, 1, 5, 8, 4, 0x7fff, 0, 0, 0, 0,
+      	            				1, 0, 8, 5, 0, 0, 0, 0, 0, 0};
+
+	if (__djgpp_nearptr_enable() == 0)
+  	return 1;
+
+  srandom(time(0) );
+
+  if (hook_keyb_handler() != 0)
+  	return 1;
+
+	memset(&main_info, 0, sizeof(main_info) );
+	main_info.joy_enabled = 1;
+
+	strcpy(datfile_name, "jumpbump.dat");
+
+	force2 = force3 = 0;
+
+	if (argc > 1) {
+		for (c1 = 1; c1 < argc; c1++) {
+			if (stricmp(argv[c1], "-nosound") == 0)
+				main_info.no_sound = 1;
+			else if (stricmp(argv[c1], "-nogore") == 0)
+				main_info.no_gore = 1;
+			else if (stricmp(argv[c1], "-nojoy") == 0)
+				main_info.joy_enabled = 0;
+			else if (stricmp(argv[c1], "-fireworks") == 0)
+				main_info.fireworks = 1;
+			else if (stricmp(argv[c1], "-dat") == 0) {
+				if (c1 < (argc - 1) ) {
+					if ( (handle = fopen(argv[c1 + 1], "rb") ) != NULL) {
+						fclose(handle);
+						strcpy(datfile_name, argv[c1 + 1]);
+					}
+				}
+			}
+			else if (stricmp(argv[c1], "-mouse") == 0) {
+				if (c1 < (argc - 1) ) {
+					if (stricmp(argv[c1 + 1], "2") == 0)
+						force2 = 1;
+					if (stricmp(argv[c1 + 1], "3") == 0)
+						force3 = 1;
+				}
+			}
+		}
+	}
+
+	for (c1 = 0; c1 < 7; c1++) {
+		player_anims[c1].num_frames = player_anim_data[c1 * 10];
+		player_anims[c1].restart_frame = player_anim_data[c1 * 10 + 1];
+		for (c2 = 0; c2 < 4; c2++) {
+			player_anims[c1].frame[c2].image = player_anim_data[c1 * 10 + c2 * 2 + 2];
+			player_anims[c1].frame[c2].ticks = player_anim_data[c1 * 10 + c2 * 2 + 3];
+		}
+	}
+
+  if ( (background_pic = malloc(102400L) ) == 0)
+    return 1;
+  if ( (mask_pic = malloc(102400L) ) == 0)
+    return 1;
+	memset(mask_pic, 0, 102400);
+
+	main_info.pob_backbuf[0] = malloc(65535);
+	main_info.pob_backbuf[1] = malloc(65535);
+	if (main_info.pob_backbuf[0] == 0 || main_info.pob_backbuf[1] == 0)
+		return 1;
+
+  if ( (handle = dat_open("rabbit.gob", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'rabbit.gob', aborting...\n");
+    return 1;
+	}
+  if ( (rabbit_gobs = malloc(dat_filelen("rabbit.gob", datfile_name) ) ) == 0) {
+		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+    fclose(handle);
+    return 1;
+  }
+	fread(rabbit_gobs, 1,	dat_filelen("rabbit.gob", datfile_name), handle);
+  fclose(handle);
+
+  if ( (handle = dat_open("objects.gob", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'objects.gob', aborting...\n");
+    return 1;
+	}
+  if ( (object_gobs = malloc(dat_filelen("objects.gob", datfile_name) ) ) == 0) {
+		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+    fclose(handle);
+    return 1;
+  }
+	fread(object_gobs, 1,	dat_filelen("objects.gob", datfile_name), handle);
+  fclose(handle);
+
+  if ( (handle = dat_open("font.gob", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'font.gob', aborting...\n");
+    return 1;
+	}
+  if ( (font_gobs = malloc(dat_filelen("font.gob", datfile_name) ) ) == 0) {
+		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+    fclose(handle);
+    return 1;
+  }
+	fread(font_gobs, 1,	dat_filelen("font.gob", datfile_name), handle);
+  fclose(handle);
+
+  if ( (handle = dat_open("numbers.gob", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'numbers.gob', aborting...\n");
+    return 1;
+	}
+  if ( (number_gobs = malloc(dat_filelen("numbers.gob", datfile_name) ) ) == 0) {
+		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+    fclose(handle);
+    return 1;
+  }
+	fread(number_gobs, 1,	dat_filelen("numbers.gob", datfile_name), handle);
+  fclose(handle);
+
+	if (read_level() != 0) {
+		strcpy(main_info.error_str, "Error loading 'levelmap.txt', aborting...\n");
+    fclose(handle);
+    return 1;
+	}
+
+	dj_init();
+	if (main_info.no_sound == 0) {
+	  dj_autodetect_sd();
+		dj_set_mixing_freq(20000);
+		dj_set_stereo(0);
+  	dj_set_auto_mix(0);
+	  dj_set_dma_time(8);
+		dj_set_num_sfx_channels(5);
+		dj_set_sfx_volume(64);
+		dj_set_nosound(1);
+  	dj_start();
+
+	  if ( (handle = dat_open("jump.mod", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'jump.mod', aborting...\n");
+  	  return 1;
+		}
+	  if (dj_load_mod(handle, 0, MOD_MENU) != 0) {
+			strcpy(main_info.error_str, "Error loading 'jump.mod', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);
+
+	  if ( (handle = dat_open("bump.mod", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'bump.mod', aborting...\n");
+  	  return 1;
+		}
+	  if (dj_load_mod(handle, 0, MOD_GAME) != 0) {
+			strcpy(main_info.error_str, "Error loading 'bump.mod', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);
+
+	  if ( (handle = dat_open("scores.mod", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'scores.mod', aborting...\n");
+  	  return 1;
+		}
+	  if (dj_load_mod(handle, 0, MOD_SCORES) != 0) {
+			strcpy(main_info.error_str, "Error loading 'scores.mod', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);
+
+	  if ( (handle = dat_open("jump.smp", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'jump.smp', aborting...\n");
+  	  return 1;
+		}
+		if (dj_load_sfx(handle, 0, dat_filelen("jump.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_JUMP) != 0) {
+			strcpy(main_info.error_str, "Error loading 'jump.smp', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);
+
+/*	  if ( (handle = dat_open("land.smp", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'land.smp', aborting...\n");
+  	  return 1;
+		}
+		if (dj_load_sfx(handle, 0, dat_filelen("land.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_LAND) != 0) {
+			strcpy(main_info.error_str, "Error loading 'land.smp', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);*/
+
+	  if ( (handle = dat_open("death.smp", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'death.smp', aborting...\n");
+  	  return 1;
+		}
+		if (dj_load_sfx(handle, 0, dat_filelen("death.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_DEATH) != 0) {
+			strcpy(main_info.error_str, "Error loading 'death.smp', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);
+
+	  if ( (handle = dat_open("spring.smp", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'spring.smp', aborting...\n");
+  	  return 1;
+		}
+		if (dj_load_sfx(handle, 0, dat_filelen("spring.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_SPRING) != 0) {
+			strcpy(main_info.error_str, "Error loading 'spring.smp', aborting...\n");
+    	return 1;
+  	}
+		fclose(handle);
+
+	  if ( (handle = dat_open("splash.smp", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'splash.smp', aborting...\n");
+  	  return 1;
+		}
+		if (dj_load_sfx(handle, 0, dat_filelen("splash.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_SPLASH) != 0) {
+			strcpy(main_info.error_str, "Error loading 'splash.smp', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);
+
+	  if ( (handle = dat_open("fly.smp", datfile_name, "rb") ) == 0) {
+			strcpy(main_info.error_str, "Error loading 'fly.smp', aborting...\n");
+  	  return 1;
+		}
+		if (dj_load_sfx(handle, 0, dat_filelen("fly.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_FLY) != 0) {
+			strcpy(main_info.error_str, "Error loading 'fly.smp', aborting...\n");
+  	  return 1;
+	  }
+		fclose(handle);
+
+		dj_get_sfx_settings(SFX_FLY, &fly);
+		fly.priority = 10;
+		fly.default_freq = SFX_FLY_FREQ;
+		fly.loop = 1;
+		fly.loop_start = 0;
+		fly.loop_length = fly.length;
+		dj_set_sfx_settings(SFX_FLY, &fly);
+	}
+
+	open_screen();
+
+  if ( (handle = dat_open("menu.pcx", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
+		return 1;
+	}
+  if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
+		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
+		return 1;
+	}
+	fclose(handle);
+
+  outportb(0x3c8, 0);
+ 	for (c1 = 0; c1 < 768; c1++)
+		outportb(0x3c9, pal[c1]);
+
+	if (main_info.joy_enabled == 1 && main_info.fireworks == 0) {
+	c1 = 0;
+	outportb(0x201, 0);
+	while (c1 < 0x7fff) {
+		if ( (inportb(0x201) & 1) == 0)
+			break;
+		c1++;
+	}
+	if (c1 != 0x7fff) {
+		main_info.joy_enabled = 1;
+		load_flag = 0;
+		put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
+		put_text(0, 200, 100, "Move the joystick to the", 2);
+		put_text(0, 200, 115, "UPPER LEFT", 2);
+		put_text(0, 200, 130, "and press button A", 2);
+		put_text(0, 200, 200, "Or press ESC to use", 2);
+		put_text(0, 200, 215, "previous settings", 2);
+		if (calib_joy(0) != 0)
+			load_flag = 1;
+		else {
+			outportw(0x3c4, 0x0f02);
+		  memset( (char *)(0xa0000 + 32768 + __djgpp_conventional_base), 0, 32768);
+			main_info.view_page = 1;
+			outportw(0x3d4, (1 << 23) + 0x0d);
+			outportw(0x3d4, ( (1 << 15) & 0xff00) + 0x0c);
+			wait_vrt();
+
+			put_text(1, 200, 40, "JOYSTICK CALIBRATION", 2);
+			put_text(1, 200, 100, "Move the joystick to the", 2);
+			put_text(1, 200, 115, "LOWER RIGHT", 2);
+			put_text(1, 200, 130, "and press button A", 2);
+			put_text(1, 200, 200, "Or press ESC to use", 2);
+			put_text(1, 200, 215, "previous settings", 2);
+			if (calib_joy(1) != 0)
+				load_flag = 1;
+			else {
+				outportw(0x3c4, 0x0f02);
+			  memset( (char *)(0xa0000 + __djgpp_conventional_base), 0, 32768);
+				outportw(0x3d4, (0 << 23) + 0x0d);
+				outportw(0x3d4, ( (0 << 15) & 0xff00) + 0x0c);
+				wait_vrt();
+
+				put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
+				put_text(0, 200, 100, "Move the joystick to the", 2);
+				put_text(0, 200, 115, "CENTER", 2);
+				put_text(0, 200, 130, "and press button A", 2);
+				put_text(0, 200, 200, "Or press ESC to use", 2);
+				put_text(0, 200, 215, "previous settings", 2);
+				if (calib_joy(2) != 0)
+					load_flag = 1;
+				else {
+					if (joy.calib_data.x1 == joy.calib_data.x2)
+						joy.calib_data.x1 -= 10;
+					if (joy.calib_data.x3 == joy.calib_data.x2)
+						joy.calib_data.x3 += 10;
+					if (joy.calib_data.y1 == joy.calib_data.y2)
+						joy.calib_data.y1 -= 10;
+					if (joy.calib_data.y3 == joy.calib_data.y2)
+						joy.calib_data.y3 += 10;
+					write_calib_data();
+				}
+			}
+		}
+		if (load_flag == 1) {
+		  if ( (handle = dat_open("calib.dat", datfile_name, "rb") ) == 0) {
+				strcpy(main_info.error_str, "Error loading 'calib.dat', aborting...\n");
+  		  return 1;
+			}
+			joy.calib_data.x1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.x2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.x3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.y1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.y2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.y3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			fclose(handle);
+		}
+  }
+  else
+		main_info.joy_enabled = 0;
+
+	}
+
+  regs.x.ax = 0;
+  __dpmi_int(0x33, &regs);
+  if (regs.x.ax == 0xffff) {
+		main_info.mouse_enabled = 1;
+		main_info.num_mouse_buttons = regs.x.bx;
+		if (force2 == 1)
+			main_info.num_mouse_buttons = 2;
+		if (force3 == 1)
+			main_info.num_mouse_buttons = 3;
+	}
+	else
+		main_info.mouse_enabled = 0;
+
+  return 0;
+
+}
+
+
+void deinit_program(void) {
+	__dpmi_regs regs;
+
+	dj_stop();
+  dj_free_mod(MOD_MENU);
+  dj_free_mod(MOD_GAME);
+  dj_free_sfx(SFX_DEATH);
+  dj_free_sfx(SFX_SPRING);
+  dj_free_sfx(SFX_SPLASH);
+  dj_deinit();
+
+  if (rabbit_gobs != 0)
+    free(rabbit_gobs);
+	if (object_gobs != 0)
+		free(object_gobs);
+	if (number_gobs != 0)
+		free(number_gobs);
+
+  if (main_info.pob_backbuf[0] != 0)
+    free(main_info.pob_backbuf[0]);
+  if (main_info.pob_backbuf[1] != 0)
+    free(main_info.pob_backbuf[1]);
+
+  if (background_pic != 0)
+    free(background_pic);
+  if (mask_pic != 0)
+    free(mask_pic);
+
+	remove_keyb_handler();
+
+	regs.x.ax = 0x3;
+  __dpmi_int(0x10, &regs);
+
+	if (main_info.error_str[0] != 0) {
+	 	printf(main_info.error_str);
+		exit(1);
+	}
+	else
+		exit(0);
+
+}
+
+
+void read_joy(void) {
+	int c1;
+	int x, y;
+	int s1;
+	char flag;
+
+	c1 = x = y = flag = 0;
+	outportb(0x201, 0);
+
+	while (1) {
+
+		s1 = inportb(0x201);
+
+		if (x == 0) {
+			if ( (s1 & 1) == 0)
+				x = c1;
+		}
+		if (y == 0) {
+			if ( (s1 & 2) == 0)
+				y = c1;
+		}
+		if (x != 0 && y != 0)
+			break;
+
+		c1++;
+		if (c1 == 0x7fff) {
+			flag = 1;
+			break;
+		}
+
+	}
+
+	if (flag == 0) {
+		joy.raw_x = x;
+		joy.raw_y = y;
+
+		if (joy.raw_x < joy.calib_data.x2)
+			joy.x = ( (long)(joy.raw_x - joy.calib_data.x2) << 10) / (joy.calib_data.x2 - joy.calib_data.x1);
+		else
+			joy.x = ( (long)(joy.raw_x - joy.calib_data.x2) << 10) / (joy.calib_data.x3 - joy.calib_data.x2);
+		if (joy.raw_y < joy.calib_data.y2)
+			joy.y = ( (long)(joy.raw_y - joy.calib_data.y2) << 10) / (joy.calib_data.y2 - joy.calib_data.y1);
+		else
+			joy.y = ( (long)(joy.raw_y - joy.calib_data.y2) << 10) / (joy.calib_data.y3 - joy.calib_data.y2);
+
+		if (joy.x < -1024)
+			joy.x = -1024;
+		if (joy.x > 1024)
+			joy.x = 1024;
+		if (joy.y < -1024)
+			joy.y = -1024;
+		if (joy.y > 1024)
+			joy.y = 1024;
+
+		s1 = inportb(0x201);
+		joy.but1 = ( ( (s1 >> 4) & 1) ^ 1);
+		joy.but2 = ( ( (s1 >> 5) & 1) ^ 1);
+	}
+	else {
+		joy.raw_x = joy.calib_data.x2;
+		joy.raw_y = joy.calib_data.y2;
+
+		joy.x = joy.y = 0;
+
+		joy.but1 = joy.but2 = 0;
+	}
+
+}
+
+
+char calib_joy(char type) {
+	int c1;
+	int x, y;
+	int s1;
+	int num_times;
+	char flag;
+
+	while (joy.but1 == 1) {
+		s1 = inportb(0x201);
+		joy.but1 = ( ( (s1 >> 4) & 1) ^ 1);
+		if (key_pressed(1) == 1) {
+			while (key_pressed(1) == 1);
+			return 1;
+		}
+	}
+
+	num_times = 0;
+
+	while (joy.but1 == 0) {
+
+		c1 = x = y = flag = 0;
+		outportb(0x201, 0);
+
+		while (1) {
+
+			s1 = inportb(0x201);
+
+			if (x == 0) {
+				if ( (s1 & 1) == 0)
+					x = c1;
+			}
+			if (y == 0) {
+				if ( (s1 & 2) == 0)
+					y = c1;
+			}
+			if (x != 0 && y != 0)
+				break;
+
+			c1++;
+			if (c1 == 0x7fff) {
+				flag = 1;
+				break;
+			}
+
+		}
+
+		joy.raw_x = x;
+		joy.raw_y = y;
+
+		s1 = inportb(0x201);
+		joy.but1 = ( ( (s1 >> 4) & 1) ^ 1);
+
+		if (num_times < 0x7fffffff)
+			num_times++;
+
+		if (flag == 1)
+			break;
+
+		if (key_pressed(1) == 1) {
+			while (key_pressed(1) == 1);
+			return 1;
+		}
+
+	}
+
+	if (num_times < 16)
+		return 1;
+
+	if (flag == 0) {
+
+		switch (type) {
+			case 0:
+				joy.calib_data.x1 = joy.raw_x;
+				joy.calib_data.y1 = joy.raw_y;
+				break;
+			case 1:
+				joy.calib_data.x3 = joy.raw_x;
+				joy.calib_data.y3 = joy.raw_y;
+				break;
+			case 2:
+				joy.calib_data.x2 = joy.raw_x;
+				joy.calib_data.y2 = joy.raw_y;
+				break;
+		}
+
+		while (joy.but1 == 1) {
+			s1 = inportb(0x201);
+			joy.but1 = ( ( (s1 >> 4) & 1) ^ 1);
+		}
+
+	}
+
+	return 0;
+
+}
+
+
+void read_mouse(void) {
+
+  regs.x.ax = 3;
+  __dpmi_int(0x33, &regs);
+  mouse.but1 = regs.x.bx & 1;
+  mouse.but2 = (regs.x.bx & 2) >> 1;
+  mouse.but3 = (regs.x.bx & 4) >> 2;
+
+}
+
+
+unsigned short rnd(unsigned short max) {
+  int l1;
+
+  l1 = ( (random() >> 16) * max) / 0x7fff;
+  if (l1 > max - 1)
+    l1 = max - 1;
+  return l1;
+}
+
+
+char read_level(void) {
+	FILE *handle;
+	int c1, c2;
+	int chr;
+
+  if ( (handle = dat_open("levelmap.txt", datfile_name, "rb") ) == 0) {
+		strcpy(main_info.error_str, "Error loading 'levelmap.txt', aborting...\n");
+    return 1;
+	}
+
+	for (c1 = 0; c1 <	16; c1++) {
+		for (c2 = 0; c2 <	22; c2++) {
+			while (1) {
+				chr = fgetc(handle);
+				if (chr	== EOF) {
+					fclose(handle);
+					return 1;
+				}
+				if (chr >= '0' && chr <= '4')
+					break;
+			}
+			ban_map[c1][c2] = chr - '0';
+		}
+	}
+
+	for (c2 = 0; c2 <	22; c2++)
+		ban_map[16][c2] = 1;
+
+  fclose(handle);
+	return 0;
+
+}
+
+
+FILE *dat_open(char *file_name, char *dat_name, char *mode) {
+	FILE *handle;
+	int num;
+	int c1;
+	char name[21];
+	int ofs;
+
+	if ( (handle = fopen(dat_name, mode) ) == NULL)
+		return 0;
+
+	num = fgetc(handle) +	(fgetc(handle) << 8) +	(fgetc(handle) << 16) +	(fgetc(handle) << 24);
+	for (c1 = 0; c1 < num; c1++) {
+		fread(name, 1, 12, handle);
+		if (strnicmp(name, file_name, strlen(file_name) ) == 0) {
+			ofs = fgetc(handle) +	(fgetc(handle) << 8) +	(fgetc(handle) << 16) +	(fgetc(handle) << 24);
+			fseek(handle, ofs, SEEK_SET);
+			return handle;
+		}
+		fseek(handle, 8, SEEK_CUR);
+	}
+
+	return 0;
+}
+
+
+int dat_filelen(char *file_name, char *dat_name) {
+	FILE *handle;
+	int num;
+	int c1;
+	char name[21];
+	int len;
+
+	if ( (handle = fopen(dat_name, "rb") ) == NULL)
+		return 0;
+
+	num = fgetc(handle) +	(fgetc(handle) << 8) +	(fgetc(handle) << 16) +	(fgetc(handle) << 24);
+	for (c1 = 0; c1 < num; c1++) {
+		fread(name, 1, 12, handle);
+		if (strnicmp(name, file_name, strlen(file_name) ) == 0) {
+			fseek(handle, 4, SEEK_CUR);
+			len = fgetc(handle) +	(fgetc(handle) << 8) +	(fgetc(handle) << 16) +	(fgetc(handle) << 24);
+			return len;
+		}
+		fseek(handle, 8, SEEK_CUR);
+	}
+
+	return 0;
+}
+
+void write_calib_data(void) {
+	FILE *handle;
+	int c1;
+	int len, num;
+	char *mem;
+	int ofs;
+
+	if ( (handle = fopen(datfile_name, "rb") ) == NULL)
+		return;
+	len = filelength(fileno(handle) );
+	if ( (mem = malloc(len) ) == NULL)
+		return;
+	fread(mem, 1, len, handle);
+	fclose(handle);
+
+	ofs = 4;
+	num = *(int *)(&mem[0]);
+	for (c1 = 0; c1 < num; c1++) {
+		if (strnicmp(&mem[ofs], "calib.dat", strlen("calib.dat") ) == 0) {
+			ofs = *(int *)(&mem[ofs + 12]);
+			break;
+		}
+		ofs += 20;
+	}
+
+	mem[ofs] = joy.calib_data.x1 & 0xff;
+	mem[ofs + 1] = (joy.calib_data.x1 >> 8) & 0xff;
+	mem[ofs + 2] = (joy.calib_data.x1 >> 16) & 0xff;
+	mem[ofs + 3] = (joy.calib_data.x1 >> 24) & 0xff;
+	mem[ofs + 4] = joy.calib_data.x2 & 0xff;
+	mem[ofs + 5] = (joy.calib_data.x2 >> 8) & 0xff;
+	mem[ofs + 6] = (joy.calib_data.x2 >> 16) & 0xff;
+	mem[ofs + 7] = (joy.calib_data.x2 >> 24) & 0xff;
+	mem[ofs + 8] = joy.calib_data.x3 & 0xff;
+	mem[ofs + 9] = (joy.calib_data.x3 >> 8) & 0xff;
+	mem[ofs + 10] = (joy.calib_data.x3 >> 16) & 0xff;
+	mem[ofs + 11] = (joy.calib_data.x3 >> 24) & 0xff;
+	mem[ofs + 12] = joy.calib_data.y1 & 0xff;
+	mem[ofs + 13] = (joy.calib_data.y1 >> 8) & 0xff;
+	mem[ofs + 14] = (joy.calib_data.y1 >> 16) & 0xff;
+	mem[ofs + 15] = (joy.calib_data.y1 >> 24) & 0xff;
+	mem[ofs + 16] = joy.calib_data.y2 & 0xff;
+	mem[ofs + 17] = (joy.calib_data.y2 >> 8) & 0xff;
+	mem[ofs + 18] = (joy.calib_data.y2 >> 16) & 0xff;
+	mem[ofs + 19] = (joy.calib_data.y2 >> 24) & 0xff;
+	mem[ofs + 20] = joy.calib_data.y3 & 0xff;
+	mem[ofs + 21] = (joy.calib_data.y3 >> 8) & 0xff;
+	mem[ofs + 22] = (joy.calib_data.y3 >> 16) & 0xff;
+	mem[ofs + 23] = (joy.calib_data.y3 >> 24) & 0xff;
+
+	if ( (handle = fopen(datfile_name, "wb") ) == NULL)
+		return;
+	fwrite(mem, 1, len, handle);
+	fclose(handle);
+
+}
+
