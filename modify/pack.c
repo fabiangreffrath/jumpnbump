@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 	}
 
 	/* here, we checked that all files are ok, and ready to roll the packfile */
-	fd = open(outfile, O_RDWR | O_CREAT, 0644);
+	fd = open(outfile, O_RDWR | O_CREAT | O_BINARY, 0644);
 	if (fd == -1) {
 		perror("opening packfile");
 		exit(1);
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 
 		printf("adding %s ", argv[i]);
 
-		infd = open(argv[i], O_RDONLY);
+		infd = open(argv[i], O_RDONLY | O_BINARY);
 		if (infd == -1) {
 			perror("opening file");
 			exit(1);

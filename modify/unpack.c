@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 	exit(1);
     }
 
-    fd = open(argv[1], O_RDONLY);
+    fd = open(argv[1], O_RDONLY | O_BINARY);
     if (fd == -1) {
 	perror("open datafile");
 	exit(1);
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	strncpy(filename, datafile[i].filename, 12);
 	printf("Extracting %s ", filename);
 
-	outfd = open(filename, O_RDWR | O_CREAT, 0644);
+	outfd = open(filename, O_RDWR | O_CREAT | O_BINARY, 0644);
 	if (!outfd) {
 	    perror("cant open file");
 	    exit(1);
