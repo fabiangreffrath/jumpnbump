@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 			while (1) {
 				flies[c1].x = s1 + rnd(101) - 50;
 				flies[c1].y = s2 + rnd(101) - 50;
-				if (ban_map[flies[c1].y >> 4][flies[c1].x >> 4] == 0)
+				if (ban_map[flies[c1].y >> 4][flies[c1].x >> 4] == BAN_VOID)
 					break;
 			}
 			flies[c1].back_defined[0] = 0;
@@ -537,7 +537,7 @@ int main(int argc, char *argv[])
 					s4 = 0;
 				if ((flies[c1].x + s4) > 351)
 					s4 = 0;
-				if (ban_map[flies[c1].y >> 4][(flies[c1].x + s4) >> 4] != 0)
+				if (ban_map[flies[c1].y >> 4][(flies[c1].x + s4) >> 4] != BAN_VOID)
 					s4 = 0;
 				flies[c1].x += s4;
 				s3 = 0;
@@ -563,7 +563,7 @@ int main(int argc, char *argv[])
 					s4 = 0;
 				if ((flies[c1].y + s4) > 239)
 					s4 = 0;
-				if (ban_map[(flies[c1].y + s4) >> 4][flies[c1].x >> 4] != 0)
+				if (ban_map[(flies[c1].y + s4) >> 4][flies[c1].x >> 4] != BAN_VOID)
 					s4 = 0;
 				flies[c1].y += s4;
 			}
@@ -763,12 +763,12 @@ void steer_players(void)
 						if (player[c1].action_right) {
 							s1 = (player[c1].x >> 16);
 							s2 = (player[c1].y >> 16);
-							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_ICE) {
 								if (player[c1].x_add < 0)
 									player[c1].x_add += 1024;
 								else
 									player[c1].x_add += 768;
-							} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1)) {
+							} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != BAN_SOLID && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_ICE) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_ICE && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != BAN_SOLID)) {
 								if (player[c1].x_add > 0)
 									player[c1].x_add += 1024;
 								else
@@ -776,7 +776,7 @@ void steer_players(void)
 							} else {
 								if (player[c1].x_add < 0) {
 									player[c1].x_add += 16384;
-									if (player[c1].x_add < 98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+									if (player[c1].x_add < 98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_SOLID)
 										add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
 								} else
 									player[c1].x_add += 12288;
@@ -795,12 +795,12 @@ void steer_players(void)
 						if (player[c1].action_left) {
 							s1 = (player[c1].x >> 16);
 							s2 = (player[c1].y >> 16);
-							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_ICE) {
 								if (player[c1].x_add > 0)
 									player[c1].x_add -= 1024;
 								else
 									player[c1].x_add -= 768;
-							} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1)) {
+							} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != BAN_SOLID && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_ICE) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_ICE && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != BAN_SOLID)) {
 								if (player[c1].x_add > 0)
 									player[c1].x_add -= 1024;
 								else
@@ -808,7 +808,7 @@ void steer_players(void)
 							} else {
 								if (player[c1].x_add > 0) {
 									player[c1].x_add -= 16384;
-									if (player[c1].x_add > -98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+									if (player[c1].x_add > -98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_SOLID)
 										add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
 								} else
 									player[c1].x_add -= 12288;
@@ -827,12 +827,12 @@ void steer_players(void)
 				} else if (player[c1].action_left) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
-					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_ICE) {
 						if (player[c1].x_add > 0)
 							player[c1].x_add -= 1024;
 						else
 							player[c1].x_add -= 768;
-					} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1)) {
+					} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != BAN_SOLID && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_ICE) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_ICE && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != BAN_SOLID)) {
 						if (player[c1].x_add > 0)
 							player[c1].x_add -= 1024;
 						else
@@ -840,7 +840,7 @@ void steer_players(void)
 					} else {
 						if (player[c1].x_add > 0) {
 							player[c1].x_add -= 16384;
-							if (player[c1].x_add > -98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+							if (player[c1].x_add > -98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_SOLID)
 								add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
 						} else
 							player[c1].x_add -= 12288;
@@ -857,12 +857,12 @@ void steer_players(void)
 				} else if (player[c1].action_right) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
-					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
+					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_ICE) {
 						if (player[c1].x_add < 0)
 							player[c1].x_add += 1024;
 						else
 							player[c1].x_add += 768;
-					} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 1)) {
+					} else if ((ban_map[(s2 + 16) >> 4][s1 >> 4] != BAN_SOLID && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_ICE) || (ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_ICE && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != BAN_SOLID)) {
 						if (player[c1].x_add > 0)
 							player[c1].x_add += 1024;
 						else
@@ -870,7 +870,7 @@ void steer_players(void)
 					} else {
 						if (player[c1].x_add < 0) {
 							player[c1].x_add += 16384;
-							if (player[c1].x_add < 98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+							if (player[c1].x_add < 98304L && player[c1].in_water == 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_SOLID)
 								add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
 						} else
 							player[c1].x_add += 12288;
@@ -887,7 +887,7 @@ void steer_players(void)
 				} else if ((!player[c1].action_left) && (!player[c1].action_right)) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
-					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 4 || (((ban_map[(s2 + 16) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 16) >> 4][s1 >> 4] == 4) && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] != 3 && (ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 4)))) {
+					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_SOLID || ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_SPRING || (((ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_SOLID || ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_SPRING) && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != BAN_ICE) || (ban_map[(s2 + 16) >> 4][s1 >> 4] != BAN_ICE && (ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_SPRING)))) {
 						if (player[c1].x_add < 0) {
 							player[c1].x_add += 16384;
 							if (player[c1].x_add > 0)
@@ -897,7 +897,7 @@ void steer_players(void)
 							if (player[c1].x_add < 0)
 								player[c1].x_add = 0;
 						}
-						if (player[c1].x_add != 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1)
+						if (player[c1].x_add != 0 && ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == BAN_SOLID)
 							add_object(OBJ_SMOKE, (player[c1].x >> 16) + 2 + rnd(9), (player[c1].y >> 16) + 13 + rnd(5), 0, -16384 - rnd(8192), OBJ_ANIM_SMOKE, 0);
 					}
 					if (player[c1].anim == 1) {
@@ -913,7 +913,7 @@ void steer_players(void)
 						s2 = (player[c1].y >> 16);
 						if (s2 < -16)
 							s2 = -16;
-						if (ban_map[(s2 + 16) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 16) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 3) {
+						if (ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_SOLID || ban_map[(s2 + 16) >> 4][s1 >> 4] == BAN_ICE || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == BAN_ICE) {
 							player[c1].y_add = -280000L;
 							player[c1].anim = 2;
 							player[c1].frame = 0;
@@ -926,7 +926,7 @@ void steer_players(void)
 							else
 								dj_play_sfx(SFX_SPRING, (unsigned short)(SFX_SPRING_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 						}
-						if ((ban_map[(s2 + 7) >> 4][s1 >> 4] == 0 || ban_map[(s2 + 7) >> 4][(s1 + 15) >> 4] == 0) && (ban_map[(s2 + 8) >> 4][s1 >> 4] == 2 || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == 2)) {
+						if ((ban_map[(s2 + 7) >> 4][s1 >> 4] == BAN_VOID || ban_map[(s2 + 7) >> 4][(s1 + 15) >> 4] == BAN_VOID) && (ban_map[(s2 + 8) >> 4][s1 >> 4] == BAN_WATER || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == BAN_WATER)) {
 							player[c1].y_add = -196608L;
 							player[c1].in_water = 0;
 							player[c1].anim = 2;
@@ -958,7 +958,7 @@ void steer_players(void)
 						player[c1].y_add -= 16384;
 						if (player[c1].y_add < -400000L)
 							player[c1].y_add = -400000L;
-						if ((ban_map[(s2 + 7) >> 4][s1 >> 4] == 0 || ban_map[(s2 + 7) >> 4][(s1 + 15) >> 4] == 0) && (ban_map[(s2 + 8) >> 4][s1 >> 4] == 2 || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == 2))
+						if ((ban_map[(s2 + 7) >> 4][s1 >> 4] == BAN_VOID || ban_map[(s2 + 7) >> 4][(s1 + 15) >> 4] == BAN_VOID) && (ban_map[(s2 + 8) >> 4][s1 >> 4] == BAN_WATER || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == BAN_WATER))
 							player[c1].in_water = 0;
 						if (rnd(100) < 50)
 							add_object(OBJ_SMOKE, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 10 + rnd(5), 0, 16384 + rnd(8192), OBJ_ANIM_SMOKE, 0);
@@ -978,26 +978,26 @@ void steer_players(void)
 				if (player[c1].y > 0) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
-					if (ban_map[s2 >> 4][s1 >> 4] == 1 || ban_map[s2 >> 4][s1 >> 4] == 3 || ban_map[s2 >> 4][s1 >> 4] == 4 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 4) {
+					if (ban_map[s2 >> 4][s1 >> 4] == BAN_SOLID || ban_map[s2 >> 4][s1 >> 4] == BAN_ICE || ban_map[s2 >> 4][s1 >> 4] == BAN_SPRING || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_ICE || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SPRING) {
 						player[c1].x = (((s1 + 16) & 0xfff0)) << 16;
 						player[c1].x_add = 0;
 					}
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
-					if (ban_map[s2 >> 4][(s1 + 15) >> 4] == 1 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 3 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 4 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+					if (ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_ICE || ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_SPRING || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_ICE || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SPRING) {
 						player[c1].x = (((s1 + 16) & 0xfff0) - 16) << 16;
 						player[c1].x_add = 0;
 					}
 				} else {
 					s1 = (player[c1].x >> 16);
 					s2 = 0;
-					if (ban_map[s2 >> 4][s1 >> 4] == 1 || ban_map[s2 >> 4][s1 >> 4] == 3 || ban_map[s2 >> 4][s1 >> 4] == 4 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 4) {
+					if (ban_map[s2 >> 4][s1 >> 4] == BAN_SOLID || ban_map[s2 >> 4][s1 >> 4] == BAN_ICE || ban_map[s2 >> 4][s1 >> 4] == BAN_SPRING || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_ICE || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SPRING) {
 						player[c1].x = (((s1 + 16) & 0xfff0)) << 16;
 						player[c1].x_add = 0;
 					}
 					s1 = (player[c1].x >> 16);
 					s2 = 0;
-					if (ban_map[s2 >> 4][(s1 + 15) >> 4] == 1 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 3 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 4 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+					if (ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_ICE || ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_SPRING || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_ICE || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SPRING) {
 						player[c1].x = (((s1 + 16) & 0xfff0) - 16) << 16;
 						player[c1].x_add = 0;
 					}
@@ -1007,7 +1007,7 @@ void steer_players(void)
 
 				s1 = (player[c1].x >> 16);
 				s2 = (player[c1].y >> 16);
-				if (ban_map[(s2 + 15) >> 4][(s1 + 8) >> 4] == 4 || ((ban_map[(s2 + 15) >> 4][s1 >> 4] == 4 && ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] != 1) || (ban_map[(s2 + 15) >> 4][s1 >> 4] != 1 && ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4))) {
+				if (ban_map[(s2 + 15) >> 4][(s1 + 8) >> 4] == BAN_SPRING || ((ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SPRING && ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] != BAN_SOLID) || (ban_map[(s2 + 15) >> 4][s1 >> 4] != BAN_SOLID && ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SPRING))) {
 					player[c1].y = ((player[c1].y >> 16) & 0xfff0) << 16;
 					player[c1].y_add = -400000L;
 					player[c1].anim = 2;
@@ -1016,9 +1016,9 @@ void steer_players(void)
 					player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					player[c1].jump_ready = 0;
 					player[c1].jump_abort = 0;
-					for (c2 = 0; c2 < 300; c2++) {
+					for (c2 = 0; c2 < NUM_OBJECTS; c2++) {
 						if (objects[c2].used == 1 && objects[c2].type == OBJ_SPRING) {
-							if (ban_map[(s2 + 15) >> 4][(s1 + 8) >> 4] == 4) {
+							if (ban_map[(s2 + 15) >> 4][(s1 + 8) >> 4] == BAN_SPRING) {
 								if ((objects[c2].x >> 20) == ((s1 + 8) >> 4) && (objects[c2].y >> 20) == ((s2 + 15) >> 4)) {
 									objects[c2].frame = 0;
 									objects[c2].ticks = object_anims[objects[c2].anim].frame[objects[c2].frame].ticks;
@@ -1026,14 +1026,14 @@ void steer_players(void)
 									break;
 								}
 							} else {
-								if (ban_map[(s2 + 15) >> 4][s1 >> 4] == 4) {
+								if (ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SPRING) {
 									if ((objects[c2].x >> 20) == (s1 >> 4) && (objects[c2].y >> 20) == ((s2 + 15) >> 4)) {
 										objects[c2].frame = 0;
 										objects[c2].ticks = object_anims[objects[c2].anim].frame[objects[c2].frame].ticks;
 										objects[c2].image = object_anims[objects[c2].anim].frame[objects[c2].frame].image;
 										break;
 									}
-								} else if (ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+								} else if (ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SPRING) {
 									if ((objects[c2].x >> 20) == ((s1 + 15) >> 4) && (objects[c2].y >> 20) == ((s2 + 15) >> 4)) {
 										objects[c2].frame = 0;
 										objects[c2].ticks = object_anims[objects[c2].anim].frame[objects[c2].frame].ticks;
@@ -1050,7 +1050,7 @@ void steer_players(void)
 				s2 = (player[c1].y >> 16);
 				if (s2 < 0)
 					s2 = 0;
-				if (ban_map[s2 >> 4][s1 >> 4] == 1 || ban_map[s2 >> 4][s1 >> 4] == 3 || ban_map[s2 >> 4][s1 >> 4] == 4 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 1 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 3 || ban_map[s2 >> 4][(s1 + 15) >> 4] == 4) {
+				if (ban_map[s2 >> 4][s1 >> 4] == BAN_SOLID || ban_map[s2 >> 4][s1 >> 4] == BAN_ICE || ban_map[s2 >> 4][s1 >> 4] == BAN_SPRING || ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_ICE || ban_map[s2 >> 4][(s1 + 15) >> 4] == BAN_SPRING) {
 					player[c1].y = (((s2 + 16) & 0xfff0)) << 16;
 					player[c1].y_add = 0;
 					player[c1].anim = 0;
@@ -1062,7 +1062,7 @@ void steer_players(void)
 				s2 = (player[c1].y >> 16);
 				if (s2 < 0)
 					s2 = 0;
-				if (ban_map[(s2 + 8) >> 4][(s1 + 8) >> 4] == 2) {
+				if (ban_map[(s2 + 8) >> 4][(s1 + 8) >> 4] == BAN_WATER) {
 					if (player[c1].in_water == 0) {
 						player[c1].in_water = 1;
 						player[c1].anim = 4;
@@ -1088,11 +1088,11 @@ void steer_players(void)
 						player[c1].y_add = -65536L;
 					if (player[c1].y_add > 65535L)
 						player[c1].y_add = 65535L;
-					if (ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3) {
+					if (ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_ICE || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_ICE) {
 						player[c1].y = (((s2 + 16) & 0xfff0) - 16) << 16;
 						player[c1].y_add = 0;
 					}
-				} else if (ban_map[(s2 + 15) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 3 || ban_map[(s2 + 15) >> 4][s1 >> 4] == 4 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 3 || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == 4) {
+				} else if (ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_ICE || ban_map[(s2 + 15) >> 4][s1 >> 4] == BAN_SPRING || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SOLID || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_ICE || ban_map[(s2 + 15) >> 4][(s1 + 15) >> 4] == BAN_SPRING) {
 					player[c1].in_water = 0;
 					player[c1].y = (((s2 + 16) & 0xfff0) - 16) << 16;
 					player[c1].y_add = 0;
@@ -1154,7 +1154,7 @@ void position_player(int player_num)
 		while (1) {
 			s1 = rnd(22);
 			s2 = rnd(16);
-			if (ban_map[s2][s1] == 0 && (ban_map[s2 + 1][s1] == 1 || ban_map[s2 + 1][s1] == 3))
+			if (ban_map[s2][s1] == BAN_VOID && (ban_map[s2 + 1][s1] == BAN_SOLID || ban_map[s2 + 1][s1] == BAN_ICE))
 				break;
 		}
 		for (c1 = 0; c1 < 4; c1++) {
@@ -1562,7 +1562,6 @@ void draw_flies(int page)
 {
 	char *ptr1;
 	int c1,c2;
-	int points[NUM_FLIES*2];
 
 #ifdef DOS
 	ptr1 = (char *) (0xa0000 + ((long) main_info.draw_page << 15) - __djgpp_base_address);
@@ -1583,7 +1582,7 @@ void draw_flies(int page)
 	for (c2 = 0; c2 < NUM_FLIES; c2++) {
 		flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x));
 		flies[c2].back_defined[main_info.draw_page] = 1;
-		if (mask_pic[(flies[c2].y * 400) + flies[c2].x] == 0)
+		if (mask_pic[(flies[c2].y * JNB_WIDTH) + flies[c2].x] == 0)
 			*(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x)) = 0;
 	}
 #endif
@@ -1704,12 +1703,12 @@ int init_level(int level, char *pal)
 		}
 	}
 
-	for (c1 = 0; c1 < 300; c1++)
+	for (c1 = 0; c1 < NUM_OBJECTS; c1++)
 		objects[c1].used = 0;
 
 	for (c1 = 0; c1 < 16; c1++) {
 		for (c2 = 0; c2 < 22; c2++) {
-			if (ban_map[c1][c2] == 4)
+			if (ban_map[c1][c2] == BAN_SPRING)
 				add_object(OBJ_SPRING, c2 << 4, c1 << 4, 0, 0, OBJ_ANIM_SPRING, 5);
 		}
 	}
@@ -1717,7 +1716,7 @@ int init_level(int level, char *pal)
 	while (1) {
 		s1 = rnd(22);
 		s2 = rnd(16);
-		if (ban_map[s2][s1] == 0) {
+		if (ban_map[s2][s1] == BAN_VOID) {
 			add_object(OBJ_YEL_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
 			break;
 		}
@@ -1725,7 +1724,7 @@ int init_level(int level, char *pal)
 	while (1) {
 		s1 = rnd(22);
 		s2 = rnd(16);
-		if (ban_map[s2][s1] == 0) {
+		if (ban_map[s2][s1] == BAN_VOID) {
 			add_object(OBJ_YEL_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
 			break;
 		}
@@ -1733,7 +1732,7 @@ int init_level(int level, char *pal)
 	while (1) {
 		s1 = rnd(22);
 		s2 = rnd(16);
-		if (ban_map[s2][s1] == 0) {
+		if (ban_map[s2][s1] == BAN_VOID) {
 			add_object(OBJ_PINK_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
 			break;
 		}
@@ -1741,7 +1740,7 @@ int init_level(int level, char *pal)
 	while (1) {
 		s1 = rnd(22);
 		s2 = rnd(16);
-		if (ban_map[s2][s1] == 0) {
+		if (ban_map[s2][s1] == BAN_VOID) {
 			add_object(OBJ_PINK_BUTFLY, (s1 << 4) + 8, (s2 << 4) + 8, (rnd(65535) - 32768) * 2, (rnd(65535) - 32768) * 2, 0, 0);
 			break;
 		}
@@ -2166,7 +2165,7 @@ int read_level(void)
 	}
 
 	for (c2 = 0; c2 < 22; c2++)
-		ban_map[16][c2] = 1;
+		ban_map[16][c2] = BAN_SOLID;
 
 	fclose(handle);
 	return 0;

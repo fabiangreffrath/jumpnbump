@@ -96,6 +96,12 @@
 #define SFX_SPLASH_FREQ 12000
 #define SFX_FLY_FREQ 12000
 
+#define BAN_VOID	0
+#define BAN_SOLID	1
+#define BAN_WATER	2
+#define BAN_ICE		3
+#define BAN_SPRING	4
+
 
 struct {
 	int joy_enabled, mouse_enabled;
@@ -142,7 +148,7 @@ struct {
 	int anim;
 	int frame, ticks;
 	int image;
-} objects[300];
+} objects[NUM_OBJECTS];
 
 struct {
 	int x, y;

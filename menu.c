@@ -544,7 +544,7 @@ int menu_init(void)
 		player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image;
 	}
 
-	for (c1 = 0; c1 < 300; c1++)
+	for (c1 = 0; c1 < NUM_OBJECTS; c1++)
 		objects[c1].used = 0;
 
 	main_info.page_info[0].num_pobs = 0;
