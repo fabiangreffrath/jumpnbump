@@ -49,6 +49,7 @@ char datfile_name[2048];
 
 char *background_pic;
 char *mask_pic;
+int flip = 0;
 
 unsigned int ban_map[17][22] = {
 	{1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -213,6 +214,21 @@ struct {
 } leftovers;
 
 int pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_than_water;
+
+static flip_pixels(unsigned char *pixels)
+{
+	int x,y;
+	unsigned char temp;
+
+	assert(pixels);
+	for (y = 0; y < JNB_HEIGHT; y++) {
+		for (x = 0; x < (352/2); x++) {
+			temp = pixels[y*JNB_WIDTH+x];
+			pixels[y*JNB_WIDTH+x] = pixels[y*JNB_WIDTH+(352-x)];
+			pixels[y*JNB_WIDTH+(352-x)] = temp;
+		}
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -1740,6 +1756,8 @@ int init_level(int level, char *pal)
 		return 1;
 	}
 	fclose(handle);
+	if (flip)
+		flip_pixels(background_pic);
 	if ((handle = dat_open("mask.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'mask.pcx', aborting...\n");
 		return 1;
@@ -1749,6 +1767,8 @@ int init_level(int level, char *pal)
 		return 1;
 	}
 	fclose(handle);
+	if (flip)
+		flip_pixels(mask_pic);
 	register_mask(mask_pic);
 
 	for (c1 = 0; c1 < 4; c1++) {
@@ -1866,6 +1886,8 @@ int init_program(int argc, char *argv[], char *pal)
 #endif
 			else if (stricmp(argv[c1], "-scaleup") == 0)
 				set_scaling(1);
+			else if (stricmp(argv[c1], "-flip") == 0)
+				flip = 1;
 			else if (stricmp(argv[c1], "-dat") == 0) {
 				if (c1 < (argc - 1)) {
 					if ((handle = fopen(argv[c1 + 1], "rb")) != NULL) {
@@ -2209,7 +2231,10 @@ int read_level(void)
 				if (chr >= '0' && chr <= '4')
 					break;
 			}
-			ban_map[c1][c2] = chr - '0';
+			if (flip)
+				ban_map[c1][21-c2] = chr - '0';
+			else
+				ban_map[c1][c2] = chr - '0';
 		}
 	}
 
