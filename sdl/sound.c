@@ -423,6 +423,7 @@ char dj_ready_mod(char mod_num)
 
 char dj_start_mod(void)
 {
+	Mix_VolumeMusic(0);
 	Mix_PlayMusic(current_music, -1);
 
 	return 0;
