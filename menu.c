@@ -85,10 +85,7 @@ int menu(void)
 		} else if (key_pressed(1) == 0)
 			esc_pressed = 0;
 
-		if (main_info.mouse_enabled == 1)
-			read_mouse();
-		if (main_info.joy_enabled == 1)
-			read_joy();
+		update_player_actions();
 		for (c1 = 0; c1 < 4; c1++) {
 			if (end_loop_flag == 1 && new_game_flag == 1) {
 				if ((player[c1].x >> 16) > (165 + c1 * 2)) {
@@ -107,7 +104,7 @@ int menu(void)
 					}
 					player[c1].enabled = 1;
 				}
-				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0)) {
+				if (!player[c1].action_up) {
 					if (player[c1].y_add < 0) {
 						player[c1].y_add += 32768;
 						if (player[c1].y_add > 0)
@@ -143,7 +140,7 @@ int menu(void)
 							player[c1].frame_tick = 0;
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 						}
-						if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0))
+						if (!player[c1].action_up)
 							player[c1].jump_ready = 1;
 					}
 				}
@@ -159,7 +156,7 @@ int menu(void)
 					}
 				}
 			} else {
-				if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1 && key_pressed(KEY_PL4_RIGHT) == 1)) {
+				if (player[c1].action_left && player[c1].action_right) {
 					if (player[c1].direction == 1) {
 						if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 							if (player[c1].x_add > 0) {
@@ -213,7 +210,7 @@ int menu(void)
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 						}
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1)) {
+				} else if (player[c1].action_left) {
 					if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 						if (player[c1].x_add > 0) {
 							player[c1].x_add -= 16384;
@@ -239,7 +236,7 @@ int menu(void)
 						player[c1].frame_tick = 0;
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT) == 1)) {
+				} else if (player[c1].action_right) {
 					if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 						if (player[c1].x_add < 0) {
 							player[c1].x_add += 16384;
@@ -299,7 +296,7 @@ int menu(void)
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
 				}
-				if (player[c1].jump_ready == 1 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 1) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 1))) {
+				if ((player[c1].jump_ready == 1) && player[c1].action_up) {
 					if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 						if ((player[c1].y >> 16) >= (160 + c1 * 2)) {
 							player[c1].y_add = -280000L;
@@ -322,14 +319,14 @@ int menu(void)
 						}
 					}
 				}
-				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0)) {
+				if (!player[c1].action_up) {
 					if (player[c1].y_add < 0) {
 						player[c1].y_add += 32768;
 						if (player[c1].y_add > 0)
 							player[c1].y_add = 0;
 					}
 				}
-				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0))
+				if (!player[c1].action_up)
 					player[c1].jump_ready = 1;
 				player[c1].y_add += 12288;
 				if (player[c1].y_add > 36864 && player[c1].anim != 3) {
@@ -445,14 +442,8 @@ int menu(void)
 				}
 				fade_count++;
 			} else {
-/*
-				outportw(0x3c4, 0x0f02);
-				memset((char *) (0xa0000 + 220 * 100 + __djgpp_conventional_base), 0, 2000);
-				memset((char *) (0xa0000 + 32768 + 220 * 100 + __djgpp_conventional_base), 0, 2000);
-				// clear 20 lines at x=0,y=220 in front and backbuffer
-*/
-				memset((void *) get_vgaptr(0, 0, 220), 0, 8000);
-				memset((void *) get_vgaptr(1, 0, 220), 0, 8000);
+				clear_lines(0, 220, 20, 0);
+				clear_lines(1, 220, 20, 0);
 
 				cur_message++;
 				if (cur_message >= NUM_MESSAGES)
@@ -487,19 +478,9 @@ int menu(void)
 		main_info.draw_page ^= 1;
 		main_info.view_page ^= 1;
 
-#ifdef DOS
-		outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
-		outportw(0x3d4, ((main_info.view_page << 15) & 0xff00) + 0x0c);
-#else
 		flippage(main_info.view_page);
-#endif
 
-/*
-		while ((inportb(0x3da) & 8) == 0)
-			dj_mix();
-		while ((inportb(0x3da) & 8) == 8)
-			dj_mix();
-*/
+		wait_vrt(1);
 
 		if (fade_flag != 0) {
 			setpalette(0, 240, menu_cur_pal);

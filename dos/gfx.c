@@ -45,14 +45,40 @@ void open_screen(void)
 }
 
 
-void wait_vrt(void)
+void wait_vrt(int mix)
 {
-
-	while ((inportb(0x3da) & 8) == 0);
-	while ((inportb(0x3da) & 8) == 8);
-
+	if (mix) {
+		while ((inportb(0x3da) & 8) == 0)
+			dj_mix();
+		while ((inportb(0x3da) & 8) == 8)
+			dj_mix();
+	} else {
+		while ((inportb(0x3da) & 8) == 0);
+		while ((inportb(0x3da) & 8) == 8);
+	}
 }
 
+void clear_page(int page, int color)
+{
+	outportw(0x3c4, 0x0f02);
+	memset((char *) (0xa0000 - __djgpp_base_address), 0, 32768);
+}
+
+void clear_lines(int page, int y, int count, int color)
+{
+	int i;
+
+	outportw(0x3c4, 0x0f02);
+	for (i=0; i<count; i++)
+		if ((i+y)<256)
+			memset((char *) (0xa0000 + (i+y) * 100 + __djgpp_conventional_base), 0, 100);
+}
+
+void flippage(int page)
+{
+	outportw(0x3d4, (page << 23) + 0x0d);
+	outportw(0x3d4, ((page << 15) & 0xff00) + 0x0c);
+}
 
 #if 0
 void get_block(char page, short x, short y, short width, short height, char *buffer)
@@ -180,17 +206,17 @@ void put_text(char page, int x, int y, char *text, char align)
 			image = t1 - 49;
 		else if (t1 == '~')
 			image = 74;
-		else if (t1 == '„')
+		else if (t1 == 0x84)
 			image = 75;
-		else if (t1 == '†')
+		else if (t1 == 0x86)
 			image = 76;
-		else if (t1 == 'Ž')
+		else if (t1 == 0x8e)
 			image = 77;
-		else if (t1 == '')
+		else if (t1 == 0x8f)
 			image = 78;
-		else if (t1 == '”')
+		else if (t1 == 0x94)
 			image = 79;
-		else if (t1 == '™')
+		else if (t1 == 0x99)
 			image = 80;
 		else
 			continue;

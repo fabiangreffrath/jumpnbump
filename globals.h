@@ -98,8 +98,8 @@
 
 
 struct {
-	char joy_enabled, mouse_enabled, num_mouse_buttons;
-	char no_sound, no_gore, fireworks;
+	int joy_enabled, mouse_enabled;
+	int no_sound, no_gore, fireworks;
 	char error_str[256];
 	int draw_page, view_page;
 	struct {
@@ -115,7 +115,8 @@ struct {
 } main_info;
 
 struct {
-	char enabled, dead_flag;
+	int action_left,action_up,action_right;
+	int enabled, dead_flag;
 	int bumps;
 	int bumped[4];
 	int x, y;
@@ -134,7 +135,7 @@ struct {
 } player_anims[7];
 
 struct {
-	char used, type;
+	int used, type;
 	int x, y;
 	int x_add, y_add;
 	int x_acc, y_acc;
@@ -146,7 +147,7 @@ struct {
 struct {
 	int x, y;
 	int raw_x, raw_y;
-	char but1, but2;
+	int but1, but2;
 	struct {
 		int x1, x2, x3;
 		int y1, y2, y3;
@@ -154,7 +155,7 @@ struct {
 } joy;
 
 struct {
-	char but1, but2, but3;
+	int but1, but2, but3;
 } mouse;
 
 char datfile_name[2048];
@@ -166,6 +167,11 @@ char *rabbit_gobs;
 char *font_gobs;
 
 
+/* fireworks.c */
+
+void fireworks(void);
+
+
 /* main.c */
 
 void steer_players(void);
@@ -174,23 +180,28 @@ void fireworks(void);
 void add_object(int type, int x, int y, int x_add, int y_add, int anim, int frame);
 void update_objects(void);
 int add_pob(int page, int x, int y, int image, char *pob_data);
+void draw_flies(int page);
 void draw_pobs(int page);
+void redraw_flies_background(int page);
 void redraw_pob_backgrounds(int page);
 int add_leftovers(int page, int x, int y, int image, char *pob_data);
 void draw_leftovers(int page);
-int init_level(int level);
+int init_level(int level, char *pal);
 void deinit_level(void);
-int init_program(int argc, char *argv[]);
+int init_program(int argc, char *argv[], char *pal);
 void deinit_program(void);
-void read_joy(void);
-int calib_joy(char type);
-void read_mouse(void);
 unsigned short rnd(unsigned short max);
 int read_level(void);
 FILE *dat_open(char *file_name, char *dat_name, char *mode);
 int dat_filelen(char *file_name, char *dat_name);
 void write_calib_data(void);
 
+
+/* input.c */
+
+void update_player_actions(void);
+void init_inputs(void);
+int calib_joy(char type);
 
 /* menu.c */
 
@@ -202,7 +213,12 @@ void menu_deinit(void);
 /* gfx.c */
 
 void open_screen(void);
-void wait_vrt(void);
+void wait_vrt(int mix);
+void flippage(int page);
+void clear_page(int page, int color);
+void clear_lines(int page, int y, int count, int color);
+void setpalette(int index, int count, char *palette);
+void fillpalette(int red, int green, int blue);
 #ifdef DOS
 void get_block(char page, short x, short y, short width, short height, char *buffer);
 void put_block(char page, short x, short y, short width, short height, char *buffer);
@@ -225,9 +241,6 @@ int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal);
 #ifndef _MSC_VER
 long filelength(int handle);
 #endif
-void setpalette(int index, int count, char *palette);
-void fillpalette(int red, int green, int blue);
-void flippage(int page);
 void fs_toggle();
 char *get_vgaptr(int, int, int);
 int intr_sysupdate();

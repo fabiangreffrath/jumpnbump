@@ -6,6 +6,7 @@ static int fullscreen = 0;
 static int vinited = 0;
 static unsigned char screen_buffer[JNB_WIDTH*JNB_HEIGHT*2];
 
+
 void open_screen(void)
 {
 	int lval = 0;
@@ -32,6 +33,7 @@ void open_screen(void)
 	return;
 }
 
+
 void fs_toggle()
 {
 	if (!vinited) {
@@ -42,10 +44,28 @@ void fs_toggle()
 		fullscreen ^= 1;
 }
 
-void wait_vrt(void)
+
+void wait_vrt(int mix)
 {
 	return;
 }
+
+
+void clear_page(int page, int color)
+{
+	memset((void *) get_vgaptr(page, 0, 0), color, JNB_WIDTH * JNB_HEIGHT);
+}
+
+
+void clear_lines(int page, int y, int count, int color)
+{
+	int i;
+
+	for (i=0; i<count; i++)
+		if ((i+y)<JNB_HEIGHT)
+			memset((void *) get_vgaptr(page, 0, i+y), color, JNB_WIDTH);
+}
+
 
 void flippage(int page)
 {
@@ -72,6 +92,7 @@ void flippage(int page)
 	SDL_Flip(jnb_surface);
 }
 
+
 char *get_vgaptr(int page, int x, int y)
 {
 	if (page == 1)
@@ -79,6 +100,7 @@ char *get_vgaptr(int page, int x, int y)
 	else
 		return &screen_buffer[(y * JNB_WIDTH) + x];
 }
+
 
 void setpalette(int index, int count, char *palette)
 {
@@ -93,6 +115,7 @@ void setpalette(int index, int count, char *palette)
 	SDL_SetColors(jnb_surface, colors, index, count);
 }
 
+
 void fillpalette(int red, int green, int blue)
 {
 	SDL_Color colors[256];
@@ -105,6 +128,7 @@ void fillpalette(int red, int green, int blue)
 	}
 	SDL_SetColors(jnb_surface, colors, 0, 256);
 }
+
 
 void get_block(int page, int x, int y, int width, int height, char *buffer)
 {
@@ -136,6 +160,7 @@ void get_block(int page, int x, int y, int width, int height, char *buffer)
 
 }
 
+
 void put_block(int page, int x, int y, int width, int height, char *buffer)
 {
 	short w, h;
@@ -161,6 +186,7 @@ void put_block(int page, int x, int y, int width, int height, char *buffer)
 		}
 	}
 }
+
 
 void put_text(int page, int x, int y, char *text, int align)
 {
@@ -219,6 +245,7 @@ void put_text(int page, int x, int y, char *text, int align)
 
 		else if (t1 == 0x99)
 			image = 80;
+
 		else
 			continue;
 		width += pob_width(image, font_gobs) + 1;
@@ -265,22 +292,22 @@ void put_text(int page, int x, int y, char *text, int align)
 		else if (t1 == '~')
 			image = 74;
 
-		else if (t1 == '„')
+		else if (t1 == 0x84)
 			image = 75;
 
-		else if (t1 == '†')
+		else if (t1 == 0x86)
 			image = 76;
 
-		else if (t1 == 'Ž')
+		else if (t1 == 0x8e)
 			image = 77;
 
-		else if (t1 == '')
+		else if (t1 == 0x8f)
 			image = 78;
 
-		else if (t1 == '”')
+		else if (t1 == 0x94)
 			image = 79;
 
-		else if (t1 == '™')
+		else if (t1 == 0x99)
 			image = 80;
 
 		else
@@ -289,6 +316,7 @@ void put_text(int page, int x, int y, char *text, int align)
 		cur_x += pob_width(image, font_gobs) + 1;
 	}
 }
+
 
 void put_pob(int page, int x, int y, int image, char *pob_data, int mask, char *mask_pic)
 {
@@ -354,6 +382,7 @@ void put_pob(int page, int x, int y, int image, char *pob_data, int mask, char *
 		mask_ptr += (400 - c2);
 	}
 }
+
 
 int pob_col(int x1, int y1, int image1, char *pob_data1, int x2, int y2, int image2, char *pob_data2)
 {
@@ -450,25 +479,30 @@ int pob_col(int x1, int y1, int image1, char *pob_data1, int x2, int y2, int ima
 	return 0;
 }
 
+
 int pob_width(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2));
 }
+
 
 int pob_height(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 2);
 }
 
+
 int pob_hs_x(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 4);
 }
 
+
 int pob_hs_y(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 6);
 }
+
 
 int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal)
 {
@@ -496,6 +530,7 @@ int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal)
 	}
 	return 0;
 }
+
 
 #ifndef _MSC_VER
 int filelength(int handle)

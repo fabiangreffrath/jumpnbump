@@ -6,12 +6,7 @@
 #endif
 #include "globals.h"
 
-
-struct {
-	char enabled;
-} keyb_handler_info;
-
-volatile char keyb[256];
+char keyb[256];
 char last_keys[50];
 
 unsigned char scancode2ascii[256] = {
@@ -43,73 +38,8 @@ unsigned char scancode2ascii[256] = {
 	0, 0, 0, 0, 0, 0
 };
 
-#ifndef USE_SDL
-_go32_dpmi_seginfo old_keyb_handler_seginfo, new_keyb_handler_seginfo;
-#endif
-
-void keyb_handler()
-{
-	unsigned char key;
-	static char extended;
-	int c1;
-
-	key = 0;
-#ifndef USE_SDL
-	key = inportb(0x60);
-#endif
-
-	if (key == 0xe0)
-		extended = 1;
-	else {
-		if (extended == 0) {
-			if ((key & 0x80) == 0) {
-				keyb[key & 0x7f] = 1;
-				for (c1 = 48; c1 > 0; c1--)
-					last_keys[c1] = last_keys[c1 - 1];
-				last_keys[0] = scancode2ascii[key & 0x7f];
-			} else
-				keyb[key & 0x7f] = 0;
-		} else {
-			if ((key & 0x80) == 0) {
-				keyb[(key & 0x7f) + 0x80] = 1;
-				for (c1 = 48; c1 > 0; c1--)
-					last_keys[c1] = last_keys[c1 - 1];
-				last_keys[0] = scancode2ascii[(key & 0x7f) + 0x80];
-			} else
-				keyb[(key & 0x7f) + 0x80] = 0;
-		}
-		if (extended == 1)
-			extended = 0;
-	}
-#ifndef USE_SDL
-	outportb(0x20, 0x20);
-#endif
-
-}
-
-void keyb_handler_end()
-{
-}
-
-
 int hook_keyb_handler(void)
 {
-#ifndef USE_SDL
-	if (keyb_handler_info.enabled == 0) {
-		_go32_dpmi_lock_data((char *) &keyb, sizeof(keyb));
-		_go32_dpmi_lock_code(keyb_handler, (unsigned long) keyb_handler_end - (unsigned long) keyb_handler);
-		_go32_dpmi_get_protected_mode_interrupt_vector(9, &old_keyb_handler_seginfo);
-		new_keyb_handler_seginfo.pm_offset = (int) keyb_handler;
-		if (_go32_dpmi_allocate_iret_wrapper(&new_keyb_handler_seginfo) != 0)
-			return 1;
-		if (_go32_dpmi_set_protected_mode_interrupt_vector(9, &new_keyb_handler_seginfo) != 0) {
-			_go32_dpmi_free_iret_wrapper(&new_keyb_handler_seginfo);
-			return 1;
-		}
-		keyb_handler_info.enabled = 1;
-		memset(last_keys, 0, sizeof(last_keys));
-	}
-#endif
 	SDL_EnableUNICODE(1);
 	memset((void *) last_keys, 0, sizeof(last_keys));
 	return 0;
@@ -119,13 +49,6 @@ int hook_keyb_handler(void)
 
 void remove_keyb_handler(void)
 {
-#ifndef USE_SDL
-	if (keyb_handler_info.enabled == 1) {
-		_go32_dpmi_set_protected_mode_interrupt_vector(9, &old_keyb_handler_seginfo);
-		_go32_dpmi_free_iret_wrapper(&new_keyb_handler_seginfo);
-		keyb_handler_info.enabled = 0;
-	}
-#endif
 }
 
 

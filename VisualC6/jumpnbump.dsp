@@ -111,7 +111,15 @@ SOURCE="$(InputPath)"
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=..\fireworks.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\sdl\gfx.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\sdl\input.c
 # End Source File
 # Begin Source File
 

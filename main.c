@@ -1,19 +1,11 @@
 #include "globals.h"
 
-
-#ifdef DOS
-__dpmi_regs regs;
-#endif
-
 #ifndef M_PI
 #define M_PI		3.14159265358979323846
 #endif
 
 char *object_gobs;
 char *number_gobs;
-
-char pal[768];
-char cur_pal[768];
 
 unsigned int ban_map[17][22] = {
 	{1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -177,7 +169,6 @@ struct {
 
 char pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_than_water;
 
-
 int main(int argc, char *argv[])
 {
 	FILE *handle;
@@ -189,8 +180,10 @@ int main(int argc, char *argv[])
 	char mod_vol, sfx_vol, mod_fade_direction;
 	char *ptr1 = (char *) NULL;
 	char str1[100];
+	char pal[768];
+	char cur_pal[768];
 
-	if (init_program(argc, argv) != 0)
+	if (init_program(argc, argv, pal) != 0)
 		deinit_program();
 
 	if (main_info.fireworks == 1) {
@@ -206,11 +199,12 @@ int main(int argc, char *argv[])
 		if (key_pressed(1) == 1) {
 			break;
 		}
-		if (init_level(0) != 0) {
+		if (init_level(0, pal) != 0) {
 			deinit_level();
 			deinit_program();
 		}
 
+		memset(cur_pal, 0, 768);
 		setpalette(0, 256, cur_pal);
 
 		flippage(1);
@@ -480,6 +474,7 @@ int main(int argc, char *argv[])
 
 			dj_mix();
 
+			/* get center of fly swarm */
 			s1 = s2 = 0;
 			for (c1 = 0; c1 < NUM_FLIES; c1++) {
 				s1 += flies[c1].x;
@@ -488,6 +483,7 @@ int main(int argc, char *argv[])
 			s1 /= NUM_FLIES;
 			s2 /= NUM_FLIES;
 
+			/* get closest player to fly swarm */
 			dist = 0x7fff;
 			for (c1 = 0; c1 < 4; c1++) {
 				if (player[c1].enabled == 1) {
@@ -498,12 +494,14 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
+			/* update fly swarm sound */
 			s3 = 32 - dist / 3;
 			if (s3 < 0)
 				s3 = 0;
 			dj_set_sfx_channel_volume(4, (char)(s3));
 
 			for (c1 = 0; c1 < NUM_FLIES; c1++) {
+				/* get closest player to fly */
 				dist = 0x7fff;
 				for (c2 = 0; c2 < 4; c2++) {
 					if (player[c2].enabled == 1) {
@@ -587,29 +585,7 @@ int main(int argc, char *argv[])
 
 			dj_mix();
 
-#ifdef DOS
-			ptr1 = (char *) (0xa0000 + ((long) main_info.draw_page << 15) - __djgpp_base_address);
-			for (c1 = 0; c1 < 4; c1++) {
-				outportw(0x3ce, (c1 << 8) + 0x04);
-				outportw(0x3c4, ((1 << c1) << 8) + 0x02);
-				for (c2 = 0; c2 < NUM_FLIES; c2++) {
-					if ((flies[c2].x & 3) == c1) {
-						flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2));
-						flies[c2].back_defined[main_info.draw_page] = 1;
-						if (mask_pic[flies[c2].y * 400 + flies[c2].x] == 0)
-							*(char *) (ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2)) = 0;
-					}
-				}
-			}
-#else
-			ptr1 = (char *) get_vgaptr(main_info.draw_page, 0, 0);
-			for (c2 = 0; c2 < NUM_FLIES; c2++) {
-				flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x));
-				flies[c2].back_defined[main_info.draw_page] = 1;
-				if (mask_pic[(flies[c2].y * 400) + flies[c2].x] == 0)
-					*(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x)) = 0;
-			}
-#endif
+			draw_flies(main_info.draw_page);
 
 			if (mod_fade_direction == 1) {
 				if (mod_vol < 30) {
@@ -653,32 +629,12 @@ int main(int argc, char *argv[])
 
 			flippage(main_info.view_page);
 
-#ifdef DOS
-			while ((inportb(0x3da) & 8) == 0)
-				dj_mix();
-			while ((inportb(0x3da) & 8) == 8)
-				dj_mix();
-#endif
+			wait_vrt(1);
 
 			if (fade_flag == 1)
 				setpalette(0, 256, cur_pal);
 
-#ifdef DOS
-			ptr1 = (char *) (0xa0000 + ((long) main_info.draw_page << 15) - __djgpp_base_address);
-			for (c1 = 0; c1 < 4; c1++) {
-				outportw(0x3c4, ((1 << c1) << 8) + 0x02);
-				for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
-					if ((flies[c2].old_x & 3) == c1 && flies[c2].back_defined[main_info.draw_page] == 1)
-						*(char *) (ptr1 + flies[c2].old_y * 100 + (flies[c2].old_x >> 2)) = flies[c2].back[main_info.draw_page];
-				}
-			}
-#else
-			ptr1 = (char *) get_vgaptr(main_info.draw_page, 0, 0);
-			for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
-				if (flies[c2].back_defined[main_info.draw_page] == 1)
-					*(char *) (ptr1 + flies[c2].old_y * JNB_WIDTH + (flies[c2].old_x)) = flies[c2].back[main_info.draw_page];
-			}
-#endif
+			redraw_flies_background(main_info.draw_page);
 
 			redraw_pob_backgrounds(main_info.draw_page);
 
@@ -688,10 +644,8 @@ int main(int argc, char *argv[])
 
 		}
 
-#ifndef DOS
 		main_info.view_page = 0;
 		main_info.draw_page = 1;
-#endif
 
 		dj_stop_sfx_channel(4);
 
@@ -699,12 +653,8 @@ int main(int argc, char *argv[])
 
 		memset(mask_pic, 0, 102400L);
 
-#ifdef DOS
-		outportw(0x3c4, 0x0f02);
-		memset((char *) (0xa0000 + (long) (main_info.view_page << 15) + __djgpp_conventional_base), 0, 32768);
-#else
-		memset((void *) get_vgaptr(main_info.view_page, 0, 0), 0, JNB_WIDTH * JNB_HEIGHT);
-#endif
+		clear_page(main_info.view_page, 0);
+
 		put_text(main_info.view_page, 100, 50, "DOTT", 2);
 		put_text(main_info.view_page, 160, 50, "JIFFY", 2);
 		put_text(main_info.view_page, 220, 50, "FIZZ", 2);
@@ -728,9 +678,7 @@ int main(int argc, char *argv[])
 
 		put_text(main_info.view_page, 200, 230, "Press ESC to continue", 2);
 
-#ifndef DOS
 		flippage(main_info.view_page);
-#endif
 
 		if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
@@ -762,7 +710,7 @@ int main(int argc, char *argv[])
 			}
 			dj_mix();
 			intr_sysupdate();
-			wait_vrt();
+			wait_vrt(0);
 			setpalette(0, 256, cur_pal);
 		}
 		while (key_pressed(1) == 1) {
@@ -780,7 +728,7 @@ int main(int argc, char *argv[])
 					cur_pal[c1]--;
 			}
 			dj_mix();
-			wait_vrt();
+			wait_vrt(0);
 			setpalette(0, 256, cur_pal);
 		}
 
@@ -802,10 +750,7 @@ void steer_players(void)
 	int c1, c2;
 	int s1 = 0, s2 = 0;
 
-	if (main_info.mouse_enabled == 1)
-		read_mouse();
-	if (main_info.joy_enabled == 1)
-		read_joy();
+	update_player_actions();
 
 	for (c1 = 0; c1 < 4; c1++) {
 
@@ -813,9 +758,9 @@ void steer_players(void)
 
 			if (player[c1].dead_flag == 0) {
 
-				if ((c1 == 0 && ((key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1))) || (c1 == 1 && ((key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1))) || (c1 == 2 && ((key_pressed(KEY_PL3_LEFT) == 1 && key_pressed(KEY_PL3_RIGHT) == 1))) || (c1 == 3 && ((key_pressed(KEY_PL4_LEFT) == 1 && key_pressed(KEY_PL4_RIGHT) == 1)))) {
+				if (player[c1].action_left && player[c1].action_right) {
 					if (player[c1].direction == 0) {
-						if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT) == 1)) {
+						if (player[c1].action_right) {
 							s1 = (player[c1].x >> 16);
 							s2 = (player[c1].y >> 16);
 							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -847,7 +792,7 @@ void steer_players(void)
 							}
 						}
 					} else {
-						if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1)) {
+						if (player[c1].action_left) {
 							s1 = (player[c1].x >> 16);
 							s2 = (player[c1].y >> 16);
 							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -879,7 +824,7 @@ void steer_players(void)
 							}
 						}
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1)) {
+				} else if (player[c1].action_left) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
 					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -909,7 +854,7 @@ void steer_players(void)
 						player[c1].frame_tick = 0;
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT)) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT))) {
+				} else if (player[c1].action_right) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
 					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -939,7 +884,7 @@ void steer_players(void)
 						player[c1].frame_tick = 0;
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
-				} else if ((c1 == 0 && ((key_pressed(KEY_PL1_LEFT) == 0 && key_pressed(KEY_PL1_RIGHT) == 0))) || (c1 == 1 && ((key_pressed(KEY_PL2_LEFT) == 0 && key_pressed(KEY_PL2_RIGHT) == 0))) || (c1 == 2 && ((key_pressed(KEY_PL3_LEFT) == 0 && key_pressed(KEY_PL3_RIGHT) == 0))) || (c1 == 3 && ((key_pressed(KEY_PL4_LEFT) == 0 && key_pressed(KEY_PL4_RIGHT) == 0)))) {
+				} else if ((!player[c1].action_left) && (!player[c1].action_right)) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
 					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 4 || (((ban_map[(s2 + 16) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 16) >> 4][s1 >> 4] == 4) && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] != 3 && (ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 4)))) {
@@ -963,7 +908,7 @@ void steer_players(void)
 					}
 				}
 				if (jetpack == 0) {
-					if (pogostick == 1 || (player[c1].jump_ready == 1 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 1) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 1)))) {
+					if (pogostick == 1 || (player[c1].jump_ready == 1 && player[c1].action_up)) {
 						s1 = (player[c1].x >> 16);
 						s2 = (player[c1].y >> 16);
 						if (s2 < -16)
@@ -996,7 +941,7 @@ void steer_players(void)
 								dj_play_sfx(SFX_SPRING, (unsigned short)(SFX_SPRING_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 						}
 					}
-					if (pogostick == 0 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0))) {
+					if (pogostick == 0 && (!player[c1].action_up)) {
 						player[c1].jump_ready = 1;
 						if (player[c1].in_water == 0 && player[c1].y_add < 0 && player[c1].jump_abort == 1) {
 							if (bunnies_in_space == 0)
@@ -1007,12 +952,9 @@ void steer_players(void)
 								player[c1].y_add = 0;
 						}
 					}
-					if (c1 == 3 && main_info.num_mouse_buttons == 2 && (mouse.but1 == 0 || mouse.but2 == 0))
-						player[c1].jump_ready = 1;
-
 				} else {
 
-					if (((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 1) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 1))) {
+					if (player[c1].action_up) {
 						player[c1].y_add -= 16384;
 						if (player[c1].y_add < -400000L)
 							player[c1].y_add = -400000L;
@@ -1236,248 +1178,6 @@ void position_player(int player_num)
 			break;
 		}
 	}
-
-}
-
-
-void fireworks(void)
-{
-	FILE *handle;
-	int c1, c2;
-	int s1, s2, s3;
-	struct {
-		char used, direction, colour;
-		int x, y;
-		int x_add, y_add;
-		int timer;
-		int anim, frame, frame_tick, image;
-	} rabbits[20];
-	struct {
-		int x, y;
-		int old_x, old_y;
-		char col, back[2];
-	} stars[300];
-
-#ifdef DOS
-	outportw(0x3c4, 0x0f02);
-	memset((char *) (0xa0000 - __djgpp_base_address), 0, 65535);
-#else
-	memset((char *) get_vgaptr(0, 0, 0), 0, JNB_WIDTH * JNB_HEIGHT);
-#endif
-
-	if ((handle = dat_open("level.pcx", datfile_name, "rb")) == 0) {
-		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
-		return;
-	}
-	read_pcx(handle, mask_pic, 102400, pal);
-	fclose(handle);
-
-	memset(mask_pic, 0, 102400);
-
-	memset(ban_map, 0, sizeof(ban_map));
-
-	fillpalette(0, 0, 0);
-
-#ifdef DOS
-	for (c1 = 0; c1 < 4; c1++) {
-		outportw(0x3c4, ((1 << c1) << 8) + 0x02);
-		for (c2 = 193; c2 < 256; c2++) {
-			memset((void *) (0xa0000 + c2 * 100 - __djgpp_base_address), (c2 - 192) >> 2, 100);
-			memset((void *) (0xa0000 + 32768 + c2 * 100 - __djgpp_base_address), (c2 - 192) >> 2, 100);
-		}
-	}
-#else
-	for (c2 = 193; c2 < 256; c2++) {
-		memset((void *) get_vgaptr(0, 0, c2), (c2 - 192) >> 2, 400);
-	}
-#endif
-
-	setpalette(0, 256, pal);
-
-	for (c1 = 0; c1 < 20; c1++)
-		rabbits[c1].used = 0;
-
-	rabbits[0].used = 1;
-	rabbits[0].colour = (char)rnd(4);
-	rabbits[0].x = (int) (150 + rnd(100)) << 16;
-	rabbits[0].y = 256 << 16;
-	rabbits[0].x_add = ((int) rnd(65535) << 1) - 65536;
-	if (rabbits[0].x_add > 0)
-		rabbits[0].direction = 0;
-	else
-		rabbits[0].direction = 1;
-	rabbits[0].y_add = -262144 + (rnd(16384) * 5);
-	rabbits[0].timer = 30 + rnd(150);
-	rabbits[0].anim = 2;
-	rabbits[0].frame = 0;
-	rabbits[0].frame_tick = 0;
-	rabbits[0].image = player_anims[rabbits[0].anim].frame[rabbits[0].frame].image + rabbits[0].colour * 18 + rabbits[0].direction * 9;
-
-	for (c1 = 0; c1 < 300; c1++) {
-		s1 = rnd(400);
-		s2 = rnd(256);
-		s3 = 30 - rnd(7);
-		stars[c1].x = stars[c1].old_x = (s1 << 16);
-		stars[c1].y = stars[c1].old_y = (s2 << 16);
-		stars[c1].col = s3;
-#ifdef DOS
-		outportw(0x3ce, ((s1 & 3) << 8) + 0x04);
-		stars[c1].back[0] = stars[c1].back[1] = *(char *) (0xa0000 + s2 * 100 + (s1 >> 2) - __djgpp_base_address);
-#else
-		stars[c1].back[0] = stars[c1].back[1] = *(char *) get_vgaptr(0, s1, s2);
-#endif
-	}
-
-	dj_set_nosound(0);
-
-	main_info.page_info[0].num_pobs = 0;
-	main_info.page_info[1].num_pobs = 0;
-	main_info.view_page = 0;
-	main_info.draw_page = 1;
-
-	while (key_pressed(1) == 0) {
-
-		dj_mix();
-		intr_sysupdate();
-
-		for (c1 = 0; c1 < 300; c1++) {
-			stars[c1].old_x = stars[c1].x;
-			stars[c1].old_y = stars[c1].y;
-			stars[c1].y -= (int) (31 - stars[c1].col) * 16384;
-			if ((stars[c1].y >> 16) < 0)
-				stars[c1].y += 256 << 16;
-			if ((stars[c1].y >> 16) >= 256)
-				stars[c1].y -= 256 << 16;
-		}
-
-		for (c1 = 0, c2 = 0; c1 < 20; c1++) {
-			if (rabbits[c1].used == 1)
-				c2++;
-		}
-		if ((c2 == 0 && rnd(10000) < 200) || (c2 == 1 && rnd(10000) < 150) || (c2 == 2 && rnd(10000) < 100) || (c2 == 3 && rnd(10000) < 50)) {
-			for (c1 = 0; c1 < 20; c1++) {
-				if (rabbits[c1].used == 0) {
-					rabbits[c1].used = 1;
-					rabbits[c1].colour = (char)rnd(4);
-					rabbits[c1].x = (int) (150 + rnd(100)) << 16;
-					rabbits[c1].y = 256 << 16;
-					rabbits[c1].x_add = ((int) rnd(65535) << 1) - 65536;
-					if (rabbits[c1].x_add > 0)
-						rabbits[c1].direction = 0;
-					else
-						rabbits[c1].direction = 1;
-					rabbits[c1].y_add = -262144 + (rnd(16384) * 5);
-					rabbits[c1].timer = 30 + rnd(150);
-					rabbits[c1].anim = 2;
-					rabbits[c1].frame = 0;
-					rabbits[c1].frame_tick = 0;
-					rabbits[c1].image = player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].image + rabbits[c1].colour * 18 + rabbits[c1].direction * 9;
-					break;
-				}
-			}
-		}
-
-		dj_mix();
-
-		main_info.page_info[main_info.draw_page].num_pobs = 0;
-
-		for (c1 = 0; c1 < 20; c1++) {
-			if (rabbits[c1].used == 1) {
-				rabbits[c1].y_add += 2048;
-				if (rabbits[c1].y_add > 36864 && rabbits[c1].anim != 3) {
-					rabbits[c1].anim = 3;
-					rabbits[c1].frame = 0;
-					rabbits[c1].frame_tick = 0;
-					rabbits[c1].image = player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].image + rabbits[c1].colour * 18 + rabbits[c1].direction * 9;
-				}
-				rabbits[c1].x += rabbits[c1].x_add;
-				rabbits[c1].y += rabbits[c1].y_add;
-				if ((rabbits[c1].x >> 16) < 16 || (rabbits[c1].x >> 16) > 400 || (rabbits[c1].y >> 16) > 256) {
-					rabbits[c1].used = 0;
-					continue;
-				}
-				rabbits[c1].timer--;
-				if (rabbits[c1].timer <= 0) {
-					rabbits[c1].used = 0;
-					for (c2 = 0; c2 < 6; c2++)
-						add_object(OBJ_FUR, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 44 + rabbits[c1].colour * 8);
-					for (c2 = 0; c2 < 6; c2++)
-						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 76);
-					for (c2 = 0; c2 < 6; c2++)
-						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 77);
-					for (c2 = 0; c2 < 8; c2++)
-						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 78);
-					for (c2 = 0; c2 < 10; c2++)
-						add_object(OBJ_FLESH, (rabbits[c1].x >> 16) + 6 + rnd(5), (rabbits[c1].y >> 16) + 6 + rnd(5), rabbits[c1].x_add + (rnd(65535) - 32768) * 3, rabbits[c1].y_add + (rnd(65535) - 32768) * 3, 0, 79);
-					dj_play_sfx(SFX_DEATH, SFX_DEATH_FREQ, 64, 0, 0, -1);
-					continue;
-				}
-				rabbits[c1].frame_tick++;
-				if (rabbits[c1].frame_tick >= player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].ticks) {
-					rabbits[c1].frame++;
-					if (rabbits[c1].frame >= player_anims[rabbits[c1].anim].num_frames)
-						rabbits[c1].frame = player_anims[rabbits[c1].anim].restart_frame;
-					rabbits[c1].frame_tick = 0;
-				}
-				rabbits[c1].image = player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].image + rabbits[c1].colour * 18 + rabbits[c1].direction * 9;
-				if (rabbits[c1].used == 1)
-					add_pob(main_info.draw_page, rabbits[c1].x >> 16, rabbits[c1].y >> 16, rabbits[c1].image, rabbit_gobs);
-			}
-		}
-
-		dj_mix();
-
-		update_objects();
-
-		for (c1 = 0; c1 < 300; c1++) {
-#ifdef DOS
-			outportw(0x3ce, (((stars[c1].x >> 16) & 3) << 8) + 0x04);
-			outportw(0x3c4, ((1 << ((stars[c1].x >> 16) & 3)) << 8) + 0x02);
-			stars[c1].back[main_info.draw_page] = *(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address);
-			*(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address) = stars[c1].col;
-#else
-			stars[c1].back[main_info.draw_page] = *(char *) get_vgaptr(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16);
-			*(char *) get_vgaptr(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16) = stars[c1].col;
-#endif
-		}
-
-		dj_mix();
-
-		draw_pobs(main_info.draw_page);
-
-		main_info.draw_page ^= 1;
-		main_info.view_page ^= 1;
-#ifdef DOS
-		outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
-		outportw(0x3d4, ((main_info.view_page << 15) & 0xff00) + 0x0c);
-#else
-		flippage(main_info.view_page);
-#endif
-
-#ifdef DOS
-		while ((inportb(0x3da) & 8) == 0)
-			dj_mix();
-		while ((inportb(0x3da) & 8) == 8)
-			dj_mix();
-#endif
-
-		redraw_pob_backgrounds(main_info.draw_page);
-
-		dj_mix();
-		intr_sysupdate();
-
-		for (c1 = 299; c1 >= 0; c1--) {
-#ifdef DOS
-			outportw(0x3c4, ((1 << ((stars[c1].old_x >> 16) & 3)) << 8) + 0x02);
-			*(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].old_y >> 16) * 100 + (stars[c1].old_x >> 18) - __djgpp_base_address) = stars[c1].back[main_info.draw_page];
-#else
-			*(char *) get_vgaptr(main_info.draw_page, stars[c1].old_x >> 16, stars[c1].old_y >> 16) = stars[c1].back[main_info.draw_page];
-#endif
-		}
-
-	}
-
-	dj_set_nosound(1);
 
 }
 
@@ -1858,6 +1558,37 @@ int add_pob(int page, int x, int y, int image, char *pob_data)
 }
 
 
+void draw_flies(int page)
+{
+	char *ptr1;
+	int c1,c2;
+	int points[NUM_FLIES*2];
+
+#ifdef DOS
+	ptr1 = (char *) (0xa0000 + ((long) main_info.draw_page << 15) - __djgpp_base_address);
+	for (c1 = 0; c1 < 4; c1++) {
+		outportw(0x3ce, (c1 << 8) + 0x04);
+		outportw(0x3c4, ((1 << c1) << 8) + 0x02);
+		for (c2 = 0; c2 < NUM_FLIES; c2++) {
+			if ((flies[c2].x & 3) == c1) {
+				flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2));
+				flies[c2].back_defined[main_info.draw_page] = 1;
+				if (mask_pic[flies[c2].y * 400 + flies[c2].x] == 0)
+					*(char *) (ptr1 + flies[c2].y * 100 + (flies[c2].x >> 2)) = 0;
+			}
+		}
+	}
+#else
+	ptr1 = (char *) get_vgaptr(main_info.draw_page, 0, 0);
+	for (c2 = 0; c2 < NUM_FLIES; c2++) {
+		flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x));
+		flies[c2].back_defined[main_info.draw_page] = 1;
+		if (mask_pic[(flies[c2].y * 400) + flies[c2].x] == 0)
+			*(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x)) = 0;
+	}
+#endif
+}
+
 void draw_pobs(int page)
 {
 	int c1;
@@ -1872,6 +1603,29 @@ void draw_pobs(int page)
 		put_pob(page, main_info.page_info[page].pobs[c1].x, main_info.page_info[page].pobs[c1].y, main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data, 1, mask_pic);
 	}
 
+}
+
+
+void redraw_flies_background(int page)
+{
+	char *ptr1;
+	int c1,c2;
+#ifdef DOS
+	ptr1 = (char *) (0xa0000 + ((long) page << 15) - __djgpp_base_address);
+	for (c1 = 0; c1 < 4; c1++) {
+		outportw(0x3c4, ((1 << c1) << 8) + 0x02);
+		for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
+			if ((flies[c2].old_x & 3) == c1 && flies[c2].back_defined[page] == 1)
+				*(char *) (ptr1 + flies[c2].old_y * 100 + (flies[c2].old_x >> 2)) = flies[c2].back[page];
+		}
+	}
+#else
+	ptr1 = (char *) get_vgaptr(page, 0, 0);
+	for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
+		if (flies[c2].back_defined[page] == 1)
+			*(char *) (ptr1 + flies[c2].old_y * JNB_WIDTH + (flies[c2].old_x)) = flies[c2].back[page];
+	}
+#endif
 }
 
 
@@ -1914,7 +1668,7 @@ void draw_leftovers(int page)
 }
 
 
-int init_level(int level)
+int init_level(int level, char *pal)
 {
 	FILE *handle;
 	int c1, c2;
@@ -1938,7 +1692,6 @@ int init_level(int level)
 		return 1;
 	}
 	fclose(handle);
-	memset(cur_pal, 0, 768);
 
 	for (c1 = 0; c1 < 4; c1++) {
 		if (player[c1].enabled == 1) {
@@ -2006,7 +1759,7 @@ void deinit_level(void)
 }
 
 
-int init_program(int argc, char *argv[])
+int init_program(int argc, char *argv[], char *pal)
 {
 	FILE *handle = (FILE *) NULL;
 	int c1 = 0, c2 = 0;
@@ -2034,7 +1787,6 @@ int init_program(int argc, char *argv[])
 		return 1;
 
 	memset(&main_info, 0, sizeof(main_info));
-	main_info.joy_enabled = 0;	/* CHANGE THIS FOR JOY */
 
 	strcpy(datfile_name, "data/jumpbump.dat");
 
@@ -2259,112 +2011,75 @@ int init_program(int argc, char *argv[])
 
 	setpalette(0, 256, pal);
 
+	init_inputs();
+
 	if (main_info.joy_enabled == 1 && main_info.fireworks == 0) {
-		c1 = 0;
-#ifdef DOS
-		outportb(0x201, 0);
-		while (c1 < 0x7fff) {
-			if ((inportb(0x201) & 1) == 0)
-				break;
-			c1++;
-		}
-#endif
-		if (c1 != 0x7fff) {
-			main_info.joy_enabled = 1;
-			load_flag = 0;
-			put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
-			put_text(0, 200, 100, "Move the joystick to the", 2);
-			put_text(0, 200, 115, "UPPER LEFT", 2);
-			put_text(0, 200, 130, "and press button A", 2);
-			put_text(0, 200, 200, "Or press ESC to use", 2);
-			put_text(0, 200, 215, "previous settings", 2);
-			if (calib_joy(0) != 0)
+		load_flag = 0;
+		put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
+		put_text(0, 200, 100, "Move the joystick to the", 2);
+		put_text(0, 200, 115, "UPPER LEFT", 2);
+		put_text(0, 200, 130, "and press button A", 2);
+		put_text(0, 200, 200, "Or press ESC to use", 2);
+		put_text(0, 200, 215, "previous settings", 2);
+		if (calib_joy(0) != 0)
+			load_flag = 1;
+		else {
+			clear_page(1, 0);
+
+			main_info.view_page = 1;
+			flippage(1);
+
+			wait_vrt(0);
+
+			put_text(1, 200, 40, "JOYSTICK CALIBRATION", 2);
+			put_text(1, 200, 100, "Move the joystick to the", 2);
+			put_text(1, 200, 115, "LOWER RIGHT", 2);
+			put_text(1, 200, 130, "and press button A", 2);
+			put_text(1, 200, 200, "Or press ESC to use", 2);
+			put_text(1, 200, 215, "previous settings", 2);
+			if (calib_joy(1) != 0)
 				load_flag = 1;
 			else {
-#ifdef DOS
-				outportw(0x3c4, 0x0f02);
-				memset((char *) (0xa0000 + 32768 + __djgpp_conventional_base), 0, 32768);
-#else
-				memset((char *) get_vgaptr(1, 0, 0), 0, JNB_WIDTH * JNB_HEIGHT);
-#endif
+				clear_page(0, 0);
+				flippage(0);
 
-				main_info.view_page = 1;
-#ifdef DOS
-				outportw(0x3d4, (1 << 23) + 0x0d);
-				outportw(0x3d4, ((1 << 15) & 0xff00) + 0x0c);
-#else
-				flippage(main_info.view_page);
-#endif
-				wait_vrt();
+				wait_vrt(0);
 
-				put_text(1, 200, 40, "JOYSTICK CALIBRATION", 2);
-				put_text(1, 200, 100, "Move the joystick to the", 2);
-				put_text(1, 200, 115, "LOWER RIGHT", 2);
-				put_text(1, 200, 130, "and press button A", 2);
-				put_text(1, 200, 200, "Or press ESC to use", 2);
-				put_text(1, 200, 215, "previous settings", 2);
-				if (calib_joy(1) != 0)
+				put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
+				put_text(0, 200, 100, "Move the joystick to the", 2);
+				put_text(0, 200, 115, "CENTER", 2);
+				put_text(0, 200, 130, "and press button A", 2);
+				put_text(0, 200, 200, "Or press ESC to use", 2);
+				put_text(0, 200, 215, "previous settings", 2);
+				if (calib_joy(2) != 0)
 					load_flag = 1;
 				else {
-#ifdef DOS
-					outportw(0x3c4, 0x0f02);
-					memset((char *) (0xa0000 + __djgpp_conventional_base), 0, 32768);
-					outportw(0x3d4, (0 << 23) + 0x0d);
-					outportw(0x3d4, ((0 << 15) & 0xff00) + 0x0c);
-#endif
-					wait_vrt();
-
-					put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
-					put_text(0, 200, 100, "Move the joystick to the", 2);
-					put_text(0, 200, 115, "CENTER", 2);
-					put_text(0, 200, 130, "and press button A", 2);
-					put_text(0, 200, 200, "Or press ESC to use", 2);
-					put_text(0, 200, 215, "previous settings", 2);
-					if (calib_joy(2) != 0)
-						load_flag = 1;
-					else {
-						if (joy.calib_data.x1 == joy.calib_data.x2)
-							joy.calib_data.x1 -= 10;
-						if (joy.calib_data.x3 == joy.calib_data.x2)
-							joy.calib_data.x3 += 10;
-						if (joy.calib_data.y1 == joy.calib_data.y2)
-							joy.calib_data.y1 -= 10;
-						if (joy.calib_data.y3 == joy.calib_data.y2)
-							joy.calib_data.y3 += 10;
-						write_calib_data();
-					}
+					if (joy.calib_data.x1 == joy.calib_data.x2)
+						joy.calib_data.x1 -= 10;
+					if (joy.calib_data.x3 == joy.calib_data.x2)
+						joy.calib_data.x3 += 10;
+					if (joy.calib_data.y1 == joy.calib_data.y2)
+						joy.calib_data.y1 -= 10;
+					if (joy.calib_data.y3 == joy.calib_data.y2)
+						joy.calib_data.y3 += 10;
+					write_calib_data();
 				}
 			}
-			if (load_flag == 1) {
-				if ((handle = dat_open("calib.dat", datfile_name, "rb")) == 0) {
-					strcpy(main_info.error_str, "Error loading 'calib.dat', aborting...\n");
-					return 1;
-				}
-				joy.calib_data.x1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-				joy.calib_data.x2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-				joy.calib_data.x3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-				joy.calib_data.y1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-				joy.calib_data.y2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-				joy.calib_data.y3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-				fclose(handle);
+		}
+		if (load_flag == 1) {
+			if ((handle = dat_open("calib.dat", datfile_name, "rb")) == 0) {
+				strcpy(main_info.error_str, "Error loading 'calib.dat', aborting...\n");
+				return 1;
 			}
-		} else
-			main_info.joy_enabled = 0;
-
+			joy.calib_data.x1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.x2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.x3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.y1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.y2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			joy.calib_data.y3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			fclose(handle);
+		}
 	}
-#ifdef DOS
-	regs.x.ax = 0;
-	__dpmi_int(0x33, &regs);
-	if (regs.x.ax == 0xffff) {
-		main_info.mouse_enabled = 1;
-		main_info.num_mouse_buttons = regs.x.bx;
-		if (force2 == 1)
-			main_info.num_mouse_buttons = 2;
-		if (force3 == 1)
-			main_info.num_mouse_buttons = 3;
-	} else
-#endif
-		main_info.mouse_enabled = 0;
 
 	return 0;
 
@@ -2414,204 +2129,6 @@ void deinit_program(void)
 		exit(1);
 	} else
 		exit(0);
-
-}
-
-
-void read_joy(void)
-{
-	int c1;
-	int x, y;
-	int s1 = 0;
-	char flag;
-
-	c1 = x = y = flag = 0;
-#ifdef DOS
-	outportb(0x201, 0);
-#endif
-
-	while (1) {
-
-#ifdef DOS
-		s1 = inportb(0x201);
-#endif
-
-		if (x == 0) {
-			if ((s1 & 1) == 0)
-				x = c1;
-		}
-		if (y == 0) {
-			if ((s1 & 2) == 0)
-				y = c1;
-		}
-		if (x != 0 && y != 0)
-			break;
-
-		c1++;
-		if (c1 == 0x7fff) {
-			flag = 1;
-			break;
-		}
-
-	}
-
-	if (flag == 0) {
-		joy.raw_x = x;
-		joy.raw_y = y;
-
-		if (joy.raw_x < joy.calib_data.x2)
-			joy.x = ((long) (joy.raw_x - joy.calib_data.x2) << 10) / (joy.calib_data.x2 - joy.calib_data.x1);
-		else
-			joy.x = ((long) (joy.raw_x - joy.calib_data.x2) << 10) / (joy.calib_data.x3 - joy.calib_data.x2);
-		if (joy.raw_y < joy.calib_data.y2)
-			joy.y = ((long) (joy.raw_y - joy.calib_data.y2) << 10) / (joy.calib_data.y2 - joy.calib_data.y1);
-		else
-			joy.y = ((long) (joy.raw_y - joy.calib_data.y2) << 10) / (joy.calib_data.y3 - joy.calib_data.y2);
-
-		if (joy.x < -1024)
-			joy.x = -1024;
-		if (joy.x > 1024)
-			joy.x = 1024;
-		if (joy.y < -1024)
-			joy.y = -1024;
-		if (joy.y > 1024)
-			joy.y = 1024;
-
-#ifdef DOS
-		s1 = inportb(0x201);
-#endif
-		joy.but1 = (((s1 >> 4) & 1) ^ 1);
-		joy.but2 = (((s1 >> 5) & 1) ^ 1);
-	} else {
-		joy.raw_x = joy.calib_data.x2;
-		joy.raw_y = joy.calib_data.y2;
-
-		joy.x = joy.y = 0;
-
-		joy.but1 = joy.but2 = 0;
-	}
-
-}
-
-
-int calib_joy(char type)
-{
-	int c1;
-	int x, y;
-	int s1 = 0;
-	int num_times;
-	char flag = 0;
-
-	while (joy.but1 == 1) {
-#ifdef DOS
-		s1 = inportb(0x201);
-#endif
-		joy.but1 = (((s1 >> 4) & 1) ^ 1);
-		if (key_pressed(1) == 1) {
-			while (key_pressed(1) == 1);
-			return 1;
-		}
-	}
-
-	num_times = 0;
-
-	while (joy.but1 == 0) {
-
-		c1 = x = y = flag = 0;
-#ifdef DOS
-		outportb(0x201, 0);
-#endif
-
-		while (1) {
-
-#ifdef DOS
-			s1 = inportb(0x201);
-#endif
-
-			if (x == 0) {
-				if ((s1 & 1) == 0)
-					x = c1;
-			}
-			if (y == 0) {
-				if ((s1 & 2) == 0)
-					y = c1;
-			}
-			if (x != 0 && y != 0)
-				break;
-
-			c1++;
-			if (c1 == 0x7fff) {
-				flag = 1;
-				break;
-			}
-
-		}
-
-		joy.raw_x = x;
-		joy.raw_y = y;
-
-#ifdef DOS
-		s1 = inportb(0x201);
-#endif
-		joy.but1 = (((s1 >> 4) & 1) ^ 1);
-
-		if (num_times < 0x7fffffff)
-			num_times++;
-
-		if (flag == 1)
-			break;
-
-		if (key_pressed(1) == 1) {
-			while (key_pressed(1) == 1);
-			return 1;
-		}
-
-	}
-
-	if (num_times < 16)
-		return 1;
-
-	if (flag == 0) {
-
-		switch (type) {
-		case 0:
-			joy.calib_data.x1 = joy.raw_x;
-			joy.calib_data.y1 = joy.raw_y;
-			break;
-		case 1:
-			joy.calib_data.x3 = joy.raw_x;
-			joy.calib_data.y3 = joy.raw_y;
-			break;
-		case 2:
-			joy.calib_data.x2 = joy.raw_x;
-			joy.calib_data.y2 = joy.raw_y;
-			break;
-		}
-
-		while (joy.but1 == 1) {
-#ifdef DOS
-			s1 = inportb(0x201);
-#endif
-			joy.but1 = (((s1 >> 4) & 1) ^ 1);
-		}
-
-	}
-
-	return 0;
-
-}
-
-
-void read_mouse(void)
-{
-
-#ifdef DOS
-	regs.x.ax = 3;
-	__dpmi_int(0x33, &regs);
-	mouse.but1 = regs.x.bx & 1;
-	mouse.but2 = (regs.x.bx & 2) >> 1;
-	mouse.but3 = (regs.x.bx & 4) >> 2;
-#endif
 
 }
 
