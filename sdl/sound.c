@@ -255,7 +255,7 @@ void mix_sound(void *unused, Uint8 *stream, int len)
 
 char dj_init(void)
 {
-	Uint16 audio_format = AUDIO_S16;
+	Uint16 audio_format = MIX_DEFAULT_FORMAT;
 	int audio_channels = 2;
 	int audio_buffers = 4096;
 
