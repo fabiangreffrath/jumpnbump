@@ -9,6 +9,12 @@ static int drawing_enable = 0;
 static pixel_t *background = NULL;
 static int background_drawn;
 static pixel_t *mask = NULL;
+static int dirty_blocks[2][25*16];
+#ifdef SCALE_UP2
+#define DIRTY_BLOCK_SHIFT 5
+#else
+#define DIRTY_BLOCK_SHIFT 4
+#endif
 
 pixel_t *get_vgaptr(int page, int x, int y)
 {
@@ -29,9 +35,9 @@ void open_screen(void)
 	}
 
 	if (fullscreen)
-		jnb_surface = SDL_SetVideoMode(JNB_SURFACE_WIDTH, JNB_SURFACE_HEIGHT, JNB_BPP, SDL_SWSURFACE | SDL_FULLSCREEN);
+		jnb_surface = SDL_SetVideoMode(JNB_SURFACE_WIDTH, JNB_SURFACE_HEIGHT, JNB_BPP, SDL_HWSURFACE | SDL_FULLSCREEN);
 	else
-		jnb_surface = SDL_SetVideoMode(JNB_SURFACE_WIDTH, JNB_SURFACE_HEIGHT, JNB_BPP, SDL_SWSURFACE);
+		jnb_surface = SDL_SetVideoMode(JNB_SURFACE_WIDTH, JNB_SURFACE_HEIGHT, JNB_BPP, SDL_HWSURFACE);
 
 	if (!jnb_surface) {
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
@@ -43,6 +49,7 @@ void open_screen(void)
 	vinited = 1;
 
 	memset(current_pal, 0, sizeof(current_pal));
+	memset(dirty_blocks, 0, sizeof(dirty_blocks));
 
 	return;
 }
@@ -72,6 +79,9 @@ void clear_page(int page, int color)
 
 	assert(drawing_enable==1);
 
+	for (i=0; i<(25*16); i++)
+		dirty_blocks[page][i] = 1;
+
 	for (i=0; i<JNB_SURFACE_HEIGHT; i++)
 		for (j=0; j<JNB_SURFACE_WIDTH; j++)
 			*buf++ = color;
@@ -83,17 +93,24 @@ void clear_lines(int page, int y, int count, pixel_t color)
 	int i,j;
 
 	assert(drawing_enable==1);
+
 #ifdef SCALE_UP2
 	count *= 2;
 	y *= 2;
 #endif
 
-	for (i=0; i<count; i++)
+	for (i=0; i<count; i++) {
 		if ((i+y)<JNB_SURFACE_HEIGHT) {
 			pixel_t *buf = get_vgaptr(page, 0, i+y);
 			for (j=0; j<JNB_SURFACE_WIDTH; j++)
 				*buf++ = color;
 		}
+	}
+	count = ((y+count)>>DIRTY_BLOCK_SHIFT) - (y>>DIRTY_BLOCK_SHIFT) + 1;
+	y >>= DIRTY_BLOCK_SHIFT;
+	for (i=0; i<count; i++)
+		for (j=0; j<25; j++)
+			dirty_blocks[page][(y+i)*25+j] = 1;
 }
 
 
@@ -128,6 +145,8 @@ void set_pixel(int page, int x, int y, pixel_t color)
 #endif
 	assert(x<JNB_SURFACE_WIDTH);
 	assert(y<JNB_SURFACE_HEIGHT);
+
+	dirty_blocks[page][(y>>DIRTY_BLOCK_SHIFT)*25+(x>>DIRTY_BLOCK_SHIFT)] = 1;
 
 	*get_vgaptr(page, x, y) = color;
 }
@@ -173,6 +192,52 @@ int Init_2xSaI (unsigned int BitFormat)
 }
 
 
+void Scale2x (unsigned char *src, unsigned int src_pitch, int src_bytes_per_pixel,
+		 unsigned char *dst, unsigned int dst_pitch, int dst_bytes_per_pixel,
+		 int width, int height, int pal[256])
+{
+#define GET_COLOR(x) (pal[(x)])
+
+	int x,y;
+	unsigned char *src_line;
+	unsigned char *dst_line[2];
+
+	src_line = src;
+	dst_line[0] = dst;
+	dst_line[1] = dst + dst_pitch;
+	for (y=0; y<height; y++) {
+		for (x=0; x<width; x++) {
+			int color;
+
+			if (src_bytes_per_pixel == 1) {
+				color = GET_COLOR(*(((unsigned char*)src_line) + x));
+			} else if (src_bytes_per_pixel == 2) {
+				color = *(((unsigned short*)src_line) + x);
+			} else {
+				color = *(((unsigned int*)src_line) + x);
+			}
+
+			if (dst_bytes_per_pixel == 2) {
+				*((unsigned long *) (&dst_line[0][x * 4])) = color | (color << 16);
+				*((unsigned long *) (&dst_line[1][x * 4])) = color | (color << 16);
+			} else {
+				*((unsigned long *) (&dst_line[0][x * 8])) = color;
+				*((unsigned long *) (&dst_line[0][x * 8 + 4])) = color;
+				*((unsigned long *) (&dst_line[1][x * 8])) = color;
+				*((unsigned long *) (&dst_line[1][x * 8 + 4])) = color;
+			}
+		}
+
+		src_line += src_pitch;
+
+		if (y < height - 1) {
+			dst_line[0] += dst_pitch * 2;
+			dst_line[1] += dst_pitch * 2;
+		}
+	}
+}
+
+
 void Super2xSaI (unsigned char *src, unsigned int src_pitch, int src_bytes_per_pixel,
 		 unsigned char *dst, unsigned int dst_pitch, int dst_bytes_per_pixel,
 		 int width, int height, int pal[256])
@@ -190,6 +255,11 @@ void Super2xSaI (unsigned char *src, unsigned int src_pitch, int src_bytes_per_p
 	unsigned char *dst_line[2];
 	int x, y;
 	unsigned long color[16];
+
+	if ( (width<2) || (height<2) ) {
+		Scale2x(src, src_pitch, src_bytes_per_pixel, dst, dst_pitch, dst_bytes_per_pixel, width, height, pal);
+		return;
+	}
 
 	/* Point to the first 3 lines. */
 	src_line[0] = src;
@@ -388,66 +458,56 @@ void Super2xSaI (unsigned char *src, unsigned int src_pitch, int src_bytes_per_p
 }
 
 
-void Scale2x (unsigned char *src, unsigned int src_pitch, int src_bytes_per_pixel,
-		 unsigned char *dst, unsigned int dst_pitch, int dst_bytes_per_pixel,
-		 int width, int height, int pal[256])
-{
-#define GET_COLOR(x) (pal[(x)])
-
-	int x,y;
-	unsigned char *src_line;
-	unsigned char *dst_line[2];
-
-	src_line = src;
-	dst_line[0] = dst;
-	dst_line[1] = dst + dst_pitch;
-	for (y=0; y<height; y++) {
-		for (x=0; x<width; x++) {
-			int color;
-
-			if (src_bytes_per_pixel == 1) {
-				color = GET_COLOR(*(((unsigned char*)src_line) + x));
-			} else if (src_bytes_per_pixel == 2) {
-				color = *(((unsigned short*)src_line) + x);
-			} else {
-				color = *(((unsigned int*)src_line) + x);
-			}
-
-			if (dst_bytes_per_pixel == 2) {
-				*((unsigned long *) (&dst_line[0][x * 4])) = color | (color << 16);
-				*((unsigned long *) (&dst_line[1][x * 4])) = color | (color << 16);
-			} else {
-				*((unsigned long *) (&dst_line[0][x * 8])) = color;
-				*((unsigned long *) (&dst_line[0][x * 8 + 4])) = color;
-				*((unsigned long *) (&dst_line[1][x * 8])) = color;
-				*((unsigned long *) (&dst_line[1][x * 8 + 4])) = color;
-			}
-		}
-
-		src_line += src_pitch;
-
-		if (y < height - 1) {
-			dst_line[0] += dst_pitch * 2;
-			dst_line[1] += dst_pitch * 2;
-		}
-	}
-}
-
 void flippage(int page)
 {
-	int h;
-	int w;
+	int x,y,h,w;
 	pixel_t *src;
 	unsigned char *dest;
 
 	assert(drawing_enable==0);
 
 	SDL_LockSurface(jnb_surface);
+	if (!jnb_surface->pixels) {
+		
+		for (x=0; x<(25*16); x++) {
+			dirty_blocks[0][x] = 1;
+			dirty_blocks[1][x] = 1;
+		}
+
+		return;
+	}
+#ifdef SCALE_UP
         dest=(unsigned char *)jnb_surface->pixels;
 	src=screen_buffer[page];
-#ifdef SCALE_UP
 	Super2xSaI(src, JNB_WIDTH, 1, dest, jnb_surface->pitch, 2, JNB_WIDTH, JNB_HEIGHT, current_pal);
 #else
+	dest=(unsigned char *)jnb_surface->pixels;
+	src=screen_buffer[page];
+	for (y=0; y<JNB_SURFACE_HEIGHT; y++) {
+		//memset(&dest[y*jnb_surface->pitch],0,JNB_SURFACE_WIDTH*JNB_BYTESPP);
+		for (x=0; x<25; x++) {
+			int count;
+			int test_x;
+
+			count=0;
+			test_x=x;
+			while ( (test_x<25) && (dirty_blocks[page][(y>>DIRTY_BLOCK_SHIFT)*25+test_x]) ) {
+				count++;
+				test_x++;
+			}
+			if (count) {
+				memcpy(	&dest[y*jnb_surface->pitch+(x<<DIRTY_BLOCK_SHIFT)*JNB_BYTESPP],
+					&src[y*JNB_SURFACE_WIDTH+(x<<DIRTY_BLOCK_SHIFT)],
+					((16<<DIRTY_BLOCK_SHIFT)>>4)*JNB_BYTESPP*count);
+				//*((pixel_t *)(&dest[(y>>DIRTY_BLOCK_SHIFT)*jnb_surface->pitch+x*JNB_BYTESPP]))=0xe0e0;
+			}
+			x = test_x;
+		}
+	}
+	memset(&dirty_blocks[page], 0, sizeof(int)*25*16);
+/*
+        dest=(unsigned char *)jnb_surface->pixels;
+	src=screen_buffer[page];
         w=(jnb_surface->clip_rect.w>JNB_SURFACE_WIDTH)?(JNB_SURFACE_WIDTH):(jnb_surface->clip_rect.w);
         h=(jnb_surface->clip_rect.h>JNB_SURFACE_HEIGHT)?(JNB_SURFACE_HEIGHT):(jnb_surface->clip_rect.h);
         for (; h>0; h--) {
@@ -455,6 +515,7 @@ void flippage(int page)
 		dest+=jnb_surface->pitch;
 		src+=JNB_SURFACE_WIDTH;
         }
+*/
 #endif
         SDL_UnlockSurface(jnb_surface);
 	SDL_Flip(jnb_surface);
@@ -599,6 +660,13 @@ void put_block(int page, int x, int y, int width, int height, pixel_t *buffer)
 		vga_ptr += JNB_SURFACE_WIDTH;
 		buffer_ptr += width;
 	}
+	width = ((x+width)>>DIRTY_BLOCK_SHIFT) - (x>>DIRTY_BLOCK_SHIFT) + 1;
+	height = ((y+height)>>DIRTY_BLOCK_SHIFT) - (y>>DIRTY_BLOCK_SHIFT) + 1;
+	x >>= DIRTY_BLOCK_SHIFT;
+	y >>= DIRTY_BLOCK_SHIFT;
+	while (width--)
+		for (h=0; h<height; h++)
+			dirty_blocks[page][(y+h)*25+(x+width)] = 1;
 }
 
 
@@ -806,6 +874,13 @@ void put_pob(int page, int x, int y, int image, gob_t *gob, int use_mask, unsign
 		vga_ptr += (JNB_SURFACE_WIDTH - c2);
 		mask_ptr += (JNB_SURFACE_WIDTH - c2);
 	}
+	draw_width = ((x+draw_width)>>DIRTY_BLOCK_SHIFT) - (x>>DIRTY_BLOCK_SHIFT) + 1;
+	draw_height = ((y+draw_height)>>DIRTY_BLOCK_SHIFT) - (y>>DIRTY_BLOCK_SHIFT) + 1;
+	x >>= DIRTY_BLOCK_SHIFT;
+	y >>= DIRTY_BLOCK_SHIFT;
+	while (draw_width--)
+		for (c1=0; c1<draw_height; c1++)
+			dirty_blocks[page][(y+c1)*25+(x+draw_width)] = 1;
 }
 
 
@@ -957,10 +1032,7 @@ void recalculate_gob(gob_t *gob, char pal[768])
 	int_pal[0] = 0;
 
 	for (i=0; i<gob->num_images; i++) {
-		if ( (gob->width[i]>4) && (gob->height[i]>4) )
-			Super2xSaI(gob->orig_data[i], gob->width[i], 1, (unsigned char *)gob->data[i], gob->width[i]*2*JNB_BYTESPP, JNB_BYTESPP, gob->width[i], gob->height[i], int_pal);
-		else
-			Scale2x(gob->orig_data[i], gob->width[i], 1, (unsigned char *)gob->data[i], gob->width[i]*2*JNB_BYTESPP, JNB_BYTESPP, gob->width[i], gob->height[i], int_pal);
+		Super2xSaI(gob->orig_data[i], gob->width[i], 1, (unsigned char *)gob->data[i], gob->width[i]*2*JNB_BYTESPP, JNB_BYTESPP, gob->width[i], gob->height[i], int_pal);
 	}
 #endif
 }
