@@ -26,5 +26,7 @@ clean:
 	$(MAKE) -C data clean
 
 install:
+	mkdir -p $(DESTDIR)/usr/games/
+	mkdir -p $(DESTDIR)/usr/share/jumpnbump/
 	install -o root -g games -m 755 $(TARGET) $(DESTDIR)/usr/games/$(TARGET)
 	install -o root -g games -m 644 data/jumpbump.dat $(DESTDIR)/usr/share/jumpnbump/jumpbump.dat
