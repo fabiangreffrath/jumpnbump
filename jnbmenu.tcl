@@ -1,3 +1,4 @@
+#!/usr/bin/wish
 #!/usr/bin/wish8.0
 #############################################################################
 # Visual Tcl v1.20 Project
@@ -6,10 +7,13 @@
 #################################
 # GLOBAL VARIABLES
 #
-global fireworks; 
-global fullscreen; 
-global nogore; 
-global nosound; 
+global fireworks;
+global fullscreen;
+global nogore;
+global nosound;
+global mirror;
+global scaleup;
+
 global widget; 
 
 #################################
@@ -25,6 +29,8 @@ init $argc $argv
 proc {exec_file} {} {
 global fullscreen
 	global nosound
+	global mirror
+	global scaleup
 	global nogore
 	global fireworks
 	
@@ -32,6 +38,10 @@ global fullscreen
 	if { $fullscreen == 1 } { set str_fullscreen "-fullscreen" }
 	set str_nosound ""
 	if { $nosound == 1 } { set str_nosound "-nosound" }
+	set str_scaleup ""
+	if { $scaleup == 1 } { set str_scaleup "-scaleup" }
+	set str_mirror ""
+	if { $mirror == 1 } { set str_mirror "-mirror" }
 	set str_nogore ""
 	if { $nogore == 1 } { set str_nogore "-nogore" }
 	set str_fireworks ""
@@ -39,14 +49,14 @@ global fullscreen
 
 	set file ""
 	if { [ .top17.lis26 curselection ] != "" } then {
-		set file "data/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
+		set file "/usr/share/games/jumpnbump/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
 	}
 	
-	exec ./jnb $str_fullscreen $str_nosound $str_nogore $str_fireworks -dat $file &
+	exec jumpnbump $str_fullscreen $str_nosound $str_scaleup $str_mirror $str_nogore $str_fireworks -dat $file &
 }
 
 proc {fill_list_box} {} {
-if [ catch { exec ls ./data } data ] {
+if [ catch { exec ls /usr/share/games/jumpnbump/ } data ] {
 		puts stderr "Error"
 	}
 
@@ -128,6 +138,7 @@ proc vTclWindow. {base} {
     wm minsize $base 1 1
     wm overrideredirect $base 0
     wm resizable $base 1 1
+    wm resizable $base 0 0
     wm withdraw $base
     wm title $base "vt.tcl"
     ###################
@@ -152,20 +163,25 @@ proc vTclWindow.top17 {base} {
     wm minsize $base 1 1
     wm overrideredirect $base 0
     wm resizable $base 1 1
+    wm resizable $base 0 0
     wm deiconify $base
-    wm title $base "Jump 'n Bump"
+    wm title $base "Jump n Bump"
     label $base.lab18 \
-        -borderwidth 1 -relief raised -text {Run Jump 'n Bump} 
+        -borderwidth 1 -relief raised -text {Jump n Bump} 
     label $base.lab20 \
         -borderwidth 1 -relief sunken 
     checkbutton $base.che22 \
-        -text {Full screen} -variable fullscreen 
+        -text {full screen} -variable fullscreen 
     checkbutton $base.che23 \
         -text {no sound} -variable nosound 
     checkbutton $base.che24 \
         -text {no gore} -variable nogore 
     checkbutton $base.che25 \
         -text fireworks -variable fireworks 
+    checkbutton $base.che28 \
+        -text scaleup -variable scaleup
+    checkbutton $base.che29 \
+        -text mirror -variable mirror
     listbox $base.lis26 \
         -yscrollcommand {.top17.scr27 set} 
     bind $base.lis26 <Double-Button-1> {
@@ -174,7 +190,7 @@ proc vTclWindow.top17 {base} {
     scrollbar $base.scr27 \
         -command {.top17.lis26 yview} 
     button $base.but28 \
-        -command { exec_file } -text Run 
+        -command { exec_file } -text Start 
     button $base.but29 \
         -command { exit } -text Quit 
     ###################
@@ -185,21 +201,25 @@ proc vTclWindow.top17 {base} {
     place $base.lab20 \
         -x 190 -y 40 -width 196 -height 257 -anchor nw -bordermode ignore 
     place $base.che22 \
-        -x 220 -y 55 -anchor nw -bordermode ignore 
+        -x 220 -y 54 -anchor nw -bordermode ignore 
     place $base.che23 \
-        -x 220 -y 85 -anchor nw -bordermode ignore 
+        -x 220 -y 83 -anchor nw -bordermode ignore 
     place $base.che24 \
-        -x 220 -y 115 -anchor nw -bordermode ignore 
+        -x 220 -y 112 -anchor nw -bordermode ignore 
     place $base.che25 \
-        -x 220 -y 145 -anchor nw -bordermode ignore 
+        -x 220 -y 141 -anchor nw -bordermode ignore 
+    place $base.che28 \
+        -x 220 -y 170 -anchor nw -bordermode ignore 
+    place $base.che29 \
+        -x 220 -y 199 -anchor nw -bordermode ignore 
     place $base.lis26 \
         -x 30 -y 40 -width 103 -height 261 -anchor nw -bordermode ignore 
     place $base.scr27 \
         -x 145 -y 40 -width 21 -height 262 -anchor nw -bordermode ignore 
     place $base.but28 \
-        -x 240 -y 190 -width 117 -height 25 -anchor nw -bordermode ignore 
+        -x 230 -y 230 -width 117 -height 25 -anchor nw -bordermode ignore 
     place $base.but29 \
-        -x 240 -y 245 -width 117 -height 25 -anchor nw -bordermode ignore 
+        -x 230 -y 255 -width 117 -height 25 -anchor nw -bordermode ignore 
 }
 
 Window show .
