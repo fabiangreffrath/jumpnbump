@@ -549,16 +549,13 @@ void processKillPacket(NetPacket *pkt)
 		player[c2].frame_tick = 0;
 		player[c2].image = player_anims[player[c2].anim].frame[player[c2].frame].image + player[c2].direction * 9;
 		if (main_info.no_gore == 0) {
-			for (c4 = 0; c4 < 6; c4++)
+			for (c4 = 0; c4 < 6; c4++) {
 				add_object(OBJ_FUR, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c2 * 8);
-			for (c4 = 0; c4 < 6; c4++)
 				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
-			for (c4 = 0; c4 < 6; c4++)
 				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
-			for (c4 = 0; c4 < 8; c4++)
 				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
-			for (c4 = 0; c4 < 10; c4++)
 				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
+			}
 		}
 		dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 		player[c1].bumps++;
@@ -3109,7 +3106,13 @@ void deinit_program(void)
 
 unsigned short rnd(unsigned short max)
 {
-	return (rand() % max);
+#if (RAND_MAX < 0x7fff)
+#error "rand returns too small values"
+#elif (RAND_MAX == 0x7fff)
+	return (unsigned short)((rand()*2) % (int)max);
+#else
+	return (unsigned short)(rand() % (int)max);
+#endif
 }
 
 
