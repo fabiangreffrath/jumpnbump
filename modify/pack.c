@@ -136,7 +136,18 @@ int main(int argc, char **argv)
 	printf("Opened %s\n", outfile);
 
 	/* write number of entries in this data file */
-	write(fd, &num_entries, 4);
+	{
+		char temp;
+
+		temp = (num_entries >>  0) & 0xff;
+		write(fd, &temp, 1);
+		temp = (num_entries >>  8) & 0xff;
+		write(fd, &temp, 1);
+		temp = (num_entries >> 16) & 0xff;
+		write(fd, &temp, 1);
+		temp = (num_entries >> 24) & 0xff;
+		write(fd, &temp, 1);
+	}
 
 	/* write the directory structure */
 	for (i = 0; i < num_entries; i++) {
