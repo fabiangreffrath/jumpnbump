@@ -3,8 +3,8 @@ TARGET = jumpnbump
 
 
 CC = gcc -g3
-CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DUSE_SDL -I.
-LIBS =  -lm -lSDL -lSDL_mixer
+CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DUSE_SDL -I. `sdl-config --cflags`
+LIBS =  -lm `sdl-config --libs`
 
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) $(LIBS) -o $(TARGET) $(OBJS)

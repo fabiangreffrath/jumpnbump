@@ -307,9 +307,7 @@ void register_mask(void *pixels);
 /* gfx.c */
 
 #ifdef USE_SDL
-#if ((!defined _MSC_VER) && (!defined __CYGWIN__))
-long filelength(int handle);
-#endif
+//long filelength(int handle);
 void fs_toggle();
 int intr_sysupdate();
 #endif
