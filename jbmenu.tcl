@@ -1,0 +1,208 @@
+#!/usr/bin/wish8.0
+#############################################################################
+# Visual Tcl v1.20 Project
+# Author : Philippe Brochard
+
+#################################
+# GLOBAL VARIABLES
+#
+global fireworks; 
+global fullscreen; 
+global nogore; 
+global nosound; 
+global widget; 
+
+#################################
+# USER DEFINED PROCEDURES
+#
+proc init {argc argv} {
+
+}
+
+init $argc $argv
+
+
+proc {exec_file} {} {
+global fullscreen
+	global nosound
+	global nogore
+	global fireworks
+	
+	set str_fullscreen ""
+	if { $fullscreen == 1 } { set str_fullscreen "-fullscreen" }
+	set str_nosound ""
+	if { $nosound == 1 } { set str_nosound "-nosound" }
+	set str_nogore ""
+	if { $nogore == 1 } { set str_nogore "-nogore" }
+	set str_fireworks ""
+	if { $fireworks == 1 } { set str_fireworks "-fireworks" }
+
+	set file ""
+	if { [ .top17.lis26 curselection ] != "" } then {
+		set file "data/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
+	}
+	
+	exec ./jnb $str_fullscreen $str_nosound $str_nogore $str_fireworks -dat $file &
+}
+
+proc {fill_list_box} {} {
+if [ catch { exec ls ./data } data ] {
+		puts stderr "Error"
+	}
+
+	foreach p $data {
+		.top17.lis26 insert end [ find_name $p ]
+	}
+}
+
+proc {find_name} {path} {
+set alast [ string last "/" $path ];
+
+	incr alast;
+	if { $alast != [ string length $path ] } {
+		set name [ string range $path $alast end ];
+	} else {
+		incr alast -2;
+		set tmp [ string range $path 0 $alast ];
+		set alast [ string last "/" $tmp ];
+		incr alast;
+		set name [ string range $tmp $alast end ];
+	}
+
+	set fname [ split $name . ]
+	set firstname [ lindex $fname 0 ]
+
+	return $firstname;
+}
+
+proc {main} {argc argv} {
+fill_list_box
+
+	bind .top17.lis26 <Double-Button-1> { exec_file }
+}
+
+proc {Window} {args} {
+global vTcl
+    set cmd [lindex $args 0]
+    set name [lindex $args 1]
+    set newname [lindex $args 2]
+    set rest [lrange $args 3 end]
+    if {$name == "" || $cmd == ""} {return}
+    if {$newname == ""} {
+        set newname $name
+    }
+    set exists [winfo exists $newname]
+    switch $cmd {
+        show {
+            if {$exists == "1" && $name != "."} {wm deiconify $name; return}
+            if {[info procs vTclWindow(pre)$name] != ""} {
+                eval "vTclWindow(pre)$name $newname $rest"
+            }
+            if {[info procs vTclWindow$name] != ""} {
+                eval "vTclWindow$name $newname $rest"
+            }
+            if {[info procs vTclWindow(post)$name] != ""} {
+                eval "vTclWindow(post)$name $newname $rest"
+            }
+        }
+        hide    { if $exists {wm withdraw $newname; return} }
+        iconify { if $exists {wm iconify $newname; return} }
+        destroy { if $exists {destroy $newname; return} }
+    }
+}
+
+#################################
+# VTCL GENERATED GUI PROCEDURES
+#
+
+proc vTclWindow. {base} {
+    if {$base == ""} {
+        set base .
+    }
+    ###################
+    # CREATING WIDGETS
+    ###################
+    wm focusmodel $base passive
+    wm geometry $base 1x1+0+0
+    wm maxsize $base 1009 738
+    wm minsize $base 1 1
+    wm overrideredirect $base 0
+    wm resizable $base 1 1
+    wm withdraw $base
+    wm title $base "vt.tcl"
+    ###################
+    # SETTING GEOMETRY
+    ###################
+}
+
+proc vTclWindow.top17 {base} {
+    if {$base == ""} {
+        set base .top17
+    }
+    if {[winfo exists $base]} {
+        wm deiconify $base; return
+    }
+    ###################
+    # CREATING WIDGETS
+    ###################
+    toplevel $base -class Toplevel
+    wm focusmodel $base passive
+    wm geometry $base 416x314+246+193
+    wm maxsize $base 1009 738
+    wm minsize $base 1 1
+    wm overrideredirect $base 0
+    wm resizable $base 1 1
+    wm deiconify $base
+    wm title $base "Jump 'n Bump"
+    label $base.lab18 \
+        -borderwidth 1 -relief raised -text {Run Jump 'n Bump} 
+    label $base.lab20 \
+        -borderwidth 1 -relief sunken 
+    checkbutton $base.che22 \
+        -text {Full screen} -variable fullscreen 
+    checkbutton $base.che23 \
+        -text {no sound} -variable nosound 
+    checkbutton $base.che24 \
+        -text {no gore} -variable nogore 
+    checkbutton $base.che25 \
+        -text fireworks -variable fireworks 
+    listbox $base.lis26 \
+        -yscrollcommand {.top17.scr27 set} 
+    bind $base.lis26 <Double-Button-1> {
+        exec_file
+    }
+    scrollbar $base.scr27 \
+        -command {.top17.lis26 yview} 
+    button $base.but28 \
+        -command { exec_file } -text Run 
+    button $base.but29 \
+        -command { exit } -text Quit 
+    ###################
+    # SETTING GEOMETRY
+    ###################
+    place $base.lab18 \
+        -x 25 -y 10 -width 366 -height 17 -anchor nw -bordermode ignore 
+    place $base.lab20 \
+        -x 190 -y 40 -width 196 -height 257 -anchor nw -bordermode ignore 
+    place $base.che22 \
+        -x 220 -y 55 -anchor nw -bordermode ignore 
+    place $base.che23 \
+        -x 220 -y 85 -anchor nw -bordermode ignore 
+    place $base.che24 \
+        -x 220 -y 115 -anchor nw -bordermode ignore 
+    place $base.che25 \
+        -x 220 -y 145 -anchor nw -bordermode ignore 
+    place $base.lis26 \
+        -x 30 -y 40 -width 103 -height 261 -anchor nw -bordermode ignore 
+    place $base.scr27 \
+        -x 145 -y 40 -width 21 -height 262 -anchor nw -bordermode ignore 
+    place $base.but28 \
+        -x 240 -y 190 -width 117 -height 25 -anchor nw -bordermode ignore 
+    place $base.but29 \
+        -x 240 -y 245 -width 117 -height 25 -anchor nw -bordermode ignore 
+}
+
+Window show .
+Window show .top17
+
+main $argc $argv
