@@ -2748,6 +2748,7 @@ int init_program(int argc, char *argv[], char *pal)
 					if (client_player_num < 0)
 						client_player_num = atoi(argv[c1 + 1]);
 				}
+#ifdef USE_NET
 			} else if (stricmp(argv[c1], "-server") == 0) {
 				if (c1 < (argc - 1)) {
 					is_server = 1;
@@ -2760,6 +2761,7 @@ int init_program(int argc, char *argv[], char *pal)
 					is_net = 1;
 					netarg = argv[c1 + 1];
 				}
+#endif
 			} else if (stricmp(argv[c1], "-mouse") == 0) {
 				if (c1 < (argc - 1)) {
 					if (stricmp(argv[c1 + 1], "2") == 0)
@@ -2782,8 +2784,12 @@ int init_program(int argc, char *argv[], char *pal)
 				printf("  -h                       this help\n");
 				printf("  -v                       print version\n");
 				printf("  -dat level.dat           play a different level\n");
-				printf("  -port port               define listen port\n");
-				printf("  -net player host rport   define network players\n");
+#ifdef USE_NET
+				//printf("  -port port               define listen port\n");
+				printf("  -server playercount      start as server waiting for players\n");
+				printf("  -connect host            connect to server\n");
+#endif
+				printf("  -player num              set main player to num (0-3). Needed for networking\n");
 				printf("  -fireworks               screensaver mode\n");
 				printf("  -fullscreen              run in fullscreen mode\n");
 				printf("  -nosound                 play without sound\n");
