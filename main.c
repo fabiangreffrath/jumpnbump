@@ -1306,9 +1306,9 @@ void fireworks(void)
 			stars[c1].old_y = stars[c1].y;
 			stars[c1].y -= (int) (31 - stars[c1].col) * 16384;
 			if ((stars[c1].y >> 16) < 0)
-				stars[c1].y += 256 << 16;;
+				stars[c1].y += 256 << 16;
 			if ((stars[c1].y >> 16) >= 256)
-				stars[c1].y -= 256 << 16;;
+				stars[c1].y -= 256 << 16;
 		}
 
 		for (c1 = 0, c2 = 0; c1 < 20; c1++) {
@@ -1849,7 +1849,6 @@ char add_leftovers(char page, short x, short y, short image, char *pob_data)
 void draw_leftovers(char page)
 {
 	int c1;
-	int back_buf_ofs;
 
 	for (c1 = leftovers.page[page].num_pobs - 1; c1 >= 0; c1--)
 		put_pob(page, leftovers.page[page].pobs[c1].x, leftovers.page[page].pobs[c1].y, leftovers.page[page].pobs[c1].image, leftovers.page[page].pobs[c1].pob_data, 1, mask_pic);
@@ -1863,7 +1862,6 @@ char init_level(short level)
 {
 	FILE *handle;
 	int c1, c2;
-	int l1;
 	int s1, s2;
 
 	if ((handle = dat_open("level.pcx", datfile_name, "rb")) == 0) {
@@ -1947,11 +1945,8 @@ char init_level(short level)
 
 void deinit_level(void)
 {
-	int c1, c2;
-
 	dj_set_nosound(1);
 	dj_stop_mod();
-
 }
 
 
@@ -2528,12 +2523,7 @@ void read_mouse(void)
 
 unsigned short rnd(unsigned short max)
 {
-	int l1;
-
-	l1 = ((random() >> 16) * max) / 0x7fff;
-	if (l1 > max - 1)
-		l1 = max - 1;
-	return l1;
+	return (rand() % max);
 }
 
 
@@ -2610,6 +2600,7 @@ int dat_filelen(char *file_name, char *dat_name)
 		return 0;
 
 	num = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+
 	for (c1 = 0; c1 < num; c1++) {
 		fread(name, 1, 12, handle);
 		if (strnicmp(name, file_name, strlen(file_name)) == 0) {

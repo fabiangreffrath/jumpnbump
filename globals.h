@@ -62,7 +62,7 @@ struct {
 	char joy_enabled, mouse_enabled, num_mouse_buttons;
 	char no_sound, no_gore, fireworks;
 	char error_str[256];
-	char draw_page, view_page;
+	int draw_page, view_page;
 	struct {
 		int num_pobs;
 		struct {
@@ -134,7 +134,7 @@ void position_player(short player_num);
 void fireworks(void);
 void add_object(char type, short x, short y, long x_add, long y_add, short anim, short frame);
 void update_objects(void);
-char add_pob(char page, short x, short y, short image, char *pob_data);
+char add_pob(int page, short x, short y, short image, char *pob_data);
 void draw_pobs(char page);
 void redraw_pob_backgrounds(char page);
 char add_leftovers(char page, short x, short y, short image, char *pob_data);
