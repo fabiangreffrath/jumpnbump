@@ -1933,6 +1933,7 @@ int init_program(int argc, char *argv[], char *pal)
 				printf("  -nogore                  play without blood\n");
 				printf("  -mirror                  play with mirrored level\n");
 				printf("  -scaleup                 play with doubled resolution (800x512)\n");
+				printf("  -musicnosound            play with music but without sound\n");
 				printf("\n");
 				return 1;
 			}
