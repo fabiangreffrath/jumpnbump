@@ -5,6 +5,10 @@
 __dpmi_regs regs;
 #endif
 
+#ifndef M_PI
+#define M_PI		3.14159265358979323846
+#endif
+
 char *object_gobs;
 char *number_gobs;
 
@@ -811,7 +815,7 @@ void steer_players(void)
 
 				if ((c1 == 0 && ((key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1))) || (c1 == 1 && ((key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1))) || (c1 == 2 && ((key_pressed(KEY_PL3_LEFT) == 1 && key_pressed(KEY_PL3_RIGHT) == 1))) || (c1 == 3 && ((key_pressed(KEY_PL4_LEFT) == 1 && key_pressed(KEY_PL4_RIGHT) == 1)))) {
 					if (player[c1].direction == 0) {
-						if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT) == 1 mouse.but2 == 1)) {
+						if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT) == 1)) {
 							s1 = (player[c1].x >> 16);
 							s2 = (player[c1].y >> 16);
 							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -2008,6 +2012,7 @@ char init_program(int argc, char *argv[])
 	int c1 = 0, c2 = 0;
 	char load_flag = 0;
 	char force2, force3;
+	sfx_data fly;
 	int player_anim_data[] = {
 		1, 0, 0, 0x7fff, 0, 0, 0, 0, 0, 0,
 		4, 0, 0, 4, 1, 4, 2, 4, 3, 4,
@@ -2404,9 +2409,6 @@ void deinit_program(void)
 #ifdef DOS
 	regs.x.ax = 0x3;
 	__dpmi_int(0x10, &regs);
-#else
-	songquit();
-	SDL_Quit();
 #endif
 
 	if (main_info.error_str[0] != 0) {

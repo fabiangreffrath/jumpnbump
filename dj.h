@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <conio.h>
+
+#ifdef DOS
 #include <pc.h>
 #include <dpmi.h>
 #include <go32.h>
 #include <sys/nearptr.h>
+#endif
 
 #define DJ_SD_TYPE_NOSOUND 0
 #define DJ_SD_TYPE_SBLASTER 1

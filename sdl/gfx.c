@@ -1,102 +1,163 @@
 #include "globals.h"
 
+#define JNB_BPP 8
+static SDL_Surface *jnb_surface, *jnb_surface_page1;
+static int fullscreen = 0;
+static int vinited = 0;
 
 void open_screen(void)
 {
-	__dpmi_regs regs;
-	char *ptr1;
+	int lval = 0;
 
-	regs.x.ax = 0x13;
-	__dpmi_int(0x10, &regs);
+	lval = SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_AUDIO);
+	if (lval < 0) {
+		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
+		exit(EXIT_FAILURE);
+	}
 
-	outportw(0x3c4, 0x0604);
-	outportw(0x3c4, 0x0100);
-	outportb(0x3c2, 0xe7);
-	outportw(0x3c4, 0x0300);
+	jnb_surface = SDL_SetVideoMode(JNB_WIDTH, JNB_HEIGHT, JNB_BPP, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	if (!jnb_surface) {
+		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
+		exit(EXIT_FAILURE);
+	}
 
-	outportb(0x3d4, 0x11);
-	outportb(0x3d5, inportb(0x3d5) & 0x7f);
+	jnb_surface_page1 = SDL_CreateRGBSurface(SDL_HWSURFACE, JNB_WIDTH, JNB_HEIGHT, JNB_BPP, 0, 0, 0, 0);
+	if (!jnb_surface_page1) {
+		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
+		exit(EXIT_FAILURE);
+	}
 
-	outportw(0x3d4, 0x7100);
-	outportw(0x3d4, 0x6301);
-	outportw(0x3d4, 0x6402);
-	outportw(0x3d4, 0x9203);
-	outportw(0x3d4, 0x6604);
-	outportw(0x3d4, 0x8205);
-	outportw(0x3d4, 0x2b06);
-	outportw(0x3d4, 0xb207);
-	outportw(0x3d4, 0x0008);
-	outportw(0x3d4, 0x6109);
-	outportw(0x3d4, 0x1310);
-	outportw(0x3d4, 0xac11);
-	outportw(0x3d4, 0xff12);
-	outportw(0x3d4, 0x3213);
-	outportw(0x3d4, 0x0014);
-	outportw(0x3d4, 0x0715);
-	outportw(0x3d4, 0x1a16);
-	outportw(0x3d4, 0xe317);
+	SDL_ShowCursor(0);
 
-	outportw(0x3d4, 0x3213);
+	if (fullscreen) {
+		lval = SDL_WM_ToggleFullScreen(jnb_surface);
+		if (lval != 1) {
+			fprintf(stderr, "SDL WARNING: %s\n", SDL_GetError());
+			fullscreen = 0;
+		}
+	}
 
-	ptr1 = (char *) (0xa0000 + __djgpp_conventional_base);
-	outportw(0x3c4, 0x0f02);
-	memset(ptr1, 0, 65535);
+	vinited = 1;
 
+	return;
 }
 
+void fs_toggle()
+{
+	if (!vinited) {
+		fullscreen ^= 1;
+		return;
+	}
+	if (SDL_WM_ToggleFullScreen(jnb_surface))
+		fullscreen ^= 1;
+}
 
 void wait_vrt(void)
 {
-
-	while ((inportb(0x3da) & 8) == 0);
-	while ((inportb(0x3da) & 8) == 8);
-
+	return;
 }
 
-
-#if 0
-void get_block(char page, short x, short y, short width, short height, char *buffer)
+void flippage(long page)
 {
-	short c1, c2, c3;
+	SDL_Surface *which;
+
+	which = (page == 1) ? jnb_surface_page1 : jnb_surface;
+
+	SDL_UpdateRect(which, 0, 0, 0, 0);
+}
+
+char *get_vgaptr(long page, long x, long y)
+{
+	SDL_Surface *which;
+
+	which = (page == 1) ? jnb_surface_page1 : jnb_surface;
+
+	return (char *) &(((char *) which->pixels)[(y * JNB_WIDTH) + x]);
+}
+
+void setpalette(int index, int count, char *palette)
+{
+	SDL_Color colors[256];
+	int i;
+
+	for (i = 0; i < count; i++) {
+		colors[i].r = palette[i * 3 + 0] << 2;
+		colors[i].g = palette[i * 3 + 1] << 2;
+		colors[i].b = palette[i * 3 + 2] << 2;
+	}
+	SDL_SetColors(jnb_surface, colors, index, count);
+	SDL_SetColors(jnb_surface_page1, colors, index, count);
+}
+
+void fillpalette(int red, int green, int blue)
+{
+	SDL_Color colors[256];
+	int i;
+
+	for (i = 0; i < 256; i++) {
+		colors[i].r = red << 2;
+		colors[i].g = green << 2;
+		colors[i].b = blue << 2;
+	}
+	SDL_SetColors(jnb_surface, colors, 0, 256);
+	SDL_SetColors(jnb_surface_page1, colors, 0, 256);
+}
+
+void get_block(char page, long x, long y, long width, long height, char *buffer)
+{
+	short w, h;
 	char *buffer_ptr, *vga_ptr;
 
-	for (c3 = 0; c3 < 4; c3++) {
-		outportw(0x3ce, (((x + c3) & 3) << 8) + 0x04);
-		for (c1 = 0; (c1 + c3) < width; c1 += 4) {
-			buffer_ptr = &buffer[(c1 + c3) * height];
-			vga_ptr = (char *) (0xa0000 + ((long) page << 15) + (long) y * 100 + ((x + c1 + c3) >> 2) + __djgpp_conventional_base);
-			for (c2 = 0; c2 < height; c2++) {
-				*buffer_ptr = *vga_ptr;
-				buffer_ptr++;
-				vga_ptr += 100;
-			}
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+	if (y + height >= JNB_HEIGHT)
+		height = JNB_HEIGHT - y;
+	if (x + width >= JNB_WIDTH)
+		width = JNB_WIDTH - x;
+
+	for (h = 0; h < height; h++) {
+		buffer_ptr = &buffer[h * width];
+
+		vga_ptr = get_vgaptr(page, x, h + y);
+
+		for (w = 0; w < width; w++) {
+			unsigned char ch;
+			ch = *vga_ptr;
+			*buffer_ptr = ch;
+			buffer_ptr++;
+			vga_ptr++;
 		}
 	}
 
 }
-#endif
 
-#if 0
-void put_block(char page, short x, short y, short width, short height, char *buffer)
+void put_block(char page, long x, long y, long width, long height, char *buffer)
 {
-	short c1, c2, c3;
+	short w, h;
 	char *vga_ptr, *buffer_ptr;
 
-	for (c3 = 0; c3 < 4; c3++) {
-		outportw(0x3c4, ((1 << ((x + c3) & 3)) << 8) + 0x02);
-		for (c1 = 0; (c1 + c3) < width; c1 += 4) {
-			vga_ptr = (char *) (0xa0000 + ((long) page << 15) + (long) y * 100 + ((x + c1 + c3) >> 2) + __djgpp_conventional_base);
-			buffer_ptr = &buffer[(c1 + c3) * height];
-			for (c2 = 0; c2 < height; c2++) {
-				*vga_ptr = *buffer_ptr;
-				vga_ptr += 100;
-				buffer_ptr++;
-			}
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+	if (y + height >= JNB_HEIGHT)
+		height = JNB_HEIGHT - y;
+	if (x + width >= JNB_WIDTH)
+		width = JNB_WIDTH - x;
+
+	for (h = 0; h < height; h++) {
+		vga_ptr = get_vgaptr(page, x, y + h);
+
+		buffer_ptr = &buffer[h * width];
+		for (w = 0; w < width; w++) {
+			*vga_ptr = *buffer_ptr;
+			vga_ptr++;
+			buffer_ptr++;
 		}
 	}
-
 }
-#endif
 
 void put_text(char page, int x, int y, char *text, char align)
 {
@@ -122,26 +183,37 @@ void put_text(char page, int x, int y, char *text, char align)
 		}
 		if (t1 >= 33 && t1 <= 34)
 			image = t1 - 33;
+
 		else if (t1 >= 39 && t1 <= 41)
 			image = t1 - 37;
+
 		else if (t1 >= 44 && t1 <= 59)
 			image = t1 - 39;
+
 		else if (t1 >= 64 && t1 <= 90)
 			image = t1 - 43;
+
 		else if (t1 >= 97 && t1 <= 122)
 			image = t1 - 49;
+
 		else if (t1 == '~')
 			image = 74;
+
 		else if (t1 == 0x84)
 			image = 75;
+
 		else if (t1 == 0x86)
 			image = 76;
+
 		else if (t1 == 0x8e)
 			image = 77;
+
 		else if (t1 == 0x8f)
 			image = 78;
+
 		else if (t1 == 0x94)
 			image = 79;
+
 		else if (t1 == 0x99)
 			image = 80;
 		else
@@ -159,8 +231,12 @@ void put_text(char page, int x, int y, char *text, char align)
 	case 2:
 		cur_x = x - width / 2;
 		break;
+	default:
+		cur_x = 0;	/* this should cause error? -Chuck */
+		break;
 	}
 	c1 = 0;
+
 	while (text[c1] != 0) {
 		t1 = text[c1];
 		c1++;
@@ -170,40 +246,50 @@ void put_text(char page, int x, int y, char *text, char align)
 		}
 		if (t1 >= 33 && t1 <= 34)
 			image = t1 - 33;
+
 		else if (t1 >= 39 && t1 <= 41)
 			image = t1 - 37;
+
 		else if (t1 >= 44 && t1 <= 59)
 			image = t1 - 39;
+
 		else if (t1 >= 64 && t1 <= 90)
 			image = t1 - 43;
+
 		else if (t1 >= 97 && t1 <= 122)
 			image = t1 - 49;
+
 		else if (t1 == '~')
 			image = 74;
+
 		else if (t1 == '„')
 			image = 75;
+
 		else if (t1 == '†')
 			image = 76;
+
 		else if (t1 == 'Ž')
 			image = 77;
+
 		else if (t1 == '')
 			image = 78;
+
 		else if (t1 == '”')
 			image = 79;
+
 		else if (t1 == '™')
 			image = 80;
+
 		else
 			continue;
 		put_pob(page, cur_x, y, image, font_gobs, 1, mask_pic);
 		cur_x += pob_width(image, font_gobs) + 1;
 	}
-
 }
-
 
 void put_pob(char page, short x, short y, short image, char *pob_data, char mask, char *mask_pic)
 {
-	long c1, c2, c3;
+	long c1, c2;
 	long pob_offset;
 	char *pob_ptr, *vga_ptr, *mask_ptr;
 	long width, height;
@@ -213,15 +299,13 @@ void put_pob(char page, short x, short y, short image, char *pob_data, char mask
 	if (image < 0 || image >= *(short *) (pob_data))
 		return;
 
-	pob_offset = *(long *) (pob_data + image * 4 + 2);
-
+	vga_ptr = get_vgaptr(page, 0, 0);
+	pob_offset = *(unsigned long *) (pob_data + (image * 4) + 2);
 	width = draw_width = *(short *) (pob_data + pob_offset);
 	height = draw_height = *(short *) (pob_data + pob_offset + 2);
 	x -= *(short *) (pob_data + pob_offset + 4);
 	y -= *(short *) (pob_data + pob_offset + 6);
-
 	pob_offset += 8;
-
 	if ((x + width) <= 0 || x >= 400)
 		return;
 	if ((y + height) <= 0 || y >= 256)
@@ -241,31 +325,32 @@ void put_pob(char page, short x, short y, short image, char *pob_data, char mask
 	if ((y + height) > 256)
 		draw_height -= y + height - 256;
 
-	for (c3 = 0; c3 < 4; c3++) {
-		outportw(0x3c4, ((1 << ((x + c3) & 3)) << 8) + 0x02);
-		pob_ptr = &pob_data[pob_offset + c3];
-		vga_ptr = (char *) (0xa0000 + (long) (page << 15) + (long) y * 100L + ((x + c3) >> 2) + __djgpp_conventional_base);
-		mask_ptr = (char *) (mask_pic + (long) y * 400L + x + c3);
-		for (c1 = 0; c1 < draw_height; c1++) {
-			for (c2 = c3; c2 < draw_width; c2 += 4) {
-				colour = *mask_ptr;
-				if (mask == 0 || (mask == 1 && colour == 0)) {
-					colour = *pob_ptr;
-					if (colour != 0)
-						*vga_ptr = colour;
-				}
-				pob_ptr += 4;
-				vga_ptr++;
-				mask_ptr += 4;
+	pob_ptr = &pob_data[pob_offset];
+
+
+#ifndef USE_SDL
+	vga_ptr = (char *) (0xa0000 + (long) (page << 15) + (long) y * 100L + ((x + c3) >> 2) + __djgpp_conventional_base);
+#else
+	vga_ptr = get_vgaptr(page, x, y);
+#endif
+	mask_ptr = (char *) (mask_pic + (y * 400) + x);
+	for (c1 = 0; c1 < draw_height; c1++) {
+		for (c2 = 0; c2 < draw_width; c2++) {
+			colour = *mask_ptr;
+			if (mask == 0 || (mask == 1 && colour == 0)) {
+				colour = *pob_ptr;
+				if (colour != 0)
+					*vga_ptr = colour;
 			}
-			pob_ptr += width - c2 + c3;
-			vga_ptr += (400 - c2 + c3) >> 2;
-			mask_ptr += 400 - c2 + c3;
+			pob_ptr++;
+			vga_ptr++;
+			mask_ptr++;
 		}
+		pob_ptr += width - c2;
+		vga_ptr += (400 - c2);
+		mask_ptr += (400 - c2);
 	}
-
 }
-
 
 char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short y2, short image2, char *pob_data2)
 {
@@ -282,7 +367,6 @@ char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short 
 	x1 -= *(short *) (pob_data1 + pob_offset1 + 4);
 	y1 -= *(short *) (pob_data1 + pob_offset1 + 6);
 	pob_offset1 += 8;
-
 	pob_offset2 = *(long *) (pob_data2 + image2 * 4 + 2);
 	width2 = *(short *) (pob_data2 + pob_offset2);
 	height2 = *(short *) (pob_data2 + pob_offset2 + 2);
@@ -293,20 +377,28 @@ char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short 
 	if (x1 < x2) {
 		if ((x1 + width1) <= x2)
 			return 0;
+
 		else if ((x1 + width1) <= (x2 + width2)) {
 			pob_offset1 += x2 - x1;
 			check_width = x1 + width1 - x2;
-		} else {
+		}
+
+		else {
 			pob_offset1 += x2 - x1;
 			check_width = width2;
 		}
-	} else {
+	}
+
+	else {
 		if ((x2 + width2) <= x1)
 			return 0;
+
 		else if ((x2 + width2) <= (x1 + width1)) {
 			pob_offset2 += x1 - x2;
 			check_width = x2 + width2 - x1;
-		} else {
+		}
+
+		else {
 			pob_offset2 += x1 - x2;
 			check_width = width1;
 		}
@@ -314,25 +406,32 @@ char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short 
 	if (y1 < y2) {
 		if ((y1 + height1) <= y2)
 			return 0;
+
 		else if ((y1 + height1) <= (y2 + height2)) {
 			pob_offset1 += (y2 - y1) * width1;
 			check_height = y1 + height1 - y2;
-		} else {
+		}
+
+		else {
 			pob_offset1 += (y2 - y1) * width1;
 			check_height = height2;
 		}
-	} else {
+	}
+
+	else {
 		if ((y2 + height2) <= y1)
 			return 0;
+
 		else if ((y2 + height2) <= (y1 + height1)) {
 			pob_offset2 += (y1 - y2) * width2;
 			check_height = y2 + height2 - y1;
-		} else {
+		}
+
+		else {
 			pob_offset2 += (y1 - y2) * width2;
 			check_height = height1;
 		}
 	}
-
 	pob_ptr1 = (char *) (pob_data1 + pob_offset1);
 	pob_ptr2 = (char *) (pob_data2 + pob_offset2);
 	for (c1 = 0; c1 < check_height; c1++) {
@@ -345,66 +444,66 @@ char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short 
 		pob_ptr1 += width1 - check_width;
 		pob_ptr2 += width2 - check_width;
 	}
-
 	return 0;
-
 }
-
 
 short pob_width(short image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2));
 }
 
-
 short pob_height(short image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 2);
 }
-
 
 short pob_hs_x(short image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 4);
 }
 
-
 short pob_hs_y(short image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 6);
 }
-
 
 char read_pcx(FILE * handle, char *buffer, long buf_len, char *pal)
 {
 	short c1;
 	short a, b;
 	long ofs1;
-
 	if (buffer != 0) {
 		fseek(handle, 128, SEEK_CUR);
-
 		ofs1 = 0;
-
 		while (ofs1 < buf_len) {
 			a = fgetc(handle);
 			if ((a & 0xc0) == 0xc0) {
 				b = fgetc(handle);
 				a &= 0x3f;
-				for (c1 = 0; c1 < a; c1++)
-					buffer[ofs1++] = b;
+				for (c1 = 0; c1 < a && ofs1 < buf_len; c1++)
+					buffer[ofs1++] = (char) b;
 			} else
-				buffer[ofs1++] = a;
+				buffer[ofs1++] = (char) a;
 		}
-
 		if (pal != 0) {
 			fseek(handle, 1, SEEK_CUR);
 			for (c1 = 0; c1 < 768; c1++)
 				pal[c1] = fgetc(handle) >> 2;
 		}
-
 	}
-
-	fclose(handle);
 	return 0;
 }
+
+#ifndef _MSC_VER
+long filelength(int handle)
+{
+	struct stat buf;
+
+	if (fstat(handle, &buf) == -1) {
+		perror("filelength");
+		exit(EXIT_FAILURE);
+	}
+
+	return buf.st_size;
+}
+#endif

@@ -450,8 +450,9 @@ char menu(void)
 				outportw(0x3c4, 0x0f02);
 				memset((char *) (0xa0000 + 220 * 100 + __djgpp_conventional_base), 0, 2000);
 				memset((char *) (0xa0000 + 32768 + 220 * 100 + __djgpp_conventional_base), 0, 2000);
-				/* clear 5 lines at x=0,y=220 in front and backbuffer */
-				*/memset((void *) get_vgaptr(0, 0, 220), 0, 8000);
+				// clear 20 lines at x=0,y=220 in front and backbuffer
+*/
+				memset((void *) get_vgaptr(0, 0, 220), 0, 8000);
 
 				cur_message++;
 				if (cur_message >= NUM_MESSAGES)
@@ -486,7 +487,7 @@ char menu(void)
 		main_info.draw_page ^= 1;
 		main_info.view_page ^= 1;
 
-#ifndef LINUX
+#ifdef DOS
 		outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
 		outportw(0x3d4, ((main_info.view_page << 15) & 0xff00) + 0x0c);
 #else

@@ -1,14 +1,7 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-#undef DOS
-
-#ifndef DOS
-# define LINUX
-#endif
-
-#ifdef LINUX
-# define NOSOUND
+#ifdef USE_SDL
 # define JNB_WIDTH 400
 # define JNB_HEIGHT 256
 #endif

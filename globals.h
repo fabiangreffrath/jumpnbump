@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _MSC_VER
 #include <strings.h>
+#endif
 #include <time.h>
 #include <math.h>
 #include <dj.h>
@@ -18,10 +20,17 @@
 # include <pc.h>
 #endif
 
-#ifdef USE_SDL
+#ifdef _MSC_VER
 # include <sys/stat.h>
-# include <SDL/SDL.h>
-# include <SDL/SDL_mixer.h>
+# include <io.h>
+# include <SDL.h>
+# include <SDL_mixer.h>
+#else
+# ifdef USE_SDL
+#  include <sys/stat.h>
+#  include <SDL/SDL.h>
+#  include <SDL/SDL_mixer.h>
+# endif
 #endif
 
 #ifndef USE_SDL
@@ -164,7 +173,7 @@ void position_player(short player_num);
 void fireworks(void);
 void add_object(char type, short x, short y, long x_add, long y_add, short anim, short frame);
 void update_objects(void);
-char add_pob(char page, short x, short y, short image, char *pob_data);
+char add_pob(int page, short x, short y, short image, char *pob_data);
 void draw_pobs(int page);
 void redraw_pob_backgrounds(int page);
 char add_leftovers(int page, short x, short y, short image, char *pob_data);
@@ -212,13 +221,16 @@ char read_pcx(FILE * handle, char *buffer, long buf_len, char *pal);
 void get_block(char page, long x, long y, long width, long height, char *buffer);
 void put_block(char page, long x, long y, long width, long height, char *buffer);
 
-#ifdef LINUX
+#ifdef USE_SDL
+#ifndef _MSC_VER
 long filelength(int handle);
+#endif
 void setpalette(int index, int count, char *palette);
 void fillpalette(int red, int green, int blue);
 void flippage(long page);
 void fs_toggle();
 char *get_vgaptr(long, long, long);
+char intr_sysupdate();
 #endif
 
 /* interrpt.c */
@@ -229,18 +241,9 @@ char hook_keyb_handler(void);
 void remove_keyb_handler(void);
 char key_pressed(unsigned char key);
 
-#ifdef LINUX
-char intr_sysupdate();
-#endif
-
 /* sound-linux.c */
 #ifdef LINUX
 
-void load_song(FILE *, signed int);
-void play_song();
-void update_song();
-void initsound();
-void songquit();
 
 #endif
 
