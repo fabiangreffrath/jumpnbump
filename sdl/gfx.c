@@ -28,7 +28,7 @@
  */
 
 #include "globals.h"
-#include "SDL_endian.h"
+#include <SDL_endian.h>
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
 #define SWAP16(X)    (X)
 #define SWAP32(X)    (X)
@@ -112,7 +112,10 @@ void open_screen(void)
 		exit(EXIT_FAILURE);
 	}
 
-	SDL_ShowCursor(0);
+	if(fullscreen)
+		SDL_ShowCursor(0);
+	else
+		SDL_ShowCursor(1);
 
 	vinited = 1;
 
