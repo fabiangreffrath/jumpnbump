@@ -30,6 +30,29 @@
 #include "globals.h"
 #include <fcntl.h>
 
+#define USE_NET
+
+#ifdef USE_NET
+#ifdef _MSC_VER
+#include <winsock2.h>
+#define EAGAIN TRY_AGAIN
+#define net_error WSAGetLastError()
+#else // _MSC_VER
+#include <unistd.h>
+#include <netdb.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#define net_error errno
+#endif
+#endif // USE_NET
+
 #ifndef M_PI
 #define M_PI		3.14159265358979323846
 #endif
@@ -241,17 +264,17 @@ int is_server = 1;
 int is_net = 0;
 int sock = -1;
 
+#ifdef USE_NET
 typedef struct
 {
     int sock;
-#ifdef USE_SDL_NET
     /*struct timeval last_timestamp;*/
     struct sockaddr *addr;
     int addrlen;
-#endif
 } NetInfo;
 
 NetInfo net_info[JNB_MAX_PLAYERS];
+#endif
 
 typedef struct
 {
@@ -275,43 +298,56 @@ typedef struct
 #define NETCMD_KILL         (0xF00DF00D + 8)
 
 
-#if USE_SDL_NET
+#ifdef USE_NET
 void bufToPacket(const char *buf, NetPacket *pkt)
 {
+/*
 	SDLNet_Write32(*((unsigned long *) (buf +  0)), pkt->cmd);
 	SDLNet_Write32(*((unsigned long *) (buf +  4)), pkt->arg);
 	SDLNet_Write32(*((unsigned long *) (buf +  8)), pkt->arg2);
 	SDLNet_Write32(*((unsigned long *) (buf + 12)), pkt->arg3);
 	SDLNet_Write32(*((unsigned long *) (buf + 16)), pkt->arg4);
+*/
+	pkt->cmd               =        ntohl(*((unsigned long *) (buf +  0)));
+	pkt->arg               = (long) ntohl(*((unsigned long *) (buf +  4)));
+	pkt->arg2              = (long) ntohl(*((unsigned long *) (buf +  8)));
+	pkt->arg3              = (long) ntohl(*((unsigned long *) (buf + 12)));
+	pkt->arg4              = (long) ntohl(*((unsigned long *) (buf + 16)));
 }
 
 
 void packetToBuf(const NetPacket *pkt, char *buf)
 {
+/*
 	*((unsigned long *) (buf +  0)) = SDLNet_Read32(pkt->cmd);
 	*((unsigned long *) (buf +  4)) = SDLNet_Read32((unsigned long) pkt->arg);
 	*((unsigned long *) (buf +  8)) = SDLNet_Read32((unsigned long) pkt->arg2);
 	*((unsigned long *) (buf + 12)) = SDLNet_Read32((unsigned long) pkt->arg3);
 	*((unsigned long *) (buf + 16)) = SDLNet_Read32((unsigned long) pkt->arg4);
+*/
+	*((unsigned long *) (buf +  0)) = htonl(pkt->cmd);
+	*((unsigned long *) (buf +  4)) = htonl((unsigned long) pkt->arg);
+	*((unsigned long *) (buf +  8)) = htonl((unsigned long) pkt->arg2);
+	*((unsigned long *) (buf + 12)) = htonl((unsigned long) pkt->arg3);
+	*((unsigned long *) (buf + 16)) = htonl((unsigned long) pkt->arg4);
 }
-#endif
+
 
 void sendPacketToSock(int s, NetPacket *pkt)
 {
-#if USE_SDL_NET
+#ifdef USE_NET
     int bytes_left = NETPKTBUFSIZE;
     int bw;
     char buf[NETPKTBUFSIZE];
     char *ptr = buf;
 
-    return;
-    
     packetToBuf(pkt, buf);
     while (bytes_left > 0) {
-        bw = write(s, ptr, bytes_left);  /* this might block. For now, we'll deal. */
+        bw = send(s, ptr, bytes_left, 0);  /* this might block. For now, we'll deal. */
         if (bw < 0) {
-            if (errno != EAGAIN) {
-                perror("SERVER: write()");
+            if (h_errno != EAGAIN) {
+		fprintf(stderr, "SERVER: send(): %i", net_error);
+                //perror("SERVER: write()");
                 close(s);
                 exit(42);
             }
@@ -348,7 +384,7 @@ void sendPacketToAll(NetPacket *pkt)
 
 int grabPacket(int s, NetPacket *pkt)
 {
-#if USE_SDL_NET
+#ifdef USE_NET
     char buf[NETPKTBUFSIZE];
     struct timeval tv;
     fd_set rfds;
@@ -359,7 +395,7 @@ int grabPacket(int s, NetPacket *pkt)
     FD_SET(s, &rfds);
     tv.tv_sec = tv.tv_usec = 0;    /* don't block. */
     if (select(s + 1, &rfds, NULL, NULL, &tv)) {
-        rc = read(s, buf, NETPKTBUFSIZE);
+        rc = recv(s, buf, NETPKTBUFSIZE, 0);
         if (rc <= 0) {  /* closed connection? */
             retval = -1;
         } else if (rc != NETPKTBUFSIZE) { // !!! FIXME: buffer these?
@@ -460,6 +496,7 @@ void tellServerGoodbye(void)
 		sendPacketToSock(sock, &pkt);
 	}
 }
+#endif // USE_NET
 
 
 void processMovePacket(NetPacket *pkt)
@@ -495,13 +532,16 @@ void tellServerPlayerMoved(int playerid, int movement_type, int newval)
 
 	if (is_server) {
 		processMovePacket(&pkt);
+#ifdef USE_NET
 		sendPacketToAll(&pkt);
 	} else {
 		sendPacketToSock(sock, &pkt);
+#endif
 	}
 }
 
 
+#ifdef USE_NET
 void tellServerNewPosition(void)
 {
 	NetPacket pkt;
@@ -516,6 +556,7 @@ void tellServerNewPosition(void)
 		sendPacketToSock(sock, &pkt);
 	}
 }
+#endif // USE_NET
 
 
 void processKillPacket(NetPacket *pkt)
@@ -561,6 +602,7 @@ void processKillPacket(NetPacket *pkt)
 }
 
 
+#ifdef USE_NET
 void processPositionPacket(NetPacket *pkt)
 {
 	int playerid = pkt->arg;
@@ -656,6 +698,7 @@ void serverSendAlive(int playerid)
 	pkt.arg3 = player[playerid].y;
 	sendPacketToAll(&pkt);
 }
+#endif // USE_NET
 
 
 void serverSendKillPacket(int killer, int victim)
@@ -669,18 +712,19 @@ void serverSendKillPacket(int killer, int victim)
 	pkt.arg3 = player[victim].x;
 	pkt.arg4 = player[victim].y;
 	processKillPacket(&pkt);
+#ifdef USE_NET
 	sendPacketToAll(&pkt);
+#endif
 }
 
 
+#ifdef USE_NET
 void update_players_from_clients(void)
 {
-#if USE_SDL_NET
+#ifdef USE_NET
     int i;
     NetPacket pkt;
     int playerid;
-
-    return;
 
     assert(is_server);
 
@@ -714,7 +758,7 @@ void update_players_from_clients(void)
 
 void init_server(const char *netarg)
 {
-#if USE_SDL_NET
+#ifdef USE_NET
     NetPacket pkt;
     char ipstr[128];
     struct hostent *hent;
@@ -722,15 +766,31 @@ void init_server(const char *netarg)
     struct in_addr inaddr;
     int i;
     int wait_for_clients = ((netarg == NULL) ? 0 : atoi(netarg));
+#ifdef _MSC_VER
+WORD wVersionRequested;
+WSADATA wsaData;
+int err;
+ 
+wVersionRequested = MAKEWORD( 2, 2 );
+ 
+err = WSAStartup( wVersionRequested, &wsaData );
+if ( err != 0 ) {
+    /* Tell the user that we could not find a usable */
+    /* WinSock DLL.                                  */
+        fprintf(stderr, "SERVER: WSAStartup failed!");
+    return;
+}
+#endif
 
-    if ((wait_for_clients > 3) || (wait_for_clients < 0)) {
+    if ((wait_for_clients > (JNB_MAX_PLAYERS - 1)) || (wait_for_clients < 0)) {
         printf("SERVER: Waiting for bogus client count (%d).\n", wait_for_clients);
         exit(42);
     }
 
-    sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sock < 0) {
-        perror("SERVER: socket()");
+        fprintf(stderr, "SERVER: socket(): %i", net_error);
+	//perror("SERVER: socket()");
         exit(42);
     }
 
@@ -739,14 +799,16 @@ void init_server(const char *netarg)
     addr.sin_port = htons(JNB_INETPORT);
     addr.sin_addr.s_addr = INADDR_ANY;
     if (bind(sock, (struct sockaddr *) &addr,
-            (socklen_t) sizeof (addr)) == -1) {
-        perror("SERVER: bind()");
+            sizeof (addr)) == -1) {
+		fprintf(stderr, "SERVER: bind(): %i", net_error);
+        //perror("SERVER: bind()");
         close(sock);
         exit(42);
     }
 
     if (listen(sock, wait_for_clients) == -1) {
-        perror("SERVER: listen()");
+		fprintf(stderr, "SERVER: listen(): %i", net_error);
+        //perror("SERVER: listen()");
         close(sock);
         exit(42);
     }
@@ -776,7 +838,7 @@ void init_server(const char *netarg)
     {
         char buf[NETPKTBUFSIZE];
         struct sockaddr_in from;
-        socklen_t fromlen = sizeof (from);
+        int fromlen = sizeof (from);
         int negatory = 1;
         int br;
         int s;
@@ -784,14 +846,15 @@ void init_server(const char *netarg)
         s = accept(sock, (struct sockaddr *) &from, &fromlen);
         if (s < 0)
         {
-            perror("SERVER: accept()");
+		fprintf(stderr, "SERVER: accept(): %i", net_error);
+            //perror("SERVER: accept()");
             close(sock);
             exit(42);
         } /* if */
 
-        br = read(s, buf, NETPKTBUFSIZE);
+        br = recv(s, buf, NETPKTBUFSIZE, 0);
         if (br < 0) {
-            perror("SERVER: read()");
+		fprintf(stderr, "SERVER: recv(): %i", net_error);
             close(s);
             close(sock);
             exit(42);
@@ -861,15 +924,30 @@ void init_server(const char *netarg)
 
 void connect_to_server(char *netarg)
 {
-#if USE_SDL_NET
+#ifdef USE_NET
     NetPacket pkt;
     char buf[NETPKTBUFSIZE];
     char ipstr[128];
     struct hostent *hent;
     struct sockaddr_in addr;
     struct in_addr inaddr;
-    socklen_t addrlen;
+    int addrlen;
     int br;
+#ifdef _MSC_VER
+WORD wVersionRequested;
+WSADATA wsaData;
+int err;
+ 
+wVersionRequested = MAKEWORD( 2, 2 );
+ 
+err = WSAStartup( wVersionRequested, &wsaData );
+if ( err != 0 ) {
+    /* Tell the user that we could not find a usable */
+    /* WinSock DLL.                                  */
+        fprintf(stderr, "SERVER: WSAStartup failed!");
+    return;
+}
+#endif
 
     if (netarg == NULL) {
         printf("CLIENT: Need to specify host to connect to.\n");
@@ -892,13 +970,15 @@ void connect_to_server(char *netarg)
 
     hent = gethostbyname(netarg);
     if (hent == NULL) {
-        herror("CLIENT: couldn't find host");
+		fprintf(stderr, "CLIENT: couldn't find host: %i", net_error);
+        //perror("CLIENT: couldn't find host");
         exit(42);
     }
 
     sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sock < 0) {
-        perror("CLIENT: socket()");
+		fprintf(stderr, "CLIENT: socket(): %i", net_error);
+        //perror("CLIENT: socket()");
         exit(42);
     }
 
@@ -909,7 +989,8 @@ void connect_to_server(char *netarg)
     addr.sin_port = htons(JNB_INETPORT);
     memcpy(&addr.sin_addr.s_addr, hent->h_addr, hent->h_length);
     if (connect(sock, (struct sockaddr *) &addr, sizeof (addr)) == -1) {
-        perror("CLIENT: connect()");
+		fprintf(stderr, "CLIENT: connect(): %i", net_error);
+        //perror("CLIENT: connect()");
         exit(42);
     }
 
@@ -921,9 +1002,10 @@ void connect_to_server(char *netarg)
     printf("CLIENT: Waiting for ACK from server...\n");
     
     addrlen = sizeof (addr);
-    br = read(sock, buf, NETPKTBUFSIZE);
+    br = recv(sock, buf, NETPKTBUFSIZE, 0);
     if (br < 0) {
-        perror("CLIENT: read()");
+		fprintf(stderr, "CLIENT: recv(): %i", net_error);
+        //perror("CLIENT: recv()");
         close(sock);
         exit(42);
     }
@@ -954,6 +1036,7 @@ void connect_to_server(char *netarg)
     wait_for_greenlight();
 #endif
 }
+#endif // USE_NET
 
 
 static flip_pixels(unsigned char *pixels)
@@ -1060,11 +1143,13 @@ int main(int argc, char *argv[])
 			while (update_count) {
 
 				if (key_pressed(1) == 1) {
+#ifdef USE_NET
 					if (is_server) {
 						serverTellEveryoneGoodbye();
 					} else {
 						tellServerGoodbye();
 					}
+#endif
 					end_loop_flag = 1;
 					memset(pal, 0, 768);
 					mod_fade_direction = 0;
@@ -1144,6 +1229,7 @@ int main(int argc, char *argv[])
 					last_keys[0] = 0;
 				}
 
+#ifdef USE_NET
 				if (is_server) {
 					update_players_from_clients();
 				} else {
@@ -1151,6 +1237,7 @@ int main(int argc, char *argv[])
 						break;  /* got a BYE packet */
 					}
 				}
+#endif
 
 				steer_players();
 
@@ -1436,6 +1523,7 @@ int main(int argc, char *argv[])
 				update_count--;
 			}
 
+#ifdef USE_NET
 			if ( (player[client_player_num].dead_flag == 0) &&
 				(
 				 (player[client_player_num].action_left) ||
@@ -1446,13 +1534,20 @@ int main(int argc, char *argv[])
 			   ) {
 				tellServerNewPosition();
 			}
+#endif
 
 			update_count = intr_sysupdate();
 
+#ifdef USE_NET
 			if ((server_said_bye) || ((fade_flag == 0) && (end_loop_flag == 1)))
 				break;
+#else
+			if ((fade_flag == 0) && (end_loop_flag == 1))
+				break;
+#endif
 		}
 
+#ifdef USE_NET
 		if (is_server) {
 			serverTellEveryoneGoodbye();
 			close(sock);
@@ -1465,7 +1560,8 @@ int main(int argc, char *argv[])
 			close(sock);
 			sock = -1;
 		}
-
+#endif
+		
 		main_info.view_page = 0;
 		main_info.draw_page = 1;
 
@@ -2013,7 +2109,9 @@ void position_player(int player_num)
 			player[player_num].image = player_anims[player[player_num].anim].frame[player[player_num].frame].image;
 
 			if (is_server) {
+#ifdef USE_NET
 				serverSendAlive(player_num);
+#endif
 				player[player_num].dead_flag = 0;
 			}
 
@@ -2673,7 +2771,9 @@ int init_program(int argc, char *argv[], char *pal)
 		1, 0, 8, 5, 0, 0, 0, 0, 0, 0
 	};
 
+#ifdef USE_NET
 	memset(&net_info, 0, sizeof(net_info));
+#endif
 
 #ifdef DOS
 	if (__djgpp_nearptr_enable() == 0)
@@ -3027,11 +3127,13 @@ int init_program(int argc, char *argv[], char *pal)
 		}
 	}
 
+#ifdef USE_NET
 	if (is_server) {
 		init_server(netarg);
 	} else {
 		connect_to_server(netarg);
 	}
+#endif
 
 	return 0;
 
