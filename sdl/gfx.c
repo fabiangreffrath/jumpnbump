@@ -1072,8 +1072,9 @@ int pob_hs_y(int image, gob_t *gob)
 }
 
 
-int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal)
+int read_pcx(FILE * handle, void *buf, int buf_len, char *pal)
 {
+	unsigned char *buffer=buf;
 	short c1;
 	short a, b;
 	long ofs1;
@@ -1188,7 +1189,7 @@ void recalculate_gob(gob_t *gob, char pal[768])
 	}
 }
 
-void register_mask(char *pixels)
+void register_mask(void *pixels)
 {
 	if (mask) {
 		free(mask);
