@@ -4,8 +4,10 @@
 #define M_PI		3.14159265358979323846
 #endif
 
-char *object_gobs;
-char *number_gobs;
+gob_t rabbit_gobs = { 0 };
+gob_t font_gobs = { 0 };
+gob_t object_gobs = { 0 };
+gob_t number_gobs = { 0 };
 
 unsigned int ban_map[17][22] = {
 	{1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -153,7 +155,8 @@ struct {
 struct {
 	int x, y;
 	int old_x, old_y;
-	char back[2], back_defined[2];
+	pixel_t back[2];
+	int back_defined[2];
 } flies[NUM_FLIES];
 
 struct {
@@ -162,12 +165,12 @@ struct {
 		struct {
 			int x, y;
 			int image;
-			char *pob_data;
+			gob_t *pob_data;
 		} pobs[NUM_LEFTOVERS];
 	} page[2];
 } leftovers;
 
-char pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_than_water;
+int pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_than_water;
 
 int main(int argc, char *argv[])
 {
@@ -176,9 +179,8 @@ int main(int argc, char *argv[])
 	int l1;
 	int s1, s2, s3, s4;
 	int closest_player = 0, dist, cur_dist;
-	char end_loop_flag, fade_flag;
-	char mod_vol, sfx_vol, mod_fade_direction;
-	char *ptr1 = (char *) NULL;
+	int end_loop_flag, fade_flag;
+	int mod_vol, sfx_vol, mod_fade_direction;
 	char str1[100];
 	char pal[768];
 	char cur_pal[768];
@@ -207,8 +209,13 @@ int main(int argc, char *argv[])
 		memset(cur_pal, 0, 768);
 		setpalette(0, 256, cur_pal);
 
+		recalculate_gob(&rabbit_gobs, pal);
+		recalculate_gob(&font_gobs, pal);
+		recalculate_gob(&object_gobs, pal);
+		recalculate_gob(&number_gobs, pal);
+
 		flippage(1);
-		register_background(background_pic);
+		register_background(background_pic, pal);
 		flippage(0);
 
 		s1 = rnd(250) + 50;
@@ -227,8 +234,8 @@ int main(int argc, char *argv[])
 		mod_vol = sfx_vol = 10;
 		mod_fade_direction = 1;
 		dj_ready_mod(MOD_GAME);
-		dj_set_mod_volume(mod_vol);
-		dj_set_sfx_volume(mod_vol);
+		dj_set_mod_volume((char)mod_vol);
+		dj_set_sfx_volume((char)mod_vol);
 		dj_start_mod();
 		dj_play_sfx(SFX_FLY, SFX_FLY_FREQ, 0, 0, 0, 4);
 		dj_set_nosound(0);
@@ -375,10 +382,10 @@ int main(int argc, char *argv[])
 										player[c1].bumps++;
 										player[c1].bumped[c2]++;
 										s1 = player[c1].bumps % 100;
-										add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, number_gobs);
-										add_leftovers(1, 360, 34 + c1 * 64, s1 / 10, number_gobs);
-										add_leftovers(0, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, number_gobs);
-										add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, number_gobs);
+										add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
+										add_leftovers(1, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
+										add_leftovers(0, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+										add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
 									}
 								} else {
 									if (player[c2].y_add < 0)
@@ -412,10 +419,10 @@ int main(int argc, char *argv[])
 										player[c2].bumps++;
 										player[c2].bumped[c1]++;
 										s1 = player[c2].bumps % 100;
-										add_leftovers(0, 360, 34 + c2 * 64, s1 / 10, number_gobs);
-										add_leftovers(1, 360, 34 + c2 * 64, s1 / 10, number_gobs);
-										add_leftovers(0, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, number_gobs);
-										add_leftovers(1, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, number_gobs);
+										add_leftovers(0, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
+										add_leftovers(1, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
+										add_leftovers(0, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+										add_leftovers(1, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
 									}
 								} else {
 									if (player[c1].y_add < 0)
@@ -575,7 +582,7 @@ int main(int argc, char *argv[])
 					main_info.page_info[main_info.draw_page].pobs[s1].x = player[c1].x >> 16;
 					main_info.page_info[main_info.draw_page].pobs[s1].y = player[c1].y >> 16;
 					main_info.page_info[main_info.draw_page].pobs[s1].image = player[c1].image + c1 * 18;
-					main_info.page_info[main_info.draw_page].pobs[s1].pob_data = rabbit_gobs;
+					main_info.page_info[main_info.draw_page].pobs[s1].pob_data = &rabbit_gobs;
 					s1++;
 				}
 			}
@@ -593,24 +600,24 @@ int main(int argc, char *argv[])
 			if (mod_fade_direction == 1) {
 				if (mod_vol < 30) {
 					mod_vol++;
-					dj_set_mod_volume(mod_vol);
+					dj_set_mod_volume((char)mod_vol);
 				}
 			} else {
 				if (mod_vol > 0) {
 					mod_vol--;
-					dj_set_mod_volume(mod_vol);
+					dj_set_mod_volume((char)mod_vol);
 				}
 			}
 
 			if (mod_fade_direction == 1) {
 				if (sfx_vol < 64) {
 					sfx_vol++;
-					dj_set_sfx_volume(sfx_vol);
+					dj_set_sfx_volume((char)sfx_vol);
 				}
 			} else {
 				if (sfx_vol > 0) {
 					sfx_vol--;
-					dj_set_sfx_volume(sfx_vol);
+					dj_set_sfx_volume((char)sfx_vol);
 				}
 			}
 
@@ -659,8 +666,10 @@ int main(int argc, char *argv[])
 		deinit_level();
 
 		memset(mask_pic, 0, 102400L);
+		register_mask(mask_pic);
 
-		register_background(NULL);
+		recalculate_gob(&font_gobs, pal);
+		register_background(NULL, NULL);
 
 		draw_begin();
 
@@ -707,14 +716,14 @@ int main(int argc, char *argv[])
 
 		mod_vol = 0;
 		dj_ready_mod(MOD_SCORES);
-		dj_set_mod_volume(mod_vol);
+		dj_set_mod_volume((char)mod_vol);
 		dj_start_mod();
 		dj_set_nosound(0);
 
 		while (key_pressed(1) == 0) {
 			if (mod_vol < 35)
 				mod_vol++;
-			dj_set_mod_volume(mod_vol);
+			dj_set_mod_volume((char)mod_vol);
 			for (c1 = 0; c1 < 768; c1++) {
 				if (cur_pal[c1] < pal[c1])
 					cur_pal[c1]++;
@@ -734,7 +743,7 @@ int main(int argc, char *argv[])
 
 		while (mod_vol > 0) {
 			mod_vol--;
-			dj_set_mod_volume(mod_vol);
+			dj_set_mod_volume((char)mod_vol);
 			for (c1 = 0; c1 < 768; c1++) {
 				if (cur_pal[c1] > pal[c1])
 					cur_pal[c1]--;
@@ -1241,7 +1250,7 @@ void update_objects(void)
 					}
 				}
 				if (objects[c1].used == 1)
-					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, &object_gobs);
 				break;
 			case OBJ_SPLASH:
 				objects[c1].ticks--;
@@ -1255,7 +1264,7 @@ void update_objects(void)
 					}
 				}
 				if (objects[c1].used == 1)
-					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, &object_gobs);
 				break;
 			case OBJ_SMOKE:
 				objects[c1].x += objects[c1].x_add;
@@ -1271,7 +1280,7 @@ void update_objects(void)
 					}
 				}
 				if (objects[c1].used == 1)
-					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, &object_gobs);
 				break;
 			case OBJ_YEL_BUTFLY:
 			case OBJ_PINK_BUTFLY:
@@ -1369,7 +1378,7 @@ void update_objects(void)
 					}
 				}
 				if (objects[c1].used == 1)
-					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, &object_gobs);
 				break;
 			case OBJ_FUR:
 				if (rnd(100) < 30)
@@ -1447,7 +1456,7 @@ void update_objects(void)
 						s1 = 0;
 					if (s1 > 7)
 						s1 = 7;
-					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].frame + s1, object_gobs);
+					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].frame + s1, &object_gobs);
 				}
 				break;
 			case OBJ_FLESH:
@@ -1512,8 +1521,8 @@ void update_objects(void)
 							} else {
 								if (rnd(100) < 10) {
 									s1 = rnd(4) - 2;
-									add_leftovers(0, objects[c1].x >> 16, (objects[c1].y >> 16) + s1, objects[c1].frame, object_gobs);
-									add_leftovers(1, objects[c1].x >> 16, (objects[c1].y >> 16) + s1, objects[c1].frame, object_gobs);
+									add_leftovers(0, objects[c1].x >> 16, (objects[c1].y >> 16) + s1, objects[c1].frame, &object_gobs);
+									add_leftovers(1, objects[c1].x >> 16, (objects[c1].y >> 16) + s1, objects[c1].frame, &object_gobs);
 								}
 								objects[c1].used = 0;
 							}
@@ -1531,7 +1540,7 @@ void update_objects(void)
 				if (objects[c1].x_add > 0 && objects[c1].x_add < 16384)
 					objects[c1].x_add = 16384;
 				if (objects[c1].used == 1)
-					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].frame, object_gobs);
+					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].frame, &object_gobs);
 				break;
 			case OBJ_FLESH_TRACE:
 				objects[c1].ticks--;
@@ -1545,7 +1554,7 @@ void update_objects(void)
 					}
 				}
 				if (objects[c1].used == 1)
-					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, object_gobs);
+					add_pob(main_info.draw_page, objects[c1].x >> 16, objects[c1].y >> 16, objects[c1].image, &object_gobs);
 				break;
 			}
 		}
@@ -1554,7 +1563,7 @@ void update_objects(void)
 }
 
 
-int add_pob(int page, int x, int y, int image, char *pob_data)
+int add_pob(int page, int x, int y, int image, gob_t *pob_data)
 {
 
 	if (main_info.page_info[page].num_pobs >= NUM_POBS)
@@ -1592,8 +1601,12 @@ void draw_pobs(int page)
 
 	for (c1 = main_info.page_info[page].num_pobs - 1; c1 >= 0; c1--) {
 		main_info.page_info[page].pobs[c1].back_buf_ofs = back_buf_ofs;
-		get_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), (char *) (main_info.pob_backbuf[page] + back_buf_ofs));
+		get_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), &main_info.pob_backbuf[page][back_buf_ofs]);
+#ifdef SCALE_UP2
+		back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * 4 * JNB_BYTESPP;
+#else
 		back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data);
+#endif
 		put_pob(page, main_info.page_info[page].pobs[c1].x, main_info.page_info[page].pobs[c1].y, main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data, 1, mask_pic);
 	}
 
@@ -1616,12 +1629,12 @@ void redraw_pob_backgrounds(int page)
 	int c1;
 
 	for (c1 = 0; c1 < main_info.page_info[page].num_pobs; c1++)
-		put_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), (char *) (main_info.pob_backbuf[page] + main_info.page_info[page].pobs[c1].back_buf_ofs));
+		put_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), &main_info.pob_backbuf[page][main_info.page_info[page].pobs[c1].back_buf_ofs]);
 
 }
 
 
-int add_leftovers(int page, int x, int y, int image, char *pob_data)
+int add_leftovers(int page, int x, int y, int image, gob_t *pob_data)
 {
 
 	if (leftovers.page[page].num_pobs >= NUM_LEFTOVERS)
@@ -1674,6 +1687,7 @@ int init_level(int level, char *pal)
 		return 1;
 	}
 	fclose(handle);
+	register_mask(mask_pic);
 
 	for (c1 = 0; c1 < 4; c1++) {
 		if (player[c1].enabled == 1) {
@@ -1745,8 +1759,8 @@ int init_program(int argc, char *argv[], char *pal)
 {
 	FILE *handle = (FILE *) NULL;
 	int c1 = 0, c2 = 0;
-	char load_flag = 0;
-	char force2, force3;
+	int load_flag = 0;
+	int force2, force3;
 	sfx_data fly;
 	int player_anim_data[] = {
 		1, 0, 0, 0x7fff, 0, 0, 0, 0, 0, 0,
@@ -1815,63 +1829,58 @@ int init_program(int argc, char *argv[], char *pal)
 		}
 	}
 
-	if ((background_pic = malloc(102400)) == NULL)
+	if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
+		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 		return 1;
-	if ((mask_pic = malloc(102400)) == NULL)
+	}
+	if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
+		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 		return 1;
-	memset(mask_pic, 0, 102400);
-
-	main_info.pob_backbuf[0] = malloc(65535);
-	main_info.pob_backbuf[1] = malloc(65535);
-	if (main_info.pob_backbuf[0] == 0 || main_info.pob_backbuf[1] == 0)
-		return 1;
+	}
+	fclose(handle);
 
 	if ((handle = dat_open("rabbit.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'rabbit.gob', aborting...\n");
 		return 1;
 	}
-	if ((rabbit_gobs = malloc(dat_filelen("rabbit.gob", datfile_name))) == 0) {
-		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+	if (register_gob(handle, &rabbit_gobs, dat_filelen("rabbit.gob", datfile_name))) {
+		/* error */
 		fclose(handle);
 		return 1;
 	}
-	fread(rabbit_gobs, 1, dat_filelen("rabbit.gob", datfile_name), handle);
 	fclose(handle);
 
 	if ((handle = dat_open("objects.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'objects.gob', aborting...\n");
 		return 1;
 	}
-	if ((object_gobs = malloc(dat_filelen("objects.gob", datfile_name))) == 0) {
-		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+	if (register_gob(handle, &object_gobs, dat_filelen("objects.gob", datfile_name))) {
+		/* error */
 		fclose(handle);
 		return 1;
 	}
-	fread(object_gobs, 1, dat_filelen("objects.gob", datfile_name), handle);
 	fclose(handle);
 
 	if ((handle = dat_open("font.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'font.gob', aborting...\n");
 		return 1;
 	}
-	if ((font_gobs = malloc(dat_filelen("font.gob", datfile_name))) == 0) {
-		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+	if (register_gob(handle, &font_gobs, dat_filelen("font.gob", datfile_name))) {
+		/* error */
 		fclose(handle);
 		return 1;
 	}
-	fread(font_gobs, 1, dat_filelen("font.gob", datfile_name), handle);
 	fclose(handle);
 
 	if ((handle = dat_open("numbers.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'numbers.gob', aborting...\n");
 		return 1;
 	}
-	if ((number_gobs = malloc(dat_filelen("numbers.gob", datfile_name))) == 0) {
-		strcpy(main_info.error_str, "Not enough memory, aborting...\n");
+	if (register_gob(handle, &number_gobs, dat_filelen("numbers.gob", datfile_name))) {
+		/* error */
 		fclose(handle);
 		return 1;
 	}
-	fread(number_gobs, 1, dat_filelen("numbers.gob", datfile_name), handle);
 	fclose(handle);
 
 	if (read_level() != 0) {
@@ -1881,6 +1890,7 @@ int init_program(int argc, char *argv[], char *pal)
 	}
 
 	dj_init();
+
 	if (main_info.no_sound == 0) {
 		dj_autodetect_sd();
 		dj_set_mixing_freq(20000);
@@ -1981,15 +1991,12 @@ int init_program(int argc, char *argv[], char *pal)
 		dj_set_sfx_settings(SFX_FLY, &fly);
 	}
 
-	if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
-		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
+	if ((background_pic = malloc(102400)) == NULL)
 		return 1;
-	}
-	if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
-		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
+	if ((mask_pic = malloc(102400)) == NULL)
 		return 1;
-	}
-	fclose(handle);
+	memset(mask_pic, 0, 102400);
+	register_mask(mask_pic);
 
 	setpalette(0, 256, pal);
 
@@ -2006,7 +2013,8 @@ int init_program(int argc, char *argv[], char *pal)
 		if (calib_joy(0) != 0)
 			load_flag = 1;
 		else {
-			register_background(NULL);
+			recalculate_gob(&font_gobs, pal);
+			register_background(NULL, NULL);
 
 			main_info.view_page = 1;
 			flippage(1);
@@ -2022,7 +2030,8 @@ int init_program(int argc, char *argv[], char *pal)
 			if (calib_joy(1) != 0)
 				load_flag = 1;
 			else {
-				register_background(NULL);
+				recalculate_gob(&font_gobs, pal);
+				register_background(NULL, NULL);
 				flippage(0);
 
 				wait_vrt(0);
@@ -2081,18 +2090,6 @@ void deinit_program(void)
 	dj_free_sfx(SFX_SPRING);
 	dj_free_sfx(SFX_SPLASH);
 	dj_deinit();
-
-	if (rabbit_gobs != 0)
-		free(rabbit_gobs);
-	if (object_gobs != 0)
-		free(object_gobs);
-	if (number_gobs != 0)
-		free(number_gobs);
-
-	if (main_info.pob_backbuf[0] != 0)
-		free(main_info.pob_backbuf[0]);
-	if (main_info.pob_backbuf[1] != 0)
-		free(main_info.pob_backbuf[1]);
 
 	if (background_pic != 0)
 		free(background_pic);

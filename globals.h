@@ -37,6 +37,24 @@
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256
 
+#ifndef SCALE_UP
+#define SCALE_UP2
+#endif
+
+#if (defined(SCALE_UP) || defined(SCALE_UP2))
+#define JNB_BPP 16
+#define JNB_BYTESPP 2
+#define JNB_SURFACE_WIDTH (JNB_WIDTH*2)
+#define JNB_SURFACE_HEIGHT (JNB_HEIGHT*2)
+typedef unsigned short pixel_t;
+#else
+#define JNB_BPP 8
+#define JNB_BYTESPP 1
+#define JNB_SURFACE_WIDTH JNB_WIDTH
+#define JNB_SURFACE_HEIGHT JNB_HEIGHT
+typedef unsigned char pixel_t;
+#endif
+
 #ifndef USE_SDL
 #define KEY_PL1_LEFT 0xcb
 #define KEY_PL1_RIGHT	0xcd
@@ -108,6 +126,15 @@
 #define BAN_ICE		3
 #define BAN_SPRING	4
 
+typedef struct {
+	int num_images;
+	int *width;
+	int *height;
+	int *hs_x;
+	int *hs_y;
+	pixel_t **data;
+	unsigned char **orig_data;
+} gob_t;
 
 struct {
 	int joy_enabled, mouse_enabled;
@@ -119,11 +146,11 @@ struct {
 		struct {
 			int x, y;
 			int image;
-			char *pob_data;
+			gob_t *pob_data;
 			int back_buf_ofs;
 		} pobs[NUM_POBS];
 	} page_info[2];
-	char *pob_backbuf[2];
+	pixel_t pob_backbuf[2][JNB_SURFACE_WIDTH*JNB_SURFACE_HEIGHT];
 } main_info;
 
 struct {
@@ -133,7 +160,7 @@ struct {
 	int bumped[4];
 	int x, y;
 	int x_add, y_add;
-	char direction, jump_ready, jump_abort, in_water;
+	int direction, jump_ready, jump_abort, in_water;
 	int anim, frame, frame_tick, image;
 } player[4];
 
@@ -175,8 +202,10 @@ char datfile_name[2048];
 char *background_pic;
 char *mask_pic;
 
-char *rabbit_gobs;
-char *font_gobs;
+extern gob_t rabbit_gobs;
+extern gob_t font_gobs;
+extern gob_t object_gobs;
+extern gob_t number_gobs;
 
 
 /* fireworks.c */
@@ -191,12 +220,12 @@ void position_player(int player_num);
 void fireworks(void);
 void add_object(int type, int x, int y, int x_add, int y_add, int anim, int frame);
 void update_objects(void);
-int add_pob(int page, int x, int y, int image, char *pob_data);
+int add_pob(int page, int x, int y, int image, gob_t *pob_data);
 void draw_flies(int page);
 void draw_pobs(int page);
 void redraw_flies_background(int page);
 void redraw_pob_backgrounds(int page);
-int add_leftovers(int page, int x, int y, int image, char *pob_data);
+int add_leftovers(int page, int x, int y, int image, gob_t *pob_data);
 void draw_leftovers(int page);
 int init_level(int level, char *pal);
 void deinit_level(void);
@@ -213,7 +242,7 @@ void write_calib_data(void);
 
 void update_player_actions(void);
 void init_inputs(void);
-int calib_joy(char type);
+int calib_joy(int type);
 
 /* menu.c */
 
@@ -231,27 +260,30 @@ void draw_end(void);
 void flippage(int page);
 void draw_begin(void);
 void draw_end(void);
-void clear_lines(int page, int y, int count, int color);
-int get_pixel(int page, int x, int y);
-void set_pixel(int page, int x, int y, int color);
+void clear_lines(int page, int y, int count, pixel_t color);
+pixel_t get_color(int color, char pal[768]);
+pixel_t get_pixel(int page, int x, int y);
+void set_pixel(int page, int x, int y, pixel_t color);
 void setpalette(int index, int count, char *palette);
 void fillpalette(int red, int green, int blue);
 #ifdef DOS
 void get_block(char page, short x, short y, short width, short height, char *buffer);
 void put_block(char page, short x, short y, short width, short height, char *buffer);
 #else
-void get_block(int page, int x, int y, int width, int height, char *buffer);
-void put_block(int page, int x, int y, int width, int height, char *buffer);
+void get_block(int page, int x, int y, int width, int height, pixel_t *buffer);
+void put_block(int page, int x, int y, int width, int height, pixel_t *buffer);
 #endif
 void put_text(int page, int x, int y, char *text, int align);
-void put_pob(int page, int x, int y, int image, char *pob_data, int mask, char *mask_pic);
-int pob_col(int x1, int y1, int image1, char *pob_data1, int x2, int y2, int image2, char *pob_data2);
-int pob_width(int image, char *pob_data);
-int pob_height(int image, char *pob_data);
-int pob_hs_x(int image, char *pob_data);
-int pob_hs_y(int image, char *pob_data);
+void put_pob(int page, int x, int y, int image, gob_t *gob, int mask, unsigned char *mask_pic);
+int pob_width(int image, gob_t *gob);
+int pob_height(int image, gob_t *gob);
+int pob_hs_x(int image, gob_t *gob);
+int pob_hs_y(int image, gob_t *gob);
 int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal);
-void register_background(char *pixels);
+void register_background(char *pixels, char pal[768]);
+int register_gob(FILE *handle, gob_t *gob, int len);
+void recalculate_gob(gob_t *gob, char pal[768]);
+void register_mask(char *pixels);
 
 /* gfx.c */
 

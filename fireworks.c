@@ -9,7 +9,7 @@ void fireworks(void)
 	int s1, s2, s3;
 	char pal[768];
 	struct {
-		char used, direction, colour;
+		int used, direction, colour;
 		int x, y;
 		int x_add, y_add;
 		int timer;
@@ -18,10 +18,11 @@ void fireworks(void)
 	struct {
 		int x, y;
 		int old_x, old_y;
-		char col, back[2];
+		int col;
+		pixel_t back[2];
 	} stars[300];
 
-	register_background(NULL);
+	register_background(NULL, NULL);
 
 	if ((handle = dat_open("level.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
@@ -31,6 +32,10 @@ void fireworks(void)
 	fclose(handle);
 
 	memset(mask_pic, 0, 102400);
+	register_mask(mask_pic);
+
+	recalculate_gob(&rabbit_gobs, pal);
+	recalculate_gob(&object_gobs, pal);
 
 	memset(ban_map, 0, sizeof(ban_map));
 
@@ -39,8 +44,8 @@ void fireworks(void)
 	draw_begin();
 
 	for (c2 = 193; c2 < 256; c2++) {
-		clear_lines(0, c2, 1, (c2 - 192) >> 2);
-		clear_lines(1, c2, 1, (c2 - 192) >> 2);
+		clear_lines(0, c2, 1, get_color((c2 - 192) >> 2, pal));
+		clear_lines(1, c2, 1, get_color((c2 - 192) >> 2, pal));
 	}
 
 	draw_end();
@@ -51,7 +56,7 @@ void fireworks(void)
 		rabbits[c1].used = 0;
 
 	rabbits[0].used = 1;
-	rabbits[0].colour = (char)rnd(4);
+	rabbits[0].colour = rnd(4);
 	rabbits[0].x = (int) (150 + rnd(100)) << 16;
 	rabbits[0].y = 256 << 16;
 	rabbits[0].x_add = ((int) rnd(65535) << 1) - 65536;
@@ -95,9 +100,9 @@ void fireworks(void)
 			stars[c1].old_y = stars[c1].y;
 			stars[c1].y -= (int) (31 - stars[c1].col) * 16384;
 			if ((stars[c1].y >> 16) < 0)
-				stars[c1].y += 256 << 16;
-			if ((stars[c1].y >> 16) >= 256)
-				stars[c1].y -= 256 << 16;
+				stars[c1].y += JNB_HEIGHT << 16;
+			if ((stars[c1].y >> 16) >= JNB_HEIGHT)
+				stars[c1].y -= JNB_HEIGHT << 16;
 		}
 
 		for (c1 = 0, c2 = 0; c1 < 20; c1++) {
@@ -108,7 +113,7 @@ void fireworks(void)
 			for (c1 = 0; c1 < 20; c1++) {
 				if (rabbits[c1].used == 0) {
 					rabbits[c1].used = 1;
-					rabbits[c1].colour = (char)rnd(4);
+					rabbits[c1].colour = rnd(4);
 					rabbits[c1].x = (int) (150 + rnd(100)) << 16;
 					rabbits[c1].y = 256 << 16;
 					rabbits[c1].x_add = ((int) rnd(65535) << 1) - 65536;
@@ -171,7 +176,7 @@ void fireworks(void)
 				}
 				rabbits[c1].image = player_anims[rabbits[c1].anim].frame[rabbits[c1].frame].image + rabbits[c1].colour * 18 + rabbits[c1].direction * 9;
 				if (rabbits[c1].used == 1)
-					add_pob(main_info.draw_page, rabbits[c1].x >> 16, rabbits[c1].y >> 16, rabbits[c1].image, rabbit_gobs);
+					add_pob(main_info.draw_page, rabbits[c1].x >> 16, rabbits[c1].y >> 16, rabbits[c1].image, &rabbit_gobs);
 			}
 		}
 
@@ -183,7 +188,7 @@ void fireworks(void)
 
 		for (c1 = 0; c1 < 300; c1++) {
 			stars[c1].back[main_info.draw_page] = get_pixel(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16);
-			set_pixel(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16, stars[c1].col);
+			set_pixel(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16, get_color(stars[c1].col, pal));
 		}
 
 		dj_mix();

@@ -38,9 +38,9 @@ char *message[] = {
 int menu(void)
 {
 	int c1;
-	char esc_pressed;
-	char end_loop_flag, new_game_flag, fade_flag;
-	char mod_vol = 0, mod_fade_direction = 0;
+	int esc_pressed;
+	int end_loop_flag, new_game_flag, fade_flag;
+	int mod_vol = 0, mod_fade_direction = 0;
 	int cur_message;
 	int fade_dir, fade_count, fade_tick;
 	char fade_pal[48];
@@ -51,7 +51,7 @@ int menu(void)
 	mod_vol = 0;
 	mod_fade_direction = 1;
 	dj_ready_mod(MOD_MENU);
-	dj_set_mod_volume(mod_vol);
+	dj_set_mod_volume((char)mod_vol);
 	dj_set_sfx_volume(64);
 	dj_start_mod();
 	dj_set_nosound(0);
@@ -396,7 +396,7 @@ int menu(void)
 		main_info.page_info[main_info.draw_page].num_pobs = 0;
 
 		for (c1 = 3; c1 >= 0; c1--)
-			add_pob(main_info.draw_page, player[c1].x >> 16, player[c1].y >> 16, player[c1].image + c1 * 18, rabbit_gobs);
+			add_pob(main_info.draw_page, player[c1].x >> 16, player[c1].y >> 16, player[c1].image + c1 * 18, &rabbit_gobs);
 
 		update_objects();
 
@@ -409,12 +409,12 @@ int menu(void)
 		if (mod_fade_direction == 1) {
 			if (mod_vol < 35) {
 				mod_vol++;
-				dj_set_mod_volume(mod_vol);
+				dj_set_mod_volume((char)mod_vol);
 			}
 		} else {
 			if (mod_vol > 0) {
 				mod_vol--;
-				dj_set_mod_volume(mod_vol);
+				dj_set_mod_volume((char)mod_vol);
 			}
 		}
 
@@ -533,7 +533,11 @@ int menu_init(void)
 	fclose(handle);
 	memset(menu_cur_pal, 0, 768);
 
-	register_background(background_pic);
+	recalculate_gob(&rabbit_gobs, menu_pal);
+	recalculate_gob(&font_gobs, menu_pal);
+	recalculate_gob(&object_gobs, menu_pal);
+	register_background(background_pic, menu_pal);
+	register_mask(mask_pic);
 
 	for (c1 = 0; c1 < 4; c1++) {
 		player[c1].enabled = 0;
@@ -541,7 +545,7 @@ int menu_init(void)
 		player[c1].y = (160L + c1 * 2) << 16;
 		player[c1].x_add = 0;
 		player[c1].y_add = 0;
-		player[c1].direction = (char)rnd(2);
+		player[c1].direction = rnd(2);
 		player[c1].jump_ready = 1;
 		player[c1].anim = 0;
 		player[c1].frame = 0;

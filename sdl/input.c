@@ -1,6 +1,6 @@
 #include "globals.h"
 
-int calib_joy(char type)
+int calib_joy(int type)
 {
 	return 1;
 }

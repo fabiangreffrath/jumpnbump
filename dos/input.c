@@ -89,7 +89,7 @@ void read_joy(void)
 }
 
 
-int calib_joy(char type)
+int calib_joy(int type)
 {
 	int c1;
 	int x, y;
