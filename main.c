@@ -2864,7 +2864,7 @@ int init_program(int argc, char *argv[], char *pal)
 			}
 			else if (strstr(argv[1],"-v")) {
 				printf("jumpnbump %s compiled %s at %s with",JNB_VERSION,__DATE__,__TIME__);
-#ifndef _SDLnet_h
+#ifndef USE_NET
 				printf("out");
 #endif
 				printf(" network support.\n");
