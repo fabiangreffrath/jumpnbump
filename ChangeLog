@@ -1,3 +1,7 @@
+24 Feb 2002 - 1.1
+   - fixed timing problems
+   - fixed crash when temporary music can't be written
+
 22 Feb 2002 - 1.0
    - working sound
    - new scaling graphics mode
