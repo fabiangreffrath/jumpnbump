@@ -29,10 +29,11 @@ clean:
 	$(MAKE) -C data clean
 
 install:
+	chmod +x jnbmenu.tcl
 	mkdir -p $(DESTDIR)/usr/games/
 	mkdir -p $(DESTDIR)/usr/share/jumpnbump/
-	install -o root -g games -m 755 $(TARGET) jumpnbump.svgalib jnbpack jnbunpack jnbmenu.tcl $(DESTDIR)/usr/games/
+	install -o root -g games -m 755 $(TARGET) jumpnbump.fbcon jumpnbump.svgalib jnbpack jnbunpack jnbmenu.tcl $(DESTDIR)/usr/games/
 	install -o root -g games -m 644 data/jumpbump.dat $(DESTDIR)/usr/share/jumpnbump/jumpbump.dat
 
 uninstall:
-	rm /usr/games/jnbpack /usr/games/jnbunpack /usr/games/jumpnbump /usr/games/jnbmenu.tcl
+	rm $(DESTDIR)/usr/games/jnbpack $(DESTDIR)/usr/games/jnbunpack $(DESTDIR)/usr/games/jumpnbump $(DESTDIR)/usr/games/jnbmenu.tcl
