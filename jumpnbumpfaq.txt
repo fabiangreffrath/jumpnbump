@@ -10,13 +10,8 @@ A: i know, the *plop* (if you kill some bunnies) comes too late (lagged)
    there's sound effects missing if you are near the flies and if
    you jump into the water (the *splash* is missing)
    
-Q: i can't download this or that level. you not have enough bandwith?
-A: longislandman did a mirror try it from there
-   http://jonatkins.org/jumpnbump/levels/
-   he has got most of the levels i have (some are missing maybe)
-
 Q: can i do my own level? how?
-A: sure.. (oh i will explain some day later how et al..)
+A: read the level creating document
 
 Q: do i need click each level one by one to save them? i want all of them?
 A: no just go into your jumpnbump directory into data there type
@@ -24,7 +19,7 @@ A: no just go into your jumpnbump directory into data there type
    mv jumpbump.mine.nu/*.bz2 .
    rm -rf jumpbump.mine.nu
    bunzip *.bz2
-   (oh well i didn't thest it :)
+   (oh well i didn't test it :)
 
 Q: my menuselector looks other than yours?
 A: that's probably because i have tkstep8.0 and changed the first

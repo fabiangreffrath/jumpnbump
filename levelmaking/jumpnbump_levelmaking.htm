@@ -1,0 +1,1669 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content="HTML Tidy, see www.w3.org">
+<title>Making levels</title>
+<meta http-equiv="Content-Type" content=
+"text/html; charset=iso-8859-1">
+</head>
+<body bgcolor="#000000" text="#FFFFFF">
+<div align="center">
+<p>&nbsp;</p>
+
+<p><font size="5">HOW TO MAKE A LEVEL</font></p>
+
+<p>This is a tutorial where you can learn how to edit all files on
+a JnB level or solve your problems.</p>
+
+<p>&nbsp;</p>
+
+<p><font color="#FF6666"><b><font color="#CCFFCC">Last update: 16
+Sep 2001. Added JnB level background for
+download</font></b></font></p>
+
+<p><font color="#FF6666"><b><font color="#CCFFCC">7 Sep 2001.
+Information about water-blood cheat in level.pcx and
+splash.smp.</font></b></font></p>
+
+<p><font color="#FF6666"><b><font color="#CCFFCC">6 Sep 2001.
+H</font></b></font><font color="#FF6666"><b><font color=
+"#CCFFCC">ow to put blinking things in
+menu.pcx.</font></b></font></p>
+
+<p>&nbsp;</p>
+</div>
+
+<p align="center">First of all unpack a level in this way:</p>
+
+<p align="center"><img src="pack.gif" width="76" height="71"></p>
+
+<p align="center"> "unpack.exe [levelname].dat"</p>
+
+<p align="center">&nbsp;</p>
+
+<p> I recommend you to unpack jumpbump.dat, so, the files you not
+edit, are the default.</p>
+
+<p>Required programs:</p>
+
+<ul>
+<li>Paint Shop Pro - <a href="http://www.jasc.com" target=
+"_parent">www.jasc.com</a></li>
+
+<li>GOBMaker - <a href= 
+"http://www.brainchilddesign.com/stuff/gobmaker" target="_parent">
+www.brainchilddesign.com/stuff/gobmaker</a></li>
+
+<li>Fast Tracker II - <a href="http://www.starbreeze.com" target= 
+"_parent">www.starbreeze.com</a></li>
+
+<li>Notepad</li>
+</ul>
+
+<p>These are the files to edit:</p>
+
+<div align="center">
+<center>
+<table width="500" border="1">
+<tr>
+<td width="100">
+<p align="center"><b>File Format</b></p>
+</td>
+<td width="100">
+<p align="center"><b>File Name</b></p>
+</td>
+<td width="300">
+<p align="center"><b>Description</b></p>
+</td>
+</tr>
+
+<tr>
+<td width="100" rowspan="4">
+<p align="center"><b>PCX</b></p>
+</td>
+<td width="100"><a href="#level_pcx">level</a></td>
+<td width="300">The zone where you play.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#mask_pcx">mask</a></td>
+<td width="300">The mask of "level.pcx"</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#menu_pcx">menu</a></td>
+<td width="300">The screen where you select players.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#menumask_pcx">menumask</a></td>
+<td width="300">The mask of "menu.pcx"</td>
+</tr>
+
+<tr>
+<td width="100">
+<p align="center"><b>DAT</b></p>
+</td>
+<td width="100"><a href="#calib_dat">calib</a></td>
+<td width="300">The joystick/joypad calibration data.</td>
+</tr>
+
+<tr>
+<td width="100">
+<p align="center"><b>TXT</b></p>
+</td>
+<td width="100"><a href="#levelmap_txt">levelmap</a></td>
+<td width="300">The map of the zone.</td>
+</tr>
+
+<tr>
+<td width="100" rowspan="4">
+<p align="center"><b>GOB</b></p>
+</td>
+<td width="100"><a href="#font_gob">font</a></td>
+<td width="300">The font of the level.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#numbers_gob">numbers</a></td>
+<td width="300">The displayed numbers on the scoreboard</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#objects_gob">objects</a></td>
+<td width="300">The objects of the zone.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#rabbit_gob">rabbit</a></td>
+<td width="300">The movements of the rabbits.</td>
+</tr>
+
+<tr>
+<td width="100" rowspan="5">
+<p align="center"><b>SMP</b></p>
+</td>
+<td width="100"><a href="#death_smp">death</a></td>
+<td width="300">Sample played when a rabbit dies.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#fly_smp">fly</a></td>
+<td width="300">Sample played when you are near the flies.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#jump_smp">jump</a></td>
+<td width="300">Sample played when you jump.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#splash_smp">splash</a></td>
+<td width="300">Sample played when you fall into the water.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#spring_smp">spring</a></td>
+<td width="300">Sample played when you jump on a spring.</td>
+</tr>
+
+<tr>
+<td width="100" rowspan="3">
+<p align="center"><b>MOD</b></p>
+</td>
+<td width="100"><a href="#bump_mod">bump</a></td>
+<td width="300">Music played when you play in the zone.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#jump_mod">jump</a></td>
+<td width="300">Music played on the select players screen.</td>
+</tr>
+
+<tr>
+<td width="100"><a href="#scores_mod">scores</a></td>
+<td width="300">Music played in the final scoreboard.</td>
+</tr>
+</table>
+</center>
+</div>
+
+<p align="center">&nbsp;</p>
+
+<ul>
+<li>
+<p align="left">How to edit all of them:</p>
+</li>
+</ul>
+
+<p><b><font size="5"><a name="level_pcx">
+</a>level.pcx</font></b></p>
+
+<p><u>Description:</u> The zone where you play.</p>
+
+<p><u>Program for edit it:</u> Paint Shop Pro.</p>
+
+<p><u>How to edit:</u> Draw a nice image for make a level with PSP,
+and if you want to see the map, do this:</p>
+
+<p>Click on File/Preferences/General Program Preferences. Then
+click on "Rulers and Units" and type, in Grid section, Width=16 and
+Height=16. Then Apply. And last, click on View/Grid.</p>
+
+<p>Now you can see the map and will be useful for make
+levelmap.txt</p>
+
+<p>The map is 16 rows and 22 columns, and another 3 columns at the
+right for scoreboard. The image size is 400x256 pixels and uses 256
+colours. Download the original background <a href="level.zip">
+here</a> and use it for your own. Remember this: all the image
+files on the level (PCXs and GOBs) must have the same colour
+palette.</p>
+
+<p align="center"> <img src="making1.gif" width="430" height="285">
+</p>
+
+<p align="left">These are the colour numbers of the default palette
+that are changed when using BLOODISTHICKERTHANWATER cheat:</p>
+
+<div align="center">
+<table width="54%" border="1">
+<tr>
+<td bgcolor="#00CCFF" width="40%"><b><font color="#000000">Water
+colour number</font></b></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><b><font color="#000000">turns
+into</font></b></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><b><font color="#000000">Blood colour
+number</font></b></div>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#00CCFF" width="40%"><font color="#000000">
+145</font></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><font color="#000000">turns into</font></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><font color="#000000">176</font></div>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#00CCFF" width="40%"><font color="#000000">
+146</font></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><font color="#000000">turns into</font></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><font color="#000000">177</font></div>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#00CCFF" width="40%"><font color="#000000">
+147</font></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><font color="#000000">turns into</font></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><font color="#000000">178</font></div>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#00CCFF" width="40%"><font color="#000000">
+148</font></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><font color="#000000">turns into</font></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><font color="#000000">179</font></div>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#00CCFF" width="40%"><font color="#000000">
+149</font></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><font color="#000000">turns into</font></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><font color="#000000">180</font></div>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#00CCFF" width="40%"><font color="#000000">
+150</font></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><font color="#000000">turns into</font></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><font color="#000000">181</font></div>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#00CCFF" width="40%"><font color="#000000">
+151</font></td>
+<td bgcolor="#CC00CC" width="21%">
+<div align="center"><font color="#000000">turns into</font></div>
+</td>
+<td bgcolor="#CC0000" width="39%">
+<div align="right"><font color="#000000">182</font></div>
+</td>
+</tr>
+</table>
+</div>
+
+<p align="center">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="mask_pcx">
+</a>mask.pcx</font></b></p>
+
+<p align="left"><u>Description:</u> The mask of "level.pcx"</p>
+
+<p align="left"><u>Program for edit it:</u> Paint Shop Pro.</p>
+
+<p align="left"><u>How to edit:</u> This is a black image file with
+white parts. The black zone is behind the rabbits and the white
+zone hides the rabbits. Be careful, don't make white the three
+columns at the right for can see the scoreboard. Here is an
+example:</p>
+
+<table width="52%" border="1" height="128" bordercolorlight=
+"#000000" bordercolordark="#000000">
+<tr>
+<td width="365" height="29">
+<p align="right">This is a part of "level.pcx"</p>
+</td>
+<td width="16" height="128" rowspan="3"><img src="making2.gif"
+width="50" height="130"></td>
+</tr>
+
+<tr>
+<td width="365" height="48">
+<p align="right">And this is a part of "mask.pcx"</p>
+</td>
+</tr>
+
+<tr>
+<td width="365">
+<p align="right">Look! Dott is behind the box!</p>
+</td>
+</tr>
+</table>
+
+<p><b><font size="5"><a name="menu_pcx"></a>menu.pcx</font></b></p>
+
+<p align="left"><u>Description:</u> The screen where you select
+players.</p>
+
+<p align="left"><u>Program for edit it:</u> Paint Shop Pro.</p>
+
+<p align="left"><u>How to edit:</u> The easiest you can do here is
+this: Type on the top your Nick and your e-mail and the title of
+the level. But you can draw too a nice level entrance, but remember
+to draw an obstacle for jump it and select players. Something cool:
+Everywhere you use the colour No255, will be blinking like the
+credits letters. Remember this: all the image files on the level
+(PCXs and GOBs) must have the same colour palette. Look here at
+each of the rabbit's way for make the menu screen:</p>
+
+<p align="center"><font color="#FFFFFF"><img src="making3.gif"
+width="400" height="256" align="top"></font></p>
+
+<p align="left">Get this image file in .PCX format <a href=
+"menu.zip">here</a>, put it in your level and it will guide you for
+where you must put thee obstacle and the floor where is supposed to
+run on the rabbits.</p>
+
+<p align="left"><b><font size="5"><a name="menumask_pcx">
+</a>menumask.pcx</font></b></p>
+
+<p align="left"><u>Description:</u> The mask of "menu.pcx"</p>
+
+<p align="left"><u>Program for edit it:</u> Paint Shop Pro.</p>
+
+<p align="left"><u>How to edit:</u> This is a black image file with
+white parts. The black zone is behind the rabbits and the white
+zone hides the rabbits. Be careful, don't make white the bottom for
+can see the credits. Here is an example:</p>
+
+<table width="52%" border="1" height="128" bordercolorlight=
+"#000000" bordercolordark="#000000">
+<tr>
+<td width="365" height="29">
+<p align="right">This is a part of "level.pcx"</p>
+</td>
+<td width="16" height="128" rowspan="3"><img src="making2.gif"
+width="50" height="130"></td>
+</tr>
+
+<tr>
+<td width="365" height="48">
+<p align="right">And this is a part of "mask.pcx"</p>
+</td>
+</tr>
+
+<tr>
+<td width="365">
+<p align="right">Look! Dott is behind the box!</p>
+</td>
+</tr>
+</table>
+
+<p><b><font size="5"><a name="calib_dat">
+</a>calib.dat</font></b></p>
+
+<p><u>Description:</u> The joystick/joypad calibration data.</p>
+
+<p align="left"><u>Program for edit it:</u> None</p>
+
+<p align="left"><u>How to edit:</u> When you pack the .dat file,
+just play it, before playing, you calibrate your
+joystick/joypad.</p>
+
+<p align="left"><b><a name="levelmap_txt"></a></b><b><font size=
+"5">levelmap.txt</font></b></p>
+
+<p><u>Description:</u> The map of the zone.</p>
+
+<p align="left"><u>Program for edit it:</u> Notepad.</p>
+
+<p><u>How to edit:</u> Just take a look in the PSP Grid of
+"level.pcx" and type:0 for air, 1 for ground, 2 for water, 3 for
+ice and 4 for a spring (just like "Number Code Land" level).
+Remember, is a 22x16 grid. Some useful information:</p>
+
+<ul>
+<li>You can jump up to 3 blocks.</li>
+
+<li>If you are using the "BUNNIESINSPACE" cheat, you can jump up to
+6 blocks.</li>
+
+<li>And jumping on a spring, 6 blocks too.</li>
+
+<li>The water is useful for "fly".</li>
+
+<li>If you alternate ground and air, you can run over there without
+falling.</li>
+</ul>
+
+<p><b><font size="5"><a name="font_gob"></a>font.gob</font></b></p>
+
+<p><u>Description:</u> The font of the level.</p>
+
+<p align="left"><u>Program for edit it:</u> Paint Shop Pro &amp;
+GOBMaker.</p>
+
+<p align="left"><u>How to edit:</u> With PSP edit "font.pcx" (found
+at GOBMaker Projects in BCD) drawing all letters, numbers and marks
+and save the image. Remember this: all the image files on the level
+(PCXs and GOBs) must have the same colour palette. Run GOBMaker,
+then open "font.gmp" (GOBMaker Project) and change the letters.
+These are the frames of "font.gob":</p>
+
+<div align="center">
+<table width="240" border="1" height="135">
+<tr>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>1</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>2</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>3</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>4</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>5</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>6</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>7</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>8</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>9</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>10</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>11</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>12</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>13</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>14</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>15</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>16</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>17</b></font></p>
+</td>
+<td width="8" height="15">
+<p align="center"><font color="#FF3333"><b>18</b></font></p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center">!</p>
+</td>
+<td width="16" height="15">
+<p align="center">"</p>
+</td>
+<td width="16" height="15">
+<p align="center">'</p>
+</td>
+<td width="16" height="15">
+<p align="center">(</p>
+</td>
+<td width="16" height="15">
+<p align="center">)</p>
+</td>
+<td width="16" height="15">
+<p align="center">,</p>
+</td>
+<td width="16" height="15">
+<p align="center">-</p>
+</td>
+<td width="16" height="15">
+<p align="center">.</p>
+</td>
+<td width="16" height="15">
+<p align="center">/</p>
+</td>
+<td width="16" height="15">
+<p align="center">0</p>
+</td>
+<td width="16" height="15">
+<p align="center">1</p>
+</td>
+<td width="16" height="15">
+<p align="center">2</p>
+</td>
+<td width="16" height="15">
+<p align="center">3</p>
+</td>
+<td width="16" height="15">
+<p align="center">4</p>
+</td>
+<td width="16" height="15">
+<p align="center">5</p>
+</td>
+<td width="16" height="15">
+<p align="center">6</p>
+</td>
+<td width="16" height="15">
+<p align="center">7</p>
+</td>
+<td width="8" height="15">
+<p align="center">8</p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>19</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>20</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>21</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>22</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>23</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>24</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>25</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>26</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>27</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>28</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>29</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>30</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>31</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>32</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>33</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>34</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>35</b></font></p>
+</td>
+<td width="8" height="15">
+<p align="center"><font color="#FF3333"><b>36</b></font></p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center">9</p>
+</td>
+<td width="16" height="15">
+<p align="center">:</p>
+</td>
+<td width="16" height="15">
+<p align="center">;</p>
+</td>
+<td width="16" height="15">
+<p align="center">@</p>
+</td>
+<td width="16" height="15">
+<p align="center">A</p>
+</td>
+<td width="16" height="15">
+<p align="center">B</p>
+</td>
+<td width="16" height="15">
+<p align="center">C</p>
+</td>
+<td width="16" height="15">
+<p align="center">D</p>
+</td>
+<td width="16" height="15">
+<p align="center">E</p>
+</td>
+<td width="16" height="15">
+<p align="center">F</p>
+</td>
+<td width="16" height="15">
+<p align="center">G</p>
+</td>
+<td width="16" height="15">
+<p align="center">H</p>
+</td>
+<td width="16" height="15">
+<p align="center">I</p>
+</td>
+<td width="16" height="15">
+<p align="center">J</p>
+</td>
+<td width="16" height="15">
+<p align="center">K</p>
+</td>
+<td width="16" height="15">
+<p align="center">L</p>
+</td>
+<td width="16" height="15">
+<p align="center">M</p>
+</td>
+<td width="8" height="15">
+<p align="center">N</p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>37</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>38</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>39</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>40</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>41</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>42</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>43</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>44</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>45</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>46</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>47</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>48</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>49</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>50</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>51</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>52</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>53</b></font></p>
+</td>
+<td width="8" height="15">
+<p align="center"><font color="#FF3333"><b>54</b></font></p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center">O</p>
+</td>
+<td width="16" height="15">
+<p align="center">P</p>
+</td>
+<td width="16" height="15">
+<p align="center">Q</p>
+</td>
+<td width="16" height="15">
+<p align="center">R</p>
+</td>
+<td width="16" height="15">
+<p align="center">S</p>
+</td>
+<td width="16" height="15">
+<p align="center">T</p>
+</td>
+<td width="16" height="15">
+<p align="center">U</p>
+</td>
+<td width="16" height="15">
+<p align="center">V</p>
+</td>
+<td width="16" height="15">
+<p align="center">W</p>
+</td>
+<td width="16" height="15">
+<p align="center">X</p>
+</td>
+<td width="16" height="15">
+<p align="center">Y</p>
+</td>
+<td width="16" height="15">
+<p align="center">Z</p>
+</td>
+<td width="16" height="15">
+<p align="center">a</p>
+</td>
+<td width="16" height="15">
+<p align="center">b</p>
+</td>
+<td width="16" height="15">
+<p align="center">c</p>
+</td>
+<td width="16" height="15">
+<p align="center">d</p>
+</td>
+<td width="16" height="15">
+<p align="center">e</p>
+</td>
+<td width="8" height="15">
+<p align="center">f</p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>55</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>56</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>57</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>58</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>59</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>60</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>61</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>62</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>63</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>64</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>65</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>66</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>67</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>68</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>69</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>70</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>71</b></font></p>
+</td>
+<td width="8" height="15">
+<p align="center"><font color="#FF3333"><b>72</b></font></p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center">g</p>
+</td>
+<td width="16" height="15">
+<p align="center">h</p>
+</td>
+<td width="16" height="15">
+<p align="center">i</p>
+</td>
+<td width="16" height="15">
+<p align="center">j</p>
+</td>
+<td width="16" height="15">
+<p align="center">k</p>
+</td>
+<td width="16" height="15">
+<p align="center">l</p>
+</td>
+<td width="16" height="15">
+<p align="center">m</p>
+</td>
+<td width="16" height="15">
+<p align="center">n</p>
+</td>
+<td width="16" height="15">
+<p align="center">o</p>
+</td>
+<td width="16" height="15">
+<p align="center">p</p>
+</td>
+<td width="16" height="15">
+<p align="center">q</p>
+</td>
+<td width="16" height="15">
+<p align="center">r</p>
+</td>
+<td width="16" height="15">
+<p align="center">s</p>
+</td>
+<td width="16" height="15">
+<p align="center">t</p>
+</td>
+<td width="16" height="15">
+<p align="center">u</p>
+</td>
+<td width="16" height="15">
+<p align="center">v</p>
+</td>
+<td width="16" height="15">
+<p align="center">w</p>
+</td>
+<td width="8" height="15">
+<p align="center">x</p>
+</td>
+</tr>
+
+<tr>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>73</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>74</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>75</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>76</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>77</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>78</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>79</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>80</b></font></p>
+</td>
+<td width="16" height="15">
+<p align="center"><font color="#FF3333"><b>81</b></font></p>
+</td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="16" height="15" bordercolor="#000000"></td>
+<td width="8" height="15" bordercolor="#000000"></td>
+</tr>
+
+<tr>
+<td width="16" height="2">
+<p align="center">y</p>
+</td>
+<td width="16" height="2">
+<p align="center">z</p>
+</td>
+<td width="16" height="2">
+<p align="center">~</p>
+</td>
+<td width="16" height="2">
+<p align="center">&auml;</p>
+</td>
+<td width="16" height="2">
+<p align="center">&acirc;</p>
+</td>
+<td width="16" height="2">
+<p align="center">&Auml;</p>
+</td>
+<td width="16" height="2">
+<p align="center">&Acirc;</p>
+</td>
+<td width="16" height="2">
+<p align="center">&ouml;</p>
+</td>
+<td width="16" height="2">
+<p align="center">&Ouml;</p>
+</td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="16" height="2" bordercolor="#000000"></td>
+<td width="8" height="2" bordercolor="#000000"></td>
+</tr>
+</table>
+
+<p align="left"><b><font size="5"><a name="numbers_gob">
+</a>numbers.gob</font></b></p>
+
+<p align="left"><u>Description:</u> The displayed numbers on the
+scoreboard</p>
+
+<p align="left"><u>Program for edit it:</u> Paint Shop Pro &amp;
+GOBMaker.</p>
+
+<p align="left"><u>How to edit:</u> With PSP create a nice PCX
+image with the ten numbers starting by zero (each number can't be
+bigger than 16x22 pixels) and save it as "numbers.pcx". Remember
+this: all the image files on the level (PCXs and GOBs) must have
+the same colour palette. Run GOBMaker, open "numbers.pcx" and
+create "numbers.gmp". Then make "numbers.gob"</p>
+
+<p align="left"><b><font size="5"><a name="objects_gob">
+</a>objects.gob</font></b></p>
+
+<p align="left"><u>Description:</u> The objects of the zone.</p>
+
+<p align="left"><u>Program for edit it:</u> Paint Shop Pro &amp;
+GOBMaker.</p>
+
+<p align="left"><u>How to edit:</u> With PSP edit "objects.pcx"
+(found at GOBMaker Projects in BCD) drawing all objects of the
+level. Remember this: all the image files on the level (PCXs and
+GOBs) must have the same colour palette. Run GOBMaker, then open
+"objects.gmp" (GOBMaker Project) and change the objects. These are
+the frames of "objects.gob":</p>
+
+<table border="1">
+<tr>
+<td width="18%">
+<p align="center"><b><font color="#FF3333">Frames</font></b></p>
+</td>
+<td width="82%">
+<p align="center"><b><font color="#FF3333">Objects</font></b></p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">1-6</p>
+</td>
+<td width="82%">
+<p align="center">Spring working</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">6</p>
+</td>
+<td width="82%">
+<p align="center">Spring stopped</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">7-15</p>
+</td>
+<td width="82%">
+<p align="center">Water Splashing</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">16-20</p>
+</td>
+<td width="82%">
+<p align="center">Dust</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">21-25</p>
+</td>
+<td width="82%">
+<p align="center">1st and 2nd butterfly looking at the right</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">27-32</p>
+</td>
+<td width="82%">
+<p align="center">1st and 2nd butterfly looking at the left</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">33-38</p>
+</td>
+<td width="82%">
+<p align="center">3rd and 4th butterfly looking at the right</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">39-44</p>
+</td>
+<td width="82%">
+<p align="center">3rd and 4th butterfly looking at the left</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">45-57</p>
+</td>
+<td width="82%">
+<p align="center">Pieces of Dott</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">53-60</p>
+</td>
+<td width="82%">
+<p align="center">Pieces of Jiffy</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">61-68</p>
+</td>
+<td width="82%">
+<p align="center">Pieces of Fizz</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">69-76</p>
+</td>
+<td width="82%">
+<p align="center">Pieces of Mijji</p>
+</td>
+</tr>
+
+<tr>
+<td width="18%">
+<p align="center">77-80</p>
+</td>
+<td width="82%">
+<p align="center">Blood</p>
+</td>
+</tr>
+</table>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="rabbit_gob">
+</a>rabbit.gob</font></b></p>
+
+<p align="left"><u>Description:</u> The movements of the
+rabbits.</p>
+
+<p align="left"><u>Program for edit it:</u> Paint Shop Pro &amp;
+GOBMaker.</p>
+
+<p align="left"><u>How to edit:</u> With PSP edit "Rabbit.pcx"
+(found at GOBMaker Projects in BCD) drawing all the frames of the
+movements. Remember this: all the image files on the level (PCXs
+and GOBs) must have the same colour palette. Run GOBMaker, then
+open "rabbit.gmp" (GOBMaker Project) and change the objects. Be
+careful, if the frames are bigger than 16x16 pixels, you can't go
+up the screen because a frame of the rabbit will stay up blinking.
+These are the frames of "rabbit.gob":</p>
+
+<table border="1">
+<tr>
+<td width="30%">
+<p align="center"><font color="#FF3333"><b>Frames</b></font></p>
+</td>
+<td width="30%">
+<p align="center"><font color="#FF3333"><b>Movements</b></font></p>
+</td>
+<td width="20%">
+<p align="center"><font color="#FF3333"><b>Direction</b></font></p>
+</td>
+<td width="20%">
+<p align="center"><font color="#FF3333"><b>Rabbits</b></font></p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">1</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<p align="center">Right</p>
+</td>
+<td rowspan="8" width="20%">
+<p align="center">Dott</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">1, 2, 3, 4</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">5, 6, 7, 8</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">9</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">10</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<p align="center">Left</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">10, 11, 12, 13</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">14, 15, 16, 17</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">18</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">19</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<div align="center">
+<p align="center">Right</p>
+</div>
+</td>
+<td rowspan="8" width="20%">
+<p align="center">Jiffy</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">19, 20, 21, 22</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">23, 24, 25, 26</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">27</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">28</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<p align="center">Left</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">28, 29, 30, 31</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">32, 33, 34, 35</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">36</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">37</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<div align="center">
+<p align="center">Right</p>
+</div>
+</td>
+<td rowspan="8" width="20%">
+<p align="center">Fizz</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">37, 38, 39, 40</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">41, 42, 43, 44</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">45</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">46</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<p align="center">Left</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">46, 47, 48, 49</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">50, 51, 52, 53</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">54</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">55</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<div align="center">
+<p align="center">Right</p>
+</div>
+</td>
+<td rowspan="8" width="20%">
+<p align="center">Mijji</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">55, 56, 57, 58</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">59, 60, 61, 62</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">63</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">64</p>
+</td>
+<td width="30%">
+<p align="center">Standing</p>
+</td>
+<td rowspan="4" width="20%">
+<p align="center">Left</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">64, 65, 66, 67</p>
+</td>
+<td width="30%">
+<p align="center">Running</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">68, 69, 70, 71</p>
+</td>
+<td width="30%">
+<p align="center">Jumping/Swimming</p>
+</td>
+</tr>
+
+<tr>
+<td width="30%">
+<p align="center">72</p>
+</td>
+<td width="30%">
+<p align="center">Die</p>
+</td>
+</tr>
+</table>
+
+<p align="center">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="death_smp">
+</a>death.smp</font></b></p>
+
+<p align="left"><u>Description:</u> Sample played when a rabbit
+dies.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> This editing information is the
+same for all SMP files. With FastTracker II open a WAV file for a
+death and save it as death.smp. It must be an 8-bit sound.</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="fly_smp">
+</a>fly.smp</font></b></p>
+
+<p align="left"><u>Description:</u> Sample played when you are near
+the flies.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> This editing information is the
+same for all SMP files. With FastTracker II open a WAV file for the
+fliues and save it as fly.smp. It must be an 8-bit sound. You must
+be near the flies for hear them but if you run to them, they will
+fly away. For hear them the best, use the LORDOFTHEFLIES cheat.</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="jump_smp">
+</a>jump.smp</font></b></p>
+
+<p align="left"><u>Description:</u> Sample played when you
+jump.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> This editing information is the
+same for all SMP files. With FastTracker II open a WAV file for
+jumping and save it as jump.smp. It must be an 8-bit sound.</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="splash_smp">
+</a>splash.smp</font></b></p>
+
+<p align="left"><u>Description:</u> Sample played when you fall
+into the water.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> This editing information is the
+same for all SMP files. With FastTracker II open a WAV file for
+splashing and save it as splash.smp. It must be an 8-bit sound.
+This sound will be longer and slower if you use
+BLOODISTHICKERTHANWATER cheat.</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="spring_smp">
+</a>spring.smp</font></b></p>
+
+<p align="left"><u>Description:</u> Sample played when you jump on
+a spring.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> This editing information is the
+same for all SMP files. With FastTracker II open a WAV file for a
+spring and save it as spring.smp. It must be an 8-bit sound. You
+can hear it also in POGOSTICK cheat.</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="bump_mod">
+</a>bump.mod</font></b></p>
+
+<p align="left"><u>Description:</u> Music played when you play in
+the zone.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> You can compose your own
+playing music, but if you think it's too hard, the best you can do
+is downloading a nice one.</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="jump_mod">
+</a>jump.mod</font></b></p>
+
+<p align="left"><u>Description:</u> Music played on the select
+players screen.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> You can compose your own intro
+music, but if you think it's too hard, the best you can do is
+downloading a nice one.</p>
+
+<p align="left">&nbsp;</p>
+
+<p align="left"><b><font size="5"><a name="scores_mod">
+</a>scores.mod</font></b></p>
+
+<p align="left"><u>Description:</u> Music played in the final
+scoreboard.</p>
+
+<p align="left"><u>Program for edit it:</u> FastTracker II.</p>
+
+<p align="left"><u>How to edit:</u> You can compose your own
+scoreboard music, but if you think it's too hard, the best you can
+do is downloading a nice one.</p>
+
+<hr>
+<p align="center">Did you edit all the files you wanted? Type in
+DOS mode:</p>
+
+<p align="center"><img src="pack.gif" width="76" height="71"></p>
+
+<p align="center">"pack.exe [mylevel].dat"</p>
+
+<p align="center">&nbsp;</p>
+
+<p align="left">If this isn't enough and you have problems e-mail
+me: <a href="mailto:bkronb@hotmail.com?subject=Jump%20'n%20Bkron"
+n="" bkron="">bkronb@hotmail.com</a></p>
+</div>
+</body>
+</html>
+
