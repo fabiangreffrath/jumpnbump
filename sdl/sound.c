@@ -434,7 +434,7 @@ void dj_free_sfx(unsigned char sfx_num)
 char dj_ready_mod(char mod_num)
 {
 	FILE *tmp;
-#ifdef _MSC_VER
+#if ((defined _MSC_VER) || (defined __MINGW32__))
 	char filename[] = "jnb.tmpmusic.mod";
 #else
 	char filename[] = "/tmp/jnb.tmpmusic.mod";
@@ -470,10 +470,12 @@ char dj_ready_mod(char mod_num)
 		current_music = NULL;
 	}
 	tmp = fopen(filename, "wb");
-	for (; len > 0; len--)
-		fputc(fgetc(fp), tmp);
-	fflush(tmp);
-	fclose(tmp);
+	if (tmp) {
+		for (; len > 0; len--)
+			fputc(fgetc(fp), tmp);
+		fflush(tmp);
+		fclose(tmp);
+	}
 	fclose(fp);
 
 	current_music = Mix_LoadMUS(filename);
