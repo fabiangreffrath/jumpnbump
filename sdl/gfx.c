@@ -64,16 +64,92 @@ static int background_drawn;
 static void *mask = NULL;
 static int dirty_blocks[2][25*16*2];
 
-static SDL_Surface *load_xpm_from_array(char *xpm[])
+static SDL_Surface *load_xpm_from_array(char **xpm)
 {
+#define NEXT_TOKEN { \
+	while ((*p != ' ') && (*p != '\t')) p++; \
+	while ((*p == ' ') || (*p == '\t')) p++; }
+
+	SDL_Surface *surface;
 	char *p;
+	int width;
+	int height;
+	int colors;
+	int images;
+	int color;
+	int pal[256];
+	int x,y;
 
-	p = *xpm;
+	p = *xpm++;
 
-	while (*p++)
-		;
+	width = atoi(p);
+	if (width <= 0)
+		return NULL;
+	NEXT_TOKEN;
 
-	return NULL;
+	height = atoi(p);
+	if (height <= 0)
+		return NULL;
+	NEXT_TOKEN;
+
+	colors = atoi(p);
+	if (colors <= 0)
+		return NULL;
+	NEXT_TOKEN;
+
+	images = atoi(p);
+	if (images <= 0)
+		return NULL;
+
+	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 32, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+	if (!surface)
+		return NULL;
+
+	SDL_SetColorKey(surface, SDL_SRCCOLORKEY, SDL_MapRGBA(surface->format, 0, 0, 0, 0));
+	while (colors--) {
+		p = *xpm++;
+
+		color = *p++;
+		NEXT_TOKEN;
+
+		if (*p++ != 'c') {
+			SDL_FreeSurface(surface);
+			return NULL;
+		}
+		NEXT_TOKEN;
+
+		if (*p == '#')
+			pal[color] = strtoul(++p, NULL, 16) | 0xff000000;
+		else
+			pal[color] = 0;
+	}
+
+	y = 0;
+	while (y < height) {
+		int *pixels;
+
+		p = *xpm++;
+
+		pixels = (int *)&((char *)surface->pixels)[y++ * surface->pitch];
+		x = 0;
+		while (x < width) {
+			int r,g,b,a;
+
+			if (*p == '\0') {
+				SDL_FreeSurface(surface);
+				return NULL;
+			}
+			r = (pal[*p] >> 16) & 0xff;
+			b = (pal[*p] & 0xff);
+			g = (pal[*p] >> 8) & 0xff;
+			a = (pal[*p] >> 24) & 0xff;
+			pixels[x] = SDL_MapRGBA(surface->format, r, g, b, a);
+			x++;
+			p++;
+		}
+	}
+
+	return surface;
 }
 
 void *get_vgaptr(int page, int x, int y)
