@@ -281,8 +281,6 @@ int main(int argc, char *argv[])
 		update_count = 1;
 		while (1) {
 
-			printf("update_countg: %i\n",update_count);
-
 			while (update_count) {
 
 				if (key_pressed(1) == 1) {

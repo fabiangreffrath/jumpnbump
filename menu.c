@@ -35,7 +35,7 @@ char menu_pal[768];
 char menu_cur_pal[768];
 
 char *message[] = {
-	"Jump 'n Bump 1.0",
+	"Jump 'n Bump 1.1",
 	"by Brainchild Design in 1998.",
 	"Code by Mattias Brynervall.",
 	"Graphics by Martin Magnusson",
@@ -108,8 +108,6 @@ int menu(void)
 	while (1) {
 
 		dj_mix();
-
-		printf("update_count: %i\n",update_count);
 
 		while (update_count) {
 
