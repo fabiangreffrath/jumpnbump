@@ -1,0 +1,4 @@
+#!/bin/sh
+#SDL_AUDIODRIVER can be dsp,dma,esd,artsc | dsound,waveout
+#SDL_VIDEODRIVER can be x11,dga,fbcon,directfb,svgalib,ggi,aalib | directx,windib
+SDL_VIDEODRIVER=fbcon jumpnbump $@

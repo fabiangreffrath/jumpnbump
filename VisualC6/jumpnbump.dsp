@@ -61,7 +61,7 @@ InputPath=.\Release\jumpnbump.exe
 SOURCE="$(InputPath)"
 
 "$(ProjDir)\..\data\jumpbump.dat" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\pack\Release\pack.exe"
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\pack\Release\jnbpack.exe"
 
 # End Custom Build
 
@@ -96,7 +96,7 @@ InputPath=.\Debug\jumpnbump.exe
 SOURCE="$(InputPath)"
 
 "$(ProjDir)\..\data\jumpbump.dat" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\pack\Debug\pack.exe"
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\pack\Debug\jnbpack.exe"
 
 # End Custom Build
 
@@ -153,10 +153,22 @@ SOURCE=..\dj.h
 
 SOURCE=..\globals.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\resource.h
+# End Source File
 # End Group
 # Begin Group "Ressourcendateien"
 
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+# Begin Source File
+
+SOURCE=..\jumpnbump.ico
+# End Source File
+# Begin Source File
+
+SOURCE=.\ressource.rc
+# End Source File
 # End Group
 # End Target
 # End Project

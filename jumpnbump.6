@@ -27,6 +27,8 @@ Run jump'n'bump without sound.
 Play without blood, familymode.
 .IP "-mirror"
 Play with mirrored level.
+.IP "-scaleup"
+Play with doublesize resolution (800x512).
 .IP "-h"
 Print help.
 .IP "-v"
@@ -71,20 +73,20 @@ lordoftheflies - the flies are attracted
 .br
 bloodisthickerthanwater - water turns to blood
 .SH LEVELS
-There are two programs to help you make your own levels: pack and unpack.
+There are two programs to help you make your own levels: jnbpack and jnbunpack.
 .br
-pack -o /tmp/newlevel.dat <file1> <file2> <file3> etc
+jnbpack -o /tmp/newlevel.dat <file1> <file2> <file3> etc
 .br
 or you can just put all the files in a dir, cd to that dir and do
 .br
-pack -o /tmp/newlevel.dat *
+jnbpack -o /tmp/newlevel.dat *
 .br
 and it will put all the files in the current dir inside the packfile.
-Don't try things like pack -o stuff.dat ../file.c because it will add
+Don't try things like jnbpack -o stuff.dat ../file.c because it will add
 "../file.c" as the filename in the packfile, which won't work.
 .br
 .br
-unpack level.dat
+jnbunpack level.dat
 .br
 will unpack it in the current directory.
 .SH AUTHORS

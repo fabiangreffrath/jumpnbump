@@ -37,6 +37,15 @@
 #define SWAP32(X)    SDL_Swap32(X)
 #endif
 
+#ifdef _MSC_VER
+    #include "jumpnbump32.xpm"
+#elif __APPLE__
+    #include "jumpnbump128.xpm"
+#else
+    #include "jumpnbump64.xpm"
+#endif
+SDL_Surface *icon;
+
 int screen_width=400;
 int screen_height=256;
 int screen_pitch=400;
@@ -54,6 +63,18 @@ static void *background = NULL;
 static int background_drawn;
 static void *mask = NULL;
 static int dirty_blocks[2][25*16*2];
+
+static SDL_Surface *load_xpm_from_array(char *xpm[])
+{
+	char *p;
+
+	p = *xpm;
+
+	while (*p++)
+		;
+
+	return NULL;
+}
 
 void *get_vgaptr(int page, int x, int y)
 {
@@ -116,6 +137,15 @@ void open_screen(void)
 		SDL_ShowCursor(0);
 	else
 		SDL_ShowCursor(1);
+
+	SDL_WM_SetCaption("Jump n Bump","");
+
+	icon=load_xpm_from_array(jumpnbump_xpm);
+	if (icon==NULL) {
+	    printf("Couldn't load icon\n");
+	} else {
+	    SDL_WM_SetIcon(icon,NULL);
+	}
 
 	vinited = 1;
 

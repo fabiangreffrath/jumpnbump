@@ -1,3 +1,18 @@
+5 Jul 2002 - 1.33
+   - added -musicnosound option
+   
+15 Jun 2002 - 1.32
+   - fix for off by one in -mirror
+     add icon for application (macosx,windows,x)
+
+10 Jun 2002 - 1.31
+   - rename jbmenu.tcl to jnbmenu.tcl, make it +x, add
+     options for -mirror and -scaleup
+     update manpage and -h with -scaleup
+     update makefiles accordingly
+     rename pack/unpack to jnbpack/jnbunpack
+     set gametitle
+
 9 Jun 2002 - 1.3
    - Added -mirror commandline option to play the level mirrored
    - Deleting temporary music file

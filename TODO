@@ -1,3 +1,5 @@
 - add network code back in
 - port for dreamcast
-- add mirroring of levels
+
+Debian:
+- the game isn't in update-menus
