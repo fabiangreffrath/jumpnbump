@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct {
@@ -43,34 +43,34 @@ static void write_pcx(FILE *pcxfile, unsigned char *data, int width, int height,
 {
 	int    i;
 
-	fputc(0x0a, pcxfile); // manufacturer
-	fputc(5, pcxfile); // version
-	fputc(1, pcxfile); // encoding
-	fputc(8, pcxfile); // bits_per_pixel
-	fputc(0, pcxfile); // xmin
+	fputc(0x0a, pcxfile); /* manufacturer */
+	fputc(5, pcxfile); /* version */
+	fputc(1, pcxfile); /* encoding */
+	fputc(8, pcxfile); /* bits_per_pixel */
+	fputc(0, pcxfile); /* xmin */
 	fputc(0, pcxfile);
-	fputc(0, pcxfile); // ymin
+	fputc(0, pcxfile); /* ymin */
 	fputc(0, pcxfile);
-	fputc((width - 1) & 0xff, pcxfile); // xmax
+	fputc((width - 1) & 0xff, pcxfile); /* xmax */
 	fputc(((width - 1) >> 8) & 0xff, pcxfile);
-	fputc((height - 1) & 0xff, pcxfile); // ymax
+	fputc((height - 1) & 0xff, pcxfile); /* ymax */
 	fputc(((height - 1) >> 8) & 0xff, pcxfile);
-	fputc(width & 0xff, pcxfile); // hres
+	fputc(width & 0xff, pcxfile); /* hres */
 	fputc((width >> 8) & 0xff, pcxfile);
-	fputc(height & 0xff, pcxfile); // vres
+	fputc(height & 0xff, pcxfile); /* vres */
 	fputc((height >> 8) & 0xff, pcxfile);
-	for (i = 0; i < 48; i++) // palette
+	for (i = 0; i < 48; i++) /* palette */
 		fputc(0, pcxfile);
-	fputc(0, pcxfile); // reserved
-	fputc(1, pcxfile); // color_planes
-	fputc(width & 0xff, pcxfile); // bytes_per_line
+	fputc(0, pcxfile); /* reserved */
+	fputc(1, pcxfile); /* color_planes */
+	fputc(width & 0xff, pcxfile); /* bytes_per_line */
 	fputc((width >> 8) & 0xff, pcxfile);
-	fputc(1 & 0xff, pcxfile); // palette_type
+	fputc(1 & 0xff, pcxfile); /* palette_type */
 	fputc((1 >> 8) & 0xff, pcxfile);
-	for (i = 0; i < 58; i++) // filler
+	for (i = 0; i < 58; i++) /* filler */
 		fputc(0, pcxfile);
 
-	// pack the image
+	/* pack the image */
 
 	for (i = 0 ; i < width*height ; i++)
 		if ( (*data & 0xc0) != 0xc0)
@@ -81,9 +81,9 @@ static void write_pcx(FILE *pcxfile, unsigned char *data, int width, int height,
 			fputc(*data++, pcxfile);
 		}
 
-	// write the palette
+	/* write the palette */
 
-	fputc(0x0c, pcxfile); // palette ID byte
+	fputc(0x0c, pcxfile); /* palette ID byte */
 	if (palette)
 		for (i = 0 ; i < 768 ; i++)
 			fputc(*palette++, pcxfile);
@@ -318,8 +318,8 @@ int main(int argc, char **argv)
 		fclose(f);
 	} else {
 		unsigned char *data;
-		int i;
-		int x_pos, y_pos;
+		int i = 0;
+		int x_pos = 0, y_pos = 0;
 
 		data = malloc(400*256);
 		if (!data) {
@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 			char buffer[1024];
 			int value;
 
-			fscanf(f, "%s %i\n", &buffer, &value);
+			fscanf(f, "%s %i\n", buffer, &value);
 			if (strcmp(buffer, "num_images:") == 0) {
 				if (gob.num_images != 0) {
 					printf("Parse error in %s\n", filename);

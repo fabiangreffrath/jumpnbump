@@ -1,4 +1,8 @@
-Sep 2002 - 1.
+Sep 2002 - 1.40
+  - new frontend (thanks mwh/name/email/url)
+  - manpage update
+  - joystick support added
+  - freebsd ports (thanks rigel from #demoscene)
   - a while back network code using kaillera was send to me by Gil Megidish,
     it's not enabled, because it doesn't seem to work good enough.
 

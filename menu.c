@@ -44,7 +44,7 @@ char *message[] = {
 	"Linux port by Chuck Mason.",
 	"New SDL port by Florian Schulze.",
 	"http://www.icculus.org/jumpnbump/",
-	//"Ryan C. Gordon made networking possible again!",
+	"Ryan C. Gordon made networking possible again!",
 	"Visit our homepage at:",
 	"http://www.algonet.se/~mattiasb",
 	"Jump 'n Bump is e-mailware.",
@@ -577,7 +577,8 @@ int menu_init(void)
 	}
 	memset(menu_cur_pal, 0, 768);
 
-	for (c1 = 0; c1 < 16; c1++) { // fix dark font
+	/* fix dark font */
+	for (c1 = 0; c1 < 16; c1++) {
 		menu_pal[(240 + c1) * 3 + 0] = c1 << 2;
 		menu_pal[(240 + c1) * 3 + 1] = c1 << 2;
 		menu_pal[(240 + c1) * 3 + 2] = c1 << 2;

@@ -46,3 +46,9 @@ David García Rodríguez <bkron@hotmail.com>
 
 Ryan C. Gordon <icculus@clutteredmind.org>
   Made networking possible again.
+
+Martin Willemoes Hansen <mwh@sysrq.dk>
+  The python frontend.
+
+Alessandro Gatti <a.gatti@tiscali.it>
+  FreeBSD fixes.

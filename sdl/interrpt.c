@@ -36,12 +36,12 @@
 #include "globals.h"
 
 #ifdef USE_KAILLERA
-#include <SDL_thread.h>
-#include <SDL_mutex.h>
+#include "SDL_thread.h"
+#include "SDL_mutex.h"
 #include <kailleraclient.h>
 
 char local_keyb[256];
-#endif // USE_KAILLERA
+#endif /* USE_KAILLERA */
 
 char keyb[256];
 char last_keys[50];
@@ -268,7 +268,7 @@ int key_pressed(int key)
 	return keyb[(unsigned char) key];
 }
 
-#else // USE_KAILLERA
+#else /* USE_KAILLERA */
 
 int addkey(unsigned int key)
 {
@@ -302,7 +302,7 @@ int key_pressed(int key)
 }
 
 
-#endif // USE_KAILLERA
+#endif /* USE_KAILLERA */
 
 int intr_sysupdate()
 {
@@ -381,7 +381,7 @@ int intr_sysupdate()
 		update_kaillera_keys();
 		i=1;
 	}
-#endif // USE_KAILLERA
+#endif /* USE_KAILLERA */
 
 	return i;
 }

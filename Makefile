@@ -1,41 +1,59 @@
-OBJS = sdl/gfx.o sdl/interrpt.o sdl/sound.o sdl/input.o fireworks.o main.o menu.o
+SDL_CFLAGS = `sdl-config --cflags`
+SDL_LIBS = `sdl-config --libs`
+CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp \
+	-Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -I. $(SDL_CFLAGS) -DUSE_NET
+LIBS = -lm $(SDL_LIBS) -lSDL_mixer -lSDL_net
+SDL_TARGET = sdl.a
+MODIFY_TARGET = gobpack jnbpack jnbunpack
+OBJS = fireworks.o main.o menu.o
 TARGET = jumpnbump
-
-CC = gcc
-CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -I. $(shell sdl-config --cflags) -DUSE_NET
-LIBS = -lm $(shell sdl-config --libs) -lSDL_mixer -lSDL_net
+BINARIES = $(TARGET) jumpnbump.svgalib jumpnbump.fbcon $(MODIFY_TARGET) \
+	jnbmenu.tcl
+PREFIX ?= /usr/local
 
 .PHONY: data
 
-all: $(TARGET) jnbpack jnbunpack gobpack data
+all: $(BINARIES)
 
-$(TARGET): $(OBJS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+$(SDL_TARGET): globals.h
+	cd sdl && make
 
-jnbpack: modify/jnbpack.o
-	$(CC) $(LFLAGS) -o jnbpack modify/jnbpack.o $(LIBS)
+$(MODIFY_TARGET): globals.h
+	cd modify && make
 
-jnbunpack: modify/jnbunpack.o
-	$(CC) $(LFLAGS) -o jnbunpack modify/jnbunpack.o $(LIBS)
+$(TARGET): $(OBJS) $(SDL_TARGET) data globals.h
+	$(CC) -o $(TARGET) $(OBJS) $(LIBS) $(SDL_TARGET)
 
-gobpack: modify/gobpack.o
-	$(CC) $(LFLAGS) -o gobpack modify/gobpack.o $(LIBS)
+$(OBJS): globals.h
+
+globals.h: globals.pre
+	sed -e "s#%%PREFIX%%#$(PREFIX)#g" < globals.pre > globals.h
+
+jnbmenu.tcl: jnbmenu.pre
+	sed -e "s#%%PREFIX%%#$(PREFIX)#g" < jnbmenu.pre > jnbmenu.tcl
 
 data: jnbpack
-	$(MAKE) -C data
+	cd data && make
 
 clean:
-	rm -f $(TARGET) jnbpack jnbunpack *.o sdl/*.o *~ log modify/*.o
-	$(MAKE) -C data clean
+	cd sdl && make clean
+	cd modify && make clean
+	cd data && make clean
+	rm -f $(TARGET) *.o globals.h jnbmenu.tcl
 
 install:
-	mkdir -p $(DESTDIR)/usr/games/
-	mkdir -p $(DESTDIR)/usr/share/jumpnbump/
-	install -o root -g games -m 755 $(TARGET) jumpnbump.svgalib jumpnbump.fbcon gobpack jnbpack jnbunpack jnbmenu.tcl $(DESTDIR)/usr/games/
-	install -o root -g games -m 644 data/jumpbump.dat $(DESTDIR)/usr/share/jumpnbump/jumpbump.dat
+	mkdir -p $(PREFIX)/games/
+	mkdir -p $(PREFIX)/share/jumpnbump/
+	mkdir -p $(PREFIX)/share/man/man6/
+	install -o root -g games -m 755 $(BINARIES) $(PREFIX)/games/
+	install -o root -g games -m 644 data/jumpbump.dat \
+	$(PREFIX)/share/jumpnbump/jumpbump.dat
+	install -o root -g root -m 644 jumpnbump.6 $(PREFIX)/share/man/man6/
 
 uninstall:
-	rm /usr/games/jnbpack /usr/games/jnbunpack /usr/games/jumpnbump /usr/games/jnbmenu.tcl /usr/games/jumpnbump.fbcon /usr/games/jumpnbump.svgalib /usr/games/gobpack
+	cd $(PREFIX)/games && rm -f $(BINARIES)
+	rm -rf $(PREFIX)/share/jumpnbump
+	rm -f $(PREFIX)/share/man/man6/jumpnbump.6
 
 doc:
 	rman jumpnbump.6 -f HTML >jumpnbump.html

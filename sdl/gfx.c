@@ -28,7 +28,7 @@
  */
 
 #include "globals.h"
-#include <SDL_endian.h>
+#include "SDL_endian.h"
 
 #ifdef _MSC_VER
     #include "jumpnbump32.xpm"
@@ -132,10 +132,10 @@ static SDL_Surface *load_xpm_from_array(char **xpm)
 				SDL_FreeSurface(surface);
 				return NULL;
 			}
-			r = (pal[*p] >> 16) & 0xff;
-			b = (pal[*p] & 0xff);
-			g = (pal[*p] >> 8) & 0xff;
-			a = (pal[*p] >> 24) & 0xff;
+			r = (pal[(int)*p] >> 16) & 0xff;
+			b = (pal[(int)*p] & 0xff);
+			g = (pal[(int)*p] >> 8) & 0xff;
+			a = (pal[(int)*p] >> 24) & 0xff;
 			pixels[x] = SDL_MapRGBA(surface->format, r, g, b, a);
 			x++;
 			p++;
@@ -178,11 +178,7 @@ void open_screen(void)
 	int bpp;
 	int flags;
 
-#ifdef __APPLE__
-	lval = SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO);
-#else
-	lval = SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_AUDIO);
-#endif
+	lval = SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	if (lval < 0) {
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
@@ -533,11 +529,16 @@ void Super2xSaI (unsigned char *src, unsigned int src_pitch, int src_bytes_per_p
 		for (x = 0; x < width; x++) {
 			unsigned long product1a, product1b, product2a, product2b;
 
+/*
+
 //---------------------------------------  B0 B1 B2 B3    0  1  2  3
 //                                         4  5* 6  S2 -> 4  5* 6  7
 //                                         1  2  3  S1    8  9 10 11
 //                                         A0 A1 A2 A3   12 13 14 15
 //--------------------------------------
+
+*/
+
 			if (color[9] == color[6] && color[5] != color[10]) {
 				product2b = color[9];
 				product1b = product2b;
@@ -596,8 +597,6 @@ void Super2xSaI (unsigned char *src, unsigned int src_pitch, int src_bytes_per_p
 	
 			if (dst_bytes_per_pixel == 2) {
 				unsigned long tmp;
-				//*((unsigned long *) (&dst_line[0][x * 4])) = product1a | (product1b << 16);
-				//*((unsigned long *) (&dst_line[1][x * 4])) = product2a | (product2b << 16);
 				tmp = SDL_SwapLE16(product1a) | SDL_SwapLE16(product1b) << 16;
 				*((unsigned long *) (&dst_line[0][x * 4])) = SDL_SwapLE32(tmp);
 				tmp = SDL_SwapLE16(product2a) | SDL_SwapLE16(product2b) << 16;
@@ -714,7 +713,6 @@ void flippage(int page)
 	dest=(unsigned char *)jnb_surface->pixels;
 	src=screen_buffer[page];
 	for (y=0; y<screen_height; y++) {
-		//memset(&dest[y*jnb_surface->pitch],0,JNB_WIDTH*bytes_per_pixel);
 		for (x=0; x<25; x++) {
 			int count;
 			int test_x;
@@ -729,7 +727,6 @@ void flippage(int page)
 				memcpy(	&dest[y*jnb_surface->pitch+(x<<dirty_block_shift)*bytes_per_pixel],
 					&src[y*screen_pitch+((x<<dirty_block_shift)*bytes_per_pixel)],
 					((16<<dirty_block_shift)>>4)*bytes_per_pixel*count);
-				//*((pixel_t *)(&dest[(y>>dirty_block_shift)*jnb_surface->pitch+x*bytes_per_pixel]))=0xe0e0;
 			}
 			x = test_x;
 		}
@@ -750,8 +747,6 @@ void draw_begin(void)
 		if (background) {
 			put_block(0, 0, 0, JNB_WIDTH, JNB_HEIGHT, background);
 			put_block(1, 0, 0, JNB_WIDTH, JNB_HEIGHT, background);
-			//put_block(0, 0, 0, rabbit_gobs.width[1], rabbit_gobs.height[1], rabbit_gobs.data[1]);
-			//put_block(1, 0, 0, rabbit_gobs.width[1], rabbit_gobs.height[1], rabbit_gobs.data[1]);
 		} else {
 			clear_page(0, 0);
 			clear_page(1, 0);
@@ -1239,7 +1234,7 @@ void register_background(char *pixels, char pal[768])
 		background = malloc(screen_pitch*screen_height);
 		assert(background);
 		Init_2xSaI(565);
-		Super2xSaI(pixels, JNB_WIDTH, 1, (unsigned char *)background, screen_pitch, bytes_per_pixel, JNB_WIDTH, JNB_HEIGHT, int_pal);
+		Super2xSaI((unsigned char *)pixels, JNB_WIDTH, 1, (unsigned char *)background, screen_pitch, bytes_per_pixel, JNB_WIDTH, JNB_HEIGHT, int_pal);
 	} else {
 		background = malloc(JNB_WIDTH*JNB_HEIGHT);
 		assert(background);

@@ -59,16 +59,16 @@ extern "C" {
 # include <windows.h>
 # include <sys/stat.h>
 # include <io.h>
-# include <SDL.h>
+# include "SDL.h"
 # if USE_SDL_MIXER
-#  include <SDL_mixer.h>
+#  include "SDL_mixer.h"
 # endif
 #else
 # ifdef USE_SDL
 #  include <sys/stat.h>
-#  include <SDL/SDL.h>
+#  include "SDL.h"
 #  if USE_SDL_MIXER
-#   include <SDL/SDL_mixer.h>
+#   include "SDL_mixer.h"
 #  endif
 # endif
 #endif
@@ -83,7 +83,7 @@ void tellServerPlayerMoved(int playerid, int movement_type, int newval);
 #define MOVEMENT_RIGHT 2
 #define MOVEMENT_UP    3
 
-#define JNB_VERSION "1.39"
+#define JNB_VERSION "1.40"
 
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256
@@ -171,7 +171,7 @@ extern int bytes_per_pixel;
 #elif _WIN32
 #define	DATA_PATH "data/jumpbump.dat"
 #else
-#define	DATA_PATH "/usr/share/jumpnbump/jumpbump.dat"
+#define	DATA_PATH "%%PREFIX%%/share/jumpnbump/jumpbump.dat"
 #endif
 #endif
 
@@ -345,7 +345,7 @@ void register_mask(void *pixels);
 /* gfx.c */
 
 #ifdef USE_SDL
-//long filelength(int handle);
+/* long filelength(int handle); */
 void fs_toggle();
 int intr_sysupdate();
 #endif

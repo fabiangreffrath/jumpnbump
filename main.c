@@ -31,8 +31,8 @@
 #include <fcntl.h>
 
 #ifdef USE_NET
-#include <SDL_net.h>
-#endif // USE_NET
+#include "SDL_net.h"
+#endif /* USE_NET */
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846
@@ -370,7 +370,7 @@ int grabPacket(TCPsocket s, SDLNet_SocketSet ss, NetPacket *pkt)
 		rc = SDLNet_TCP_Recv(s, &buf[buf_count], NETPKTBUFSIZE - buf_count);
 		if (rc <= 0) {  /* closed connection? */
 			retval = -1;
-		} else if (rc != NETPKTBUFSIZE) { // !!! FIXME: buffer these?
+		} else if (rc != NETPKTBUFSIZE) {
 			buf_count = rc;
 		} else {
 			buf_count = 0;
@@ -465,7 +465,7 @@ void tellServerGoodbye(void)
 		sendPacketToSock(sock, &pkt);
 	}
 }
-#endif // USE_NET
+#endif /* USE_NET */
 
 
 void processMovePacket(NetPacket *pkt)
@@ -526,7 +526,7 @@ void tellServerNewPosition(void)
 		sendPacketToSock(sock, &pkt);
 	}
 }
-#endif // USE_NET
+#endif /* USE_NET */
 
 
 void processKillPacket(NetPacket *pkt)
@@ -669,7 +669,7 @@ void serverSendAlive(int playerid)
 	pkt.arg3 = player[playerid].y;
 	sendPacketToAll(&pkt);
 }
-#endif // USE_NET
+#endif /* USE_NET */
 
 
 void serverSendKillPacket(int killer, int victim)
@@ -716,8 +716,10 @@ void update_players_from_clients(void)
 			}
 		} else if (pkt.cmd == NETCMD_MOVE) {
 			pkt.arg = playerid;  /* just in case. */
-			//pkt.arg3 = player[playerid].x;
-			//pkt.arg4 = player[playerid].y;
+			/*
+			pkt.arg3 = player[playerid].x;
+			pkt.arg4 = player[playerid].y;
+			*/
 			processMovePacket(&pkt);
 			sendPacketToAll(&pkt);
 		} else {
@@ -910,7 +912,7 @@ void connect_to_server(char *netarg)
 
 	br = SDLNet_TCP_Recv(sock, buf, NETPKTBUFSIZE);
 	if (br < 0) {
-		fprintf(stderr, "CLIENT: recv(): %s\n", SDLNet_GetError);
+		fprintf(stderr, "CLIENT: recv(): %s\n", SDLNet_GetError());
 		SDLNet_FreeSocketSet(socketset);
 		SDLNet_TCP_Close(sock);
 		exit(42);
@@ -943,10 +945,10 @@ void connect_to_server(char *netarg)
 
 	wait_for_greenlight();
 }
-#endif // USE_NET
+#endif /* USE_NET */
 
 
-static flip_pixels(unsigned char *pixels)
+static void flip_pixels(unsigned char *pixels)
 {
 	int x,y;
 	unsigned char temp;
@@ -969,7 +971,7 @@ int main(int argc, char *argv[])
 	int l1;
 	int s1, s2, s3, s4;
 	int closest_player = 0, dist, cur_dist = 0;
-	int end_loop_flag = 0, fade_flag;
+	int end_loop_flag = 0, fade_flag = 0;
 	int mod_vol, sfx_vol, mod_fade_direction;
 	char str1[100];
 	char pal[768];
@@ -1002,7 +1004,6 @@ int main(int argc, char *argv[])
 		setpalette(0, 256, cur_pal);
 
 		recalculate_gob(&rabbit_gobs, pal);
-		//recalculate_gob(&font_gobs, pal);
 		recalculate_gob(&object_gobs, pal);
 		recalculate_gob(&number_gobs, pal);
 
@@ -1488,7 +1489,6 @@ int main(int argc, char *argv[])
 		memset(mask_pic, 0, JNB_WIDTH*JNB_HEIGHT);
 		register_mask(mask_pic);
 
-		//recalculate_gob(&font_gobs, pal);
 		register_background(NULL, NULL);
 
 		draw_begin();
@@ -1529,7 +1529,8 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		for (c1 = 0; c1 < 16; c1++) { // fix dark font
+		/* fix dark font */
+		for (c1 = 0; c1 < 16; c1++) {
 			pal[(240 + c1) * 3 + 0] = c1 << 2;
 			pal[(240 + c1) * 3 + 1] = c1 << 2;
 			pal[(240 + c1) * 3 + 2] = c1 << 2;
@@ -2785,7 +2786,6 @@ int init_program(int argc, char *argv[], char *pal)
 				printf("  -v                       print version\n");
 				printf("  -dat level.dat           play a different level\n");
 #ifdef USE_NET
-				//printf("  -port port               define listen port\n");
 				printf("  -server playercount      start as server waiting for players\n");
 				printf("  -connect host            connect to server\n");
 #endif
@@ -2975,7 +2975,8 @@ int init_program(int argc, char *argv[], char *pal)
 	memset(mask_pic, 0, JNB_WIDTH*JNB_HEIGHT);
 	register_mask(mask_pic);
 
-	for (c1 = 0; c1 < 16; c1++) { // fix dark font
+	/* fix dark font */
+	for (c1 = 0; c1 < 16; c1++) {
 		pal[(240 + c1) * 3 + 0] = c1 << 2;
 		pal[(240 + c1) * 3 + 1] = c1 << 2;
 		pal[(240 + c1) * 3 + 2] = c1 << 2;

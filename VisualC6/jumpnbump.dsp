@@ -61,7 +61,8 @@ InputPath=.\Release\jumpnbump.exe
 SOURCE="$(InputPath)"
 
 BuildCmds= \
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Release\gobpack.exe" "..\VisualC6\pack\Release\jnbpack.exe"
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Release\gobpack.exe" "..\VisualC6\pack\Release\jnbpack.exe" \
+	
 
 "$(ProjDir)\..\data\font.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -110,7 +111,8 @@ InputPath=.\Debug\jumpnbump.exe
 SOURCE="$(InputPath)"
 
 BuildCmds= \
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Debug\gobpack.exe" "..\VisualC6\pack\Debug\jnbpack.exe"
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Debug\gobpack.exe" "..\VisualC6\pack\Debug\jnbpack.exe" \
+	
 
 "$(ProjDir)\..\data\font.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -179,7 +181,32 @@ SOURCE=..\dj.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\globals.h
+SOURCE=..\globals.pre
+
+!IF  "$(CFG)" == "jumpnbump - Win32 Release"
+
+# Begin Custom Build
+ProjDir=.
+InputPath=..\globals.pre
+
+"$(ProjDir)\..\globals.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy "$(ProjDir)\..\globals.pre" "$(ProjDir)\..\globals.h"
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "jumpnbump - Win32 Debug"
+
+# Begin Custom Build
+ProjDir=.
+InputPath=..\globals.pre
+
+"$(ProjDir)\..\globals.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy "$(ProjDir)\..\globals.pre" "$(ProjDir)\..\globals.h"
+
+# End Custom Build
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 

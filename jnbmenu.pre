@@ -49,14 +49,14 @@ global fullscreen
 
 	set file ""
 	if { [ .top17.lis26 curselection ] != "" } then {
-		set file "/usr/share/games/jumpnbump/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
+		set file "%%PREFIX%%/games/jumpnbump/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
 	}
 	
 	exec jumpnbump $str_fullscreen $str_nosound $str_scaleup $str_mirror $str_nogore $str_fireworks -dat $file &
 }
 
 proc {fill_list_box} {} {
-if [ catch { exec ls /usr/share/games/jumpnbump/ } data ] {
+if [ catch { exec ls %%PREFIX%%/share/jumpnbump/ } data ] {
 		puts stderr "Error"
 	}
 
