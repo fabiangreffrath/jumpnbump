@@ -44,6 +44,7 @@ char *message[] = {
 	"Linux port by Chuck Mason.",
 	"New SDL port by Florian Schulze.",
 	"http://www.icculus.org/jumpnbump/",
+	//"Ryan C. Gordon made networking possible again!",
 	"Visit our homepage at:",
 	"http://www.algonet.se/~mattiasb",
 	"Jump 'n Bump is e-mailware.",
@@ -53,7 +54,7 @@ char *message[] = {
 	"If you do that, you will greatly encourage us",
 	"to make more games for you!",
 	"Send your e-mail to: matbr656@student.liu.se",
-	"Oh, and by the way, there's a lot of secrets!",
+	"Oh, and by the way, there're a lot of secrets!",
 	"If you can't find them, you'd better ask us...",
 	"If you'd like to contact a specific member of BCD,",
 	"these are their e-mail addresses:",
@@ -120,7 +121,7 @@ int menu(void)
 				esc_pressed = 0;
 
 			update_player_actions();
-			for (c1 = 0; c1 < 4; c1++) {
+			for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
 				if (end_loop_flag == 1 && new_game_flag == 1) {
 					if ((player[c1].x >> 16) > (165 + c1 * 2)) {
 						if (player[c1].x_add < 0)
@@ -398,7 +399,7 @@ int menu(void)
 						player[c1].x = 0;
 						player[c1].x_add = 0;
 					}
-					if ((player[c1].x >> 16) > 400) {
+					if ((player[c1].x >> 16) > JNB_WIDTH) {
 						end_loop_flag = 1;
 						new_game_flag = 1;
 						memset(menu_pal, 0, 768);
@@ -553,7 +554,7 @@ int menu(void)
 
 int menu_init(void)
 {
-	FILE *handle;
+	char *handle;
 	int c1;
 
 	fillpalette(0, 0, 0);
@@ -562,20 +563,18 @@ int menu_init(void)
 		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 		return 1;
 	}
-	if (read_pcx(handle, background_pic, 102400, menu_pal) != 0) {
+	if (read_pcx(handle, background_pic, JNB_WIDTH*JNB_HEIGHT, menu_pal) != 0) {
 		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 		return 1;
 	}
-	fclose(handle);
 	if ((handle = dat_open("menumask.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'menumask.pcx', aborting...\n");
 		return 1;
 	}
-	if (read_pcx(handle, mask_pic, 102400, 0) != 0) {
+	if (read_pcx(handle, mask_pic, JNB_WIDTH*JNB_HEIGHT, 0) != 0) {
 		strcpy(main_info.error_str, "Error loading 'menumask.pcx', aborting...\n");
 		return 1;
 	}
-	fclose(handle);
 	memset(menu_cur_pal, 0, 768);
 
 	for (c1 = 0; c1 < 16; c1++) { // fix dark font
@@ -590,7 +589,7 @@ int menu_init(void)
 	register_background(background_pic, menu_pal);
 	register_mask(mask_pic);
 
-	for (c1 = 0; c1 < 4; c1++) {
+	for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
 		player[c1].enabled = 0;
 		player[c1].x = (long) rnd(150) << 16;
 		player[c1].y = (160L + c1 * 2) << 16;

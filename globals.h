@@ -30,6 +30,10 @@
 #ifndef __GLOBALS_H
 #define __GLOBALS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "config.h"
 
 #include <assert.h>
@@ -56,19 +60,34 @@
 # include <sys/stat.h>
 # include <io.h>
 # include <SDL.h>
-# include <SDL_mixer.h>
+# if USE_SDL_MIXER
+#  include <SDL_mixer.h>
+# endif
 #else
 # ifdef USE_SDL
 #  include <sys/stat.h>
 #  include <SDL/SDL.h>
-#  include <SDL/SDL_mixer.h>
+#  if USE_SDL_MIXER
+#   include <SDL/SDL_mixer.h>
+#  endif
 # endif
 #endif
 
-#define JNB_VERSION "1.35"
+#define JNB_MAX_PLAYERS 4
+
+#define JNB_INETPORT 11111
+
+extern int client_player_num;
+void tellServerPlayerMoved(int playerid, int movement_type, int newval);
+#define MOVEMENT_LEFT  1
+#define MOVEMENT_RIGHT 2
+#define MOVEMENT_UP    3
+
+#define JNB_VERSION "1.39"
 
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256
+
 extern int screen_width;
 extern int screen_height;
 extern int screen_pitch;
@@ -187,7 +206,7 @@ typedef struct {
 	int action_left,action_up,action_right;
 	int enabled, dead_flag;
 	int bumps;
-	int bumped[4];
+	int bumped[JNB_MAX_PLAYERS];
 	int x, y;
 	int x_add, y_add;
 	int direction, jump_ready, jump_abort, in_water;
@@ -270,7 +289,7 @@ int init_program(int argc, char *argv[], char *pal);
 void deinit_program(void);
 unsigned short rnd(unsigned short max);
 int read_level(void);
-FILE *dat_open(char *file_name, char *dat_name, char *mode);
+unsigned char *dat_open(char *file_name, char *dat_name, char *mode);
 int dat_filelen(char *file_name, char *dat_name);
 void write_calib_data(void);
 
@@ -317,9 +336,9 @@ int pob_width(int image, gob_t *gob);
 int pob_height(int image, gob_t *gob);
 int pob_hs_x(int image, gob_t *gob);
 int pob_hs_y(int image, gob_t *gob);
-int read_pcx(FILE * handle, void *buffer, int buf_len, char *pal);
+int read_pcx(unsigned char * handle, void *buffer, int buf_len, char *pal);
 void register_background(char *pixels, char pal[768]);
-int register_gob(FILE *handle, gob_t *gob, int len);
+int register_gob(unsigned char *handle, gob_t *gob, int len);
 void recalculate_gob(gob_t *gob, char pal[768]);
 void register_mask(void *pixels);
 
@@ -343,6 +362,10 @@ int key_pressed(int key);
 #ifdef LINUX
 
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

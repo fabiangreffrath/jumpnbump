@@ -33,7 +33,7 @@ extern unsigned int ban_map[17][22];
 
 void fireworks(void)
 {
-	FILE *handle;
+	char *handle;
 	int c1, c2;
 	int s1, s2, s3;
 	char pal[768];
@@ -57,10 +57,9 @@ void fireworks(void)
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
 		return;
 	}
-	read_pcx(handle, mask_pic, 102400, pal);
-	fclose(handle);
+	read_pcx(handle, mask_pic, JNB_WIDTH*JNB_HEIGHT, pal);
 
-	memset(mask_pic, 0, 102400);
+	memset(mask_pic, 0, JNB_WIDTH*JNB_HEIGHT);
 	register_mask(mask_pic);
 
 	recalculate_gob(&rabbit_gobs, pal);
@@ -72,7 +71,7 @@ void fireworks(void)
 
 	draw_begin();
 
-	for (c2 = 193; c2 < 256; c2++) {
+	for (c2 = JNB_HEIGHT - 63; c2 < JNB_HEIGHT; c2++) {
 		clear_lines(0, c2, 1, get_color((c2 - 192) >> 2, pal));
 		clear_lines(1, c2, 1, get_color((c2 - 192) >> 2, pal));
 	}
@@ -102,8 +101,8 @@ void fireworks(void)
 
 	draw_begin();
 	for (c1 = 0; c1 < 300; c1++) {
-		s1 = rnd(400);
-		s2 = rnd(256);
+		s1 = rnd(JNB_WIDTH);
+		s2 = rnd(JNB_HEIGHT);
 		s3 = 30 - rnd(7);
 		stars[c1].x = stars[c1].old_x = (s1 << 16);
 		stars[c1].y = stars[c1].old_y = (s2 << 16);
@@ -176,7 +175,7 @@ void fireworks(void)
 				}
 				rabbits[c1].x += rabbits[c1].x_add;
 				rabbits[c1].y += rabbits[c1].y_add;
-				if ((rabbits[c1].x >> 16) < 16 || (rabbits[c1].x >> 16) > 400 || (rabbits[c1].y >> 16) > 256) {
+				if ((rabbits[c1].x >> 16) < 16 || (rabbits[c1].x >> 16) > JNB_WIDTH || (rabbits[c1].y >> 16) > JNB_HEIGHT) {
 					rabbits[c1].used = 0;
 					continue;
 				}

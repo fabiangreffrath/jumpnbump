@@ -126,7 +126,7 @@ static SDL_Surface *load_xpm_from_array(char **xpm)
 		pixels = (int *)&((char *)surface->pixels)[y++ * surface->pitch];
 		x = 0;
 		while (x < width) {
-			int r,g,b,a;
+			Uint8 r,g,b,a;
 
 			if (*p == '\0') {
 				SDL_FreeSurface(surface);
@@ -709,7 +709,7 @@ void flippage(int page)
 	dest=(unsigned char *)jnb_surface->pixels;
 	src=screen_buffer[page];
 	for (y=0; y<screen_height; y++) {
-		//memset(&dest[y*jnb_surface->pitch],0,JNB_SURFACE_WIDTH*bytes_per_pixel);
+		//memset(&dest[y*jnb_surface->pitch],0,JNB_WIDTH*bytes_per_pixel);
 		for (x=0; x<25; x++) {
 			int count;
 			int test_x;
@@ -1186,19 +1186,19 @@ int pob_hs_y(int image, gob_t *gob)
 }
 
 
-int read_pcx(FILE * handle, void *buf, int buf_len, char *pal)
+int read_pcx(unsigned char * handle, void *buf, int buf_len, char *pal)
 {
 	unsigned char *buffer=buf;
 	short c1;
 	short a, b;
 	long ofs1;
 	if (buffer != 0) {
-		fseek(handle, 128, SEEK_CUR);
+		handle += 128;
 		ofs1 = 0;
 		while (ofs1 < buf_len) {
-			a = fgetc(handle);
+			a = *(handle++);
 			if ((a & 0xc0) == 0xc0) {
-				b = fgetc(handle);
+				b = *(handle++);
 				a &= 0x3f;
 				for (c1 = 0; c1 < a && ofs1 < buf_len; c1++)
 					buffer[ofs1++] = (char) b;
@@ -1206,9 +1206,9 @@ int read_pcx(FILE * handle, void *buf, int buf_len, char *pal)
 				buffer[ofs1++] = (char) a;
 		}
 		if (pal != 0) {
-			fseek(handle, 1, SEEK_CUR);
+			handle++;
 			for (c1 = 0; c1 < 768; c1++)
-				pal[c1] = fgetc(handle) >> 2;
+				pal[c1] = *(handle++) /*fgetc(handle)*/ >> 2;
 		}
 	}
 	return 0;
@@ -1242,13 +1242,13 @@ void register_background(char *pixels, char pal[768])
 	}
 }
 
-int register_gob(FILE *handle, gob_t *gob, int len)
+int register_gob(unsigned char *handle, gob_t *gob, int len)
 {
 	unsigned char *gob_data;
 	int i;
 
 	gob_data = malloc(len);
-	fread(gob_data, 1, len, handle);
+	memcpy(gob_data, handle, len);
 
 	gob->num_images = (short)((gob_data[0]) + (gob_data[1] << 8));
 

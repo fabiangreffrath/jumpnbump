@@ -29,8 +29,13 @@
 
 #include "globals.h"
 #include <limits.h>
+#include "SDL.h"
+
+#ifndef NO_SDL_MIXER
+#include "SDL_mixer.h"
 
 static Mix_Music *current_music = (Mix_Music *) NULL;
+#endif
 
 sfx_data sounds[NUM_SFX];
 
@@ -257,6 +262,10 @@ char dj_init(void)
 
 	audio_buffers = SAMPLECOUNT*audio_rate/11025;
 
+	memset(channelinfo, 0, sizeof(channelinfo));
+	memset(sounds, 0, sizeof(sounds));
+
+#ifndef NO_SDL_MIXER
 	if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) < 0) {
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
 		main_info.no_sound = 1;
@@ -269,9 +278,10 @@ char dj_init(void)
 	Mix_SetMusicCMD(getenv("MUSIC_CMD"));
 
 	Mix_SetPostMix(mix_sound, NULL);
-
-	memset(channelinfo, 0, sizeof(channelinfo));
-	memset(sounds, 0, sizeof(sounds));
+#else
+	main_info.no_sound = 1;
+	return 1;
+#endif
 
 	return 0;
 }
@@ -281,12 +291,14 @@ void dj_deinit(void)
 	if (main_info.no_sound)
 		return;
 
+#ifndef NO_SDL_MIXER
 	Mix_HaltMusic();
 	if (current_music)
 		Mix_FreeMusic(current_music);
 	current_music = NULL;
 
 	Mix_CloseAudio();
+#endif
 
 	SDL_Quit();
 }
@@ -409,7 +421,7 @@ void dj_stop_sfx_channel(char channel_num)
 	SDL_UnlockAudio();
 }
 
-char dj_load_sfx(FILE * file_handle, char *filename, int file_length, char sfx_type, unsigned char sfx_num)
+char dj_load_sfx(unsigned char * file_handle, char *filename, int file_length, char sfx_type, unsigned char sfx_num)
 {
 	unsigned int i;
 	unsigned char *src;
@@ -419,7 +431,9 @@ char dj_load_sfx(FILE * file_handle, char *filename, int file_length, char sfx_t
 		return 0;
 
 	sounds[sfx_num].buf = malloc(file_length);
-	fread(sounds[sfx_num].buf, 1, file_length, file_handle);
+
+	memcpy(sounds[sfx_num].buf, file_handle, file_length);
+
 	sounds[sfx_num].length = file_length / 2;
 	src = sounds[sfx_num].buf;
 	dest = (unsigned short *)sounds[sfx_num].buf;
@@ -447,13 +461,14 @@ void dj_free_sfx(unsigned char sfx_num)
 
 char dj_ready_mod(char mod_num)
 {
+#ifndef NO_SDL_MIXER
 	FILE *tmp;
-#if ((defined _MSC_VER) || (defined __MINGW32__))
+# if ((defined _MSC_VER) || (defined __MINGW32__))
 	char filename[] = "jnb.tmpmusic.mod";
-#else
+# else
 	char filename[] = "/tmp/jnb.tmpmusic.mod";
-#endif
-	FILE *fp;
+# endif
+	char *fp;
 	int len;
 
 	if (main_info.no_sound)
@@ -483,14 +498,17 @@ char dj_ready_mod(char mod_num)
 		Mix_FreeMusic(current_music);
 		current_music = NULL;
 	}
+
+	if (fp == NULL) {
+		return 0;
+	}
+
 	tmp = fopen(filename, "wb");
 	if (tmp) {
-		for (; len > 0; len--)
-			fputc(fgetc(fp), tmp);
+        fwrite(fp, len, 1, tmp);
 		fflush(tmp);
 		fclose(tmp);
 	}
-	fclose(fp);
 
 	current_music = Mix_LoadMUS(filename);
 	unlink(filename);
@@ -499,37 +517,45 @@ char dj_ready_mod(char mod_num)
 		return 0;
 	}
 
+#endif
+
 	return 0;
 }
 
 char dj_start_mod(void)
 {
+#ifndef NO_SDL_MIXER
 	if (main_info.no_sound)
 		return 0;
 
 	Mix_VolumeMusic(0);
 	Mix_PlayMusic(current_music, -1);
+#endif
 
 	return 0;
 }
 
 void dj_stop_mod(void)
 {
+#ifndef NO_SDL_MIXER
 	if (main_info.no_sound)
 		return;
 
 	Mix_HaltMusic();
+#endif
 }
 
 void dj_set_mod_volume(char volume)
 {
+#ifndef NO_SDL_MIXER
 	if (main_info.no_sound)
 		return;
 
 	Mix_VolumeMusic(volume);
+#endif
 }
 
-char dj_load_mod(FILE * file_handle, char *filename, char mod_num)
+char dj_load_mod(unsigned char * file_handle, char *filename, char mod_num)
 {
 	return 0;
 }

@@ -36,18 +36,59 @@ int calib_joy(int type)
 
 void update_player_actions(void)
 {
-	player[0].action_left	= key_pressed(KEY_PL1_LEFT) == 1;
-	player[0].action_right	= key_pressed(KEY_PL1_RIGHT) == 1;
-	player[0].action_up	= key_pressed(KEY_PL1_JUMP) == 1;
-	player[1].action_left	= key_pressed(KEY_PL2_LEFT) == 1;
-	player[1].action_right	= key_pressed(KEY_PL2_RIGHT) == 1;
-	player[1].action_up	= key_pressed(KEY_PL2_JUMP) == 1;
-	player[2].action_left	= key_pressed(KEY_PL3_LEFT) == 1;
-	player[2].action_right	= key_pressed(KEY_PL3_RIGHT) == 1;
-	player[2].action_up	= key_pressed(KEY_PL3_JUMP) == 1;
-	player[3].action_left	= key_pressed(KEY_PL4_LEFT) == 1;
-	player[3].action_right	= key_pressed(KEY_PL4_RIGHT) == 1;
-	player[3].action_up	= key_pressed(KEY_PL4_JUMP) == 1;
+	int tmp;
+
+	if (client_player_num < 0) {
+		tmp = (key_pressed(KEY_PL1_LEFT) == 1);
+		if (tmp != player[0].action_left)
+			tellServerPlayerMoved(0, MOVEMENT_LEFT, tmp);
+		tmp = (key_pressed(KEY_PL1_RIGHT) == 1);
+		if (tmp != player[0].action_right)
+			tellServerPlayerMoved(0, MOVEMENT_RIGHT, tmp);
+		tmp = (key_pressed(KEY_PL1_JUMP) == 1);
+		if (tmp != player[0].action_up)
+			tellServerPlayerMoved(0, MOVEMENT_UP, tmp);
+
+		tmp = (key_pressed(KEY_PL2_LEFT) == 1);
+		if (tmp != player[1].action_left)
+			tellServerPlayerMoved(1, MOVEMENT_LEFT, tmp);
+		tmp = (key_pressed(KEY_PL2_RIGHT) == 1);
+		if (tmp != player[1].action_right)
+			tellServerPlayerMoved(1, MOVEMENT_RIGHT, tmp);
+		tmp = (key_pressed(KEY_PL2_JUMP) == 1);
+		if (tmp != player[1].action_up)
+			tellServerPlayerMoved(1, MOVEMENT_UP, tmp);
+
+		tmp = (key_pressed(KEY_PL3_LEFT) == 1);
+		if (tmp != player[2].action_left)
+			tellServerPlayerMoved(2, MOVEMENT_LEFT, tmp);
+		tmp = (key_pressed(KEY_PL3_RIGHT) == 1);
+		if (tmp != player[2].action_right)
+			tellServerPlayerMoved(2, MOVEMENT_RIGHT, tmp);
+		tmp = (key_pressed(KEY_PL3_JUMP) == 1);
+		if (tmp != player[2].action_up)
+			tellServerPlayerMoved(2, MOVEMENT_UP, tmp);
+
+		tmp = (key_pressed(KEY_PL4_LEFT) == 1);
+		if (tmp != player[3].action_left)
+		tellServerPlayerMoved(3, MOVEMENT_LEFT, tmp);
+		tmp = (key_pressed(KEY_PL4_RIGHT) == 1);
+		if (tmp != player[3].action_right)
+		tellServerPlayerMoved(3, MOVEMENT_RIGHT, tmp);
+		tmp = (key_pressed(KEY_PL4_JUMP) == 1);
+		if (tmp != player[3].action_up)
+		tellServerPlayerMoved(3, MOVEMENT_UP, tmp);
+	} else {
+		tmp = (key_pressed(KEY_PL1_LEFT) == 1);
+		if (tmp != player[client_player_num].action_left)
+			tellServerPlayerMoved(client_player_num, MOVEMENT_LEFT, tmp);
+		tmp = (key_pressed(KEY_PL1_RIGHT) == 1);
+		if (tmp != player[client_player_num].action_right)
+			tellServerPlayerMoved(client_player_num, MOVEMENT_RIGHT, tmp);
+		tmp = (key_pressed(KEY_PL1_JUMP) == 1);
+		if (tmp != player[client_player_num].action_up)
+			tellServerPlayerMoved(client_player_num, MOVEMENT_UP, tmp);
+	}
 }
 
 void init_inputs(void)

@@ -127,7 +127,7 @@ extern char dj_get_sfx_settings(unsigned char sfx_num, sfx_data *data);
 extern char dj_set_sfx_settings(unsigned char sfx_num, sfx_data *data);
 extern void dj_set_sfx_channel_volume(char channel_num, char volume);
 extern void dj_stop_sfx_channel(char channel_num);
-extern char dj_load_sfx(FILE *file_handle, char *filename, int file_length, char sfx_type, unsigned char sfx_num);
+extern char dj_load_sfx(unsigned char *file_handle, char *filename, int file_length, char sfx_type, unsigned char sfx_num);
 extern void dj_free_sfx(unsigned char sfx_num);
 
 extern char dj_ready_mod(char mod_num);
@@ -135,6 +135,6 @@ extern char dj_start_mod(void);
 extern void dj_stop_mod(void);
 extern void dj_set_mod_volume(char volume);
 extern char dj_get_mod_volume(void);
-extern char dj_load_mod(FILE *file_handle, char *filename, char mod_num);
+extern char dj_load_mod(unsigned char *file_handle, char *filename, char mod_num);
 extern void dj_free_mod(char mod_num);
 

@@ -28,6 +28,7 @@
  */
 
 #include "globals.h"
+#include <fcntl.h>
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846
@@ -39,7 +40,7 @@ gob_t object_gobs = { 0 };
 gob_t number_gobs = { 0 };
 
 main_info_t main_info;
-player_t player[4];
+player_t player[JNB_MAX_PLAYERS];
 player_anim_t player_anims[7];
 object_t objects[NUM_OBJECTS];
 joy_t joy;
@@ -194,6 +195,8 @@ struct {
 	}
 };
 
+int flies_enabled = 1;
+
 struct {
 	int x, y;
 	int old_x, old_y;
@@ -215,6 +218,744 @@ struct {
 
 int pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_than_water;
 
+
+#ifndef _MSC_VER
+int filelength(int handle)
+{
+	struct stat buf;
+
+	if (fstat(handle, &buf) == -1) {
+		perror("filelength");
+		exit(EXIT_FAILURE);
+	}
+
+	return buf.st_size;
+}
+#endif
+
+
+/* networking shite. */
+
+int client_player_num = -1;
+int is_server = 1;
+int is_net = 0;
+int sock = -1;
+
+typedef struct
+{
+    int sock;
+#ifdef USE_SDL_NET
+    /*struct timeval last_timestamp;*/
+    struct sockaddr *addr;
+    int addrlen;
+#endif
+} NetInfo;
+
+NetInfo net_info[JNB_MAX_PLAYERS];
+
+typedef struct
+{
+	unsigned long cmd;
+	long arg;
+	long arg2;
+	long arg3;
+	long arg4;
+} NetPacket;
+
+#define NETPKTBUFSIZE (4 + 4 + 4 + 4 + 4)
+
+#define NETCMD_NACK         (0xF00DF00D + 0)
+#define NETCMD_ACK          (0xF00DF00D + 1)
+#define NETCMD_HELLO        (0xF00DF00D + 2)
+#define NETCMD_GREENLIGHT   (0xF00DF00D + 3)
+#define NETCMD_MOVE         (0xF00DF00D + 4)
+#define NETCMD_BYE          (0xF00DF00D + 5)
+#define NETCMD_POSITION     (0xF00DF00D + 6)
+#define NETCMD_ALIVE        (0xF00DF00D + 7)
+#define NETCMD_KILL         (0xF00DF00D + 8)
+
+
+#if USE_SDL_NET
+void bufToPacket(const char *buf, NetPacket *pkt)
+{
+	SDLNet_Write32(*((unsigned long *) (buf +  0)), pkt->cmd);
+	SDLNet_Write32(*((unsigned long *) (buf +  4)), pkt->arg);
+	SDLNet_Write32(*((unsigned long *) (buf +  8)), pkt->arg2);
+	SDLNet_Write32(*((unsigned long *) (buf + 12)), pkt->arg3);
+	SDLNet_Write32(*((unsigned long *) (buf + 16)), pkt->arg4);
+}
+
+
+void packetToBuf(const NetPacket *pkt, char *buf)
+{
+	*((unsigned long *) (buf +  0)) = SDLNet_Read32(pkt->cmd);
+	*((unsigned long *) (buf +  4)) = SDLNet_Read32((unsigned long) pkt->arg);
+	*((unsigned long *) (buf +  8)) = SDLNet_Read32((unsigned long) pkt->arg2);
+	*((unsigned long *) (buf + 12)) = SDLNet_Read32((unsigned long) pkt->arg3);
+	*((unsigned long *) (buf + 16)) = SDLNet_Read32((unsigned long) pkt->arg4);
+}
+#endif
+
+void sendPacketToSock(int s, NetPacket *pkt)
+{
+#if USE_SDL_NET
+    int bytes_left = NETPKTBUFSIZE;
+    int bw;
+    char buf[NETPKTBUFSIZE];
+    char *ptr = buf;
+
+    return;
+    
+    packetToBuf(pkt, buf);
+    while (bytes_left > 0) {
+        bw = write(s, ptr, bytes_left);  /* this might block. For now, we'll deal. */
+        if (bw < 0) {
+            if (errno != EAGAIN) {
+                perror("SERVER: write()");
+                close(s);
+                exit(42);
+            }
+        } else if (bw == 0) {
+            SDL_Delay(1);
+        } else {
+            bytes_left -= bw;
+            ptr += bw;
+        }
+    }
+#endif
+}
+
+
+void sendPacket(int playerid, NetPacket *pkt)
+{
+	if ( playerid < JNB_MAX_PLAYERS ) {
+		if ((player[playerid].enabled) && (playerid != client_player_num)) {
+			sendPacketToSock(net_info[playerid].sock, pkt);
+		}
+	}
+}
+
+
+void sendPacketToAll(NetPacket *pkt)
+{
+	int i;
+
+	for (i = 0; i < JNB_MAX_PLAYERS; i++) {
+		sendPacket(i, pkt);
+	}
+}
+
+
+int grabPacket(int s, NetPacket *pkt)
+{
+#if USE_SDL_NET
+    char buf[NETPKTBUFSIZE];
+    struct timeval tv;
+    fd_set rfds;
+    int rc;
+    int retval = 0;
+
+    FD_ZERO(&rfds);
+    FD_SET(s, &rfds);
+    tv.tv_sec = tv.tv_usec = 0;    /* don't block. */
+    if (select(s + 1, &rfds, NULL, NULL, &tv)) {
+        rc = read(s, buf, NETPKTBUFSIZE);
+        if (rc <= 0) {  /* closed connection? */
+            retval = -1;
+        } else if (rc != NETPKTBUFSIZE) { // !!! FIXME: buffer these?
+            printf("NETWORK: -BUG- ... dropped a packet! (had %d of %d bytes).\b",
+                    rc, NETPKTBUFSIZE);
+        } else {
+            bufToPacket(buf, pkt);
+            retval = 1;
+        }
+    }
+
+    return(retval);
+#endif
+
+    return 0;
+}
+
+
+int serverRecvPacket(NetPacket *pkt)
+{
+	int rc;
+	int i;
+
+	assert(is_server);
+
+	for (i = 0; i < JNB_MAX_PLAYERS; i++) {
+		int s = net_info[i].sock;
+
+		if ((i == client_player_num) || (!player[i].enabled))
+			continue;
+
+		rc = grabPacket(s, pkt);
+		if (rc < 0) {
+			NetPacket pkt;
+
+			player[i].enabled = 0;
+			close(s);
+			pkt.cmd = NETCMD_BYE;
+			pkt.arg = i;
+			pkt.arg2 = 0;
+			pkt.arg3 = 0;
+			pkt.arg4 = 0;
+			sendPacketToAll(&pkt);
+		} else if (rc > 0) {
+			return(i);  /* it's all good. */
+		}
+	}
+
+	return(-1);  /* no packets available currently. */
+}
+
+
+void wait_for_greenlight(void)
+{
+	NetPacket pkt;
+	int i;
+
+	printf("CLIENT: Waiting for greenlight...\n");
+
+	do {
+		int rc;
+		while ((rc = grabPacket(sock, &pkt)) == 0) {
+			SDL_Delay(100);  /* nap and then try again. */
+		}
+
+		if (rc < 0) {
+			printf("CLIENT: Lost connection.\n");
+			close(sock);
+			exit(42);
+		}
+	} while (pkt.cmd != NETCMD_GREENLIGHT);
+
+	printf("CLIENT: Got greenlight.\n");
+
+	for (i = 0; i < JNB_MAX_PLAYERS; i++) {
+		if (pkt.arg & (1 << i)) {
+			printf("CLIENT: There is a player #%d.\n", i);
+			player[i].enabled = 1;
+		}
+	}
+}
+
+
+static int buggered_off = 0;
+
+
+void tellServerGoodbye(void)
+{
+	NetPacket pkt;
+
+	if (!buggered_off) {
+		buggered_off = 1;
+		pkt.cmd = NETCMD_BYE;
+		pkt.arg = client_player_num;
+		pkt.arg2 = 0;
+		pkt.arg3 = 0;
+		pkt.arg4 = 0;
+		sendPacketToSock(sock, &pkt);
+	}
+}
+
+
+void processMovePacket(NetPacket *pkt)
+{
+	int playerid = pkt->arg;
+	int movetype = ((pkt->arg2 >> 16) & 0xFF);
+	int newval   = ((pkt->arg2 >>  0) & 0xFF);
+
+	if (movetype == MOVEMENT_LEFT) {
+		player[playerid].action_left = newval;
+	} else if (movetype == MOVEMENT_RIGHT) {
+		player[playerid].action_right = newval;
+	} else if (movetype == MOVEMENT_UP) {
+		player[playerid].action_up = newval;
+	} else {
+		printf("bogus MOVE packet!\n");
+	}
+
+	player[playerid].x = pkt->arg3;
+	player[playerid].y = pkt->arg4;
+}
+
+
+void tellServerPlayerMoved(int playerid, int movement_type, int newval)
+{
+	NetPacket pkt;
+
+	pkt.cmd = NETCMD_MOVE;
+	pkt.arg = playerid;
+	pkt.arg2 = ( ((movement_type & 0xFF) << 16) | ((newval & 0xFF) << 0) );
+	pkt.arg3 = player[playerid].x;
+	pkt.arg4 = player[playerid].y;
+
+	if (is_server) {
+		processMovePacket(&pkt);
+		sendPacketToAll(&pkt);
+	} else {
+		sendPacketToSock(sock, &pkt);
+	}
+}
+
+
+void tellServerNewPosition(void)
+{
+	NetPacket pkt;
+	pkt.cmd = NETCMD_POSITION;
+	pkt.arg = client_player_num;
+	pkt.arg2 = player[client_player_num].x;
+	pkt.arg3 = player[client_player_num].y;
+
+	if (is_server) {
+		sendPacketToAll(&pkt);
+	} else {
+		sendPacketToSock(sock, &pkt);
+	}
+}
+
+
+void processKillPacket(NetPacket *pkt)
+{
+	int c1 = pkt->arg;
+	int c2 = pkt->arg2;
+	int x = pkt->arg3;
+	int y = pkt->arg4;
+	int c4 = 0;
+	int s1 = 0;
+
+	player[c1].y_add = -player[c1].y_add;
+	if (player[c1].y_add > -262144L)
+		player[c1].y_add = -262144L;
+	player[c1].jump_abort = 1;
+	player[c2].dead_flag = 1;
+	if (player[c2].anim != 6) {
+		player[c2].anim = 6;
+		player[c2].frame = 0;
+		player[c2].frame_tick = 0;
+		player[c2].image = player_anims[player[c2].anim].frame[player[c2].frame].image + player[c2].direction * 9;
+		if (main_info.no_gore == 0) {
+			for (c4 = 0; c4 < 6; c4++)
+				add_object(OBJ_FUR, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c2 * 8);
+			for (c4 = 0; c4 < 6; c4++)
+				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
+			for (c4 = 0; c4 < 6; c4++)
+				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
+			for (c4 = 0; c4 < 8; c4++)
+				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
+			for (c4 = 0; c4 < 10; c4++)
+				add_object(OBJ_FLESH, (x >> 16) + 6 + rnd(5), (y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
+		}
+		dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
+		player[c1].bumps++;
+		player[c1].bumped[c2]++;
+		s1 = player[c1].bumps % 100;
+		add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
+		add_leftovers(1, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
+		add_leftovers(0, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+		add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+	}
+}
+
+
+void processPositionPacket(NetPacket *pkt)
+{
+	int playerid = pkt->arg;
+
+	player[playerid].x = pkt->arg2;
+	player[playerid].y = pkt->arg3;
+}
+
+
+void processAlivePacket(NetPacket *pkt)
+{
+	int playerid = pkt->arg;
+
+	player[playerid].dead_flag = 0;
+	player[playerid].x = pkt->arg2;
+	player[playerid].y = pkt->arg3;
+}
+
+
+void serverTellEveryoneGoodbye(void)
+{
+	int i;
+
+	if (!buggered_off) {
+		buggered_off = 1;
+		for (i = 0; i < JNB_MAX_PLAYERS; i++) {
+			if (player[i].enabled) {
+				NetPacket pkt;
+
+				pkt.cmd = NETCMD_BYE;
+				pkt.arg = i;
+				pkt.arg2 = 0;
+				pkt.arg3 = 0;
+				pkt.arg4 = 0;
+				sendPacketToAll(&pkt);
+			}
+		}
+	}
+}
+
+
+int server_said_bye = 0;
+
+
+int update_players_from_server(void)
+{
+	NetPacket pkt;
+	int rc;
+
+	assert(!is_server);
+
+	while ((rc = grabPacket(sock, &pkt)) != 0) {
+		if (rc < 0) {
+			printf("CLIENT: Lost connection.\n");
+			pkt.cmd = NETCMD_BYE;
+			pkt.arg = client_player_num;
+		}
+
+		if (pkt.cmd == NETCMD_BYE) {
+			if (pkt.arg == client_player_num) {
+				close(sock);
+				sock = -1;
+				server_said_bye = 1;
+				return(0);
+			} else {
+				player[pkt.arg].enabled = 0;
+			}
+		} else if (pkt.cmd == NETCMD_MOVE) {
+			processMovePacket(&pkt);
+		} else if (pkt.cmd == NETCMD_ALIVE) {
+			processAlivePacket(&pkt);
+		} else if (pkt.cmd == NETCMD_POSITION) {
+			processPositionPacket(&pkt);
+		} else if (pkt.cmd == NETCMD_KILL) {
+			processKillPacket(&pkt);
+		} else {
+			printf("CLIENT: Got an unknown packet: 0x%lX.\n", pkt.cmd);
+		}
+	}
+
+	return(1);
+}
+
+
+void serverSendAlive(int playerid)
+{
+	NetPacket pkt;
+
+	assert(is_server);
+	pkt.cmd = NETCMD_ALIVE;
+	pkt.arg = playerid;
+	pkt.arg2 = player[playerid].x;
+	pkt.arg3 = player[playerid].y;
+	sendPacketToAll(&pkt);
+}
+
+
+void serverSendKillPacket(int killer, int victim)
+{
+	NetPacket pkt;
+
+	assert(is_server);
+	pkt.cmd = NETCMD_KILL;
+	pkt.arg = killer;
+	pkt.arg2 = victim;
+	pkt.arg3 = player[victim].x;
+	pkt.arg4 = player[victim].y;
+	processKillPacket(&pkt);
+	sendPacketToAll(&pkt);
+}
+
+
+void update_players_from_clients(void)
+{
+#if USE_SDL_NET
+    int i;
+    NetPacket pkt;
+    int playerid;
+
+    return;
+
+    assert(is_server);
+
+    while ((playerid = serverRecvPacket(&pkt)) >= 0) {
+        if (pkt.cmd == NETCMD_BYE) {
+            pkt.arg = playerid;  /* just in case. */
+            sendPacketToAll(&pkt);
+            player[playerid].enabled = 0;
+            close(net_info[playerid].sock);
+        } else if (pkt.cmd == NETCMD_POSITION) {
+            pkt.arg = playerid;  /* just in case. */
+            processPositionPacket(&pkt);
+            for (i = 0; i < (sizeof (net_info) / sizeof (net_info[0])); i++) {
+                if (i != playerid) {
+                    sendPacket(i, &pkt);
+                }
+            }
+        } else if (pkt.cmd == NETCMD_MOVE) {
+            pkt.arg = playerid;  /* just in case. */
+            //pkt.arg3 = player[playerid].x;
+            //pkt.arg4 = player[playerid].y;
+            processMovePacket(&pkt);
+            sendPacketToAll(&pkt);
+        } else {
+            printf("SERVER: Got unknown packet (0x%lX).\n", pkt.cmd);
+        }
+    }
+#endif
+}
+
+
+void init_server(const char *netarg)
+{
+#if USE_SDL_NET
+    NetPacket pkt;
+    char ipstr[128];
+    struct hostent *hent;
+    struct sockaddr_in addr;
+    struct in_addr inaddr;
+    int i;
+    int wait_for_clients = ((netarg == NULL) ? 0 : atoi(netarg));
+
+    if ((wait_for_clients > 3) || (wait_for_clients < 0)) {
+        printf("SERVER: Waiting for bogus client count (%d).\n", wait_for_clients);
+        exit(42);
+    }
+
+    sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock < 0) {
+        perror("SERVER: socket()");
+        exit(42);
+    }
+
+    memset(&addr, '\0', sizeof (addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(JNB_INETPORT);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    if (bind(sock, (struct sockaddr *) &addr,
+            (socklen_t) sizeof (addr)) == -1) {
+        perror("SERVER: bind()");
+        close(sock);
+        exit(42);
+    }
+
+    if (listen(sock, wait_for_clients) == -1) {
+        perror("SERVER: listen()");
+        close(sock);
+        exit(42);
+    }
+
+    player[client_player_num].enabled = 1;
+
+    gethostname(ipstr, sizeof (ipstr));
+    hent = gethostbyname(ipstr);
+    if (hent != NULL) {
+        memcpy(&inaddr, hent->h_addr, hent->h_length);
+        strncpy(ipstr, inet_ntoa(inaddr), sizeof (ipstr));
+    }
+
+    printf("SERVER: we are [%s].\n", ipstr);
+
+    addr.sin_addr.s_addr = inaddr.s_addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(JNB_INETPORT);
+    net_info[client_player_num].addr = malloc(sizeof (addr));
+    memcpy(net_info[client_player_num].addr, &addr, sizeof (addr));
+    net_info[client_player_num].addrlen = sizeof (addr);
+    /*gettimeofday(&net_info[client_player_num].last_timestamp, NULL);*/
+
+    printf("SERVER: waiting for (%d) clients...\n", wait_for_clients);
+
+    while (wait_for_clients > 0)
+    {
+        char buf[NETPKTBUFSIZE];
+        struct sockaddr_in from;
+        socklen_t fromlen = sizeof (from);
+        int negatory = 1;
+        int br;
+        int s;
+
+        s = accept(sock, (struct sockaddr *) &from, &fromlen);
+        if (s < 0)
+        {
+            perror("SERVER: accept()");
+            close(sock);
+            exit(42);
+        } /* if */
+
+        br = read(s, buf, NETPKTBUFSIZE);
+        if (br < 0) {
+            perror("SERVER: read()");
+            close(s);
+            close(sock);
+            exit(42);
+        }
+
+        strncpy(ipstr, inet_ntoa(from.sin_addr), sizeof (ipstr));
+        printf("SERVER: Got data from [%s].\n", ipstr);
+
+        if (br != NETPKTBUFSIZE) {
+            printf("SERVER: Bogus packet.\n");
+            continue;
+        }
+
+        bufToPacket(buf, &pkt);
+        if (pkt.cmd != NETCMD_HELLO) {
+            printf("SERVER: Bogus packet.\n");
+            continue;
+        }
+
+        printf("SERVER: Client claims to be player #%ld.\n", pkt.arg);
+
+        if (pkt.arg > (sizeof (player) / sizeof (player[0]))) {
+            printf("SERVER:  (that's an invalid player number.)\n");
+        } else {
+            if (player[pkt.arg].enabled) {
+                printf("SERVER:  (that player number is already taken.)\n");
+            } else {
+                negatory = 0;
+            }
+        }
+
+        if (negatory) {
+            printf("SERVER: Forbidding connection.\n");
+            pkt.cmd = NETCMD_NACK;
+            sendPacketToSock(s, &pkt);
+            close(s);
+        } else {
+            player[pkt.arg].enabled = 1;
+            net_info[pkt.arg].sock = s;
+            net_info[pkt.arg].addr = malloc(fromlen);
+            memcpy(net_info[pkt.arg].addr, &from, fromlen);
+            net_info[pkt.arg].addrlen = fromlen;
+            /*memcpy(&net_info[pkt.arg].last_timestamp, &pkt.timestamp, sizeof (pkt.timestamp));*/
+            wait_for_clients--;
+            printf("SERVER: Granting connection. (%d) to go.\n", wait_for_clients);
+            pkt.cmd = NETCMD_ACK;
+            sendPacket(pkt.arg, &pkt);
+        }
+    }
+
+    close(sock);  /* done with the listen socket. */
+    sock = -1;
+
+    printf("SERVER: Got all our connections. Greenlighting clients...\n");
+
+    pkt.cmd = NETCMD_GREENLIGHT;
+    pkt.arg = 0;
+    for (i = 0; i < (sizeof (net_info) / sizeof (net_info[0])); i++) {
+        if (player[i].enabled) {
+            pkt.arg |= (1 << i);
+        }
+    }
+    sendPacketToAll(&pkt);
+#endif
+}
+
+
+void connect_to_server(char *netarg)
+{
+#if USE_SDL_NET
+    NetPacket pkt;
+    char buf[NETPKTBUFSIZE];
+    char ipstr[128];
+    struct hostent *hent;
+    struct sockaddr_in addr;
+    struct in_addr inaddr;
+    socklen_t addrlen;
+    int br;
+
+    if (netarg == NULL) {
+        printf("CLIENT: Need to specify host to connect to.\n");
+        exit(42);
+    }
+
+    player[client_player_num].enabled = 1;
+    gethostname(ipstr, sizeof (ipstr));
+    hent = gethostbyname(ipstr);
+    if (hent != NULL) {
+        net_info[client_player_num].addr = malloc(hent->h_length);
+        memcpy(&net_info[client_player_num].addr, &hent->h_addr, hent->h_length);
+        net_info[client_player_num].addrlen = hent->h_length;
+        memcpy(&inaddr, hent->h_addr, hent->h_length);
+        strncpy(ipstr, inet_ntoa(inaddr), sizeof (ipstr));
+    }
+    printf("CLIENT: we are [%s].\n", ipstr);
+
+    /*gettimeofday(&net_info[client_player_num].last_timestamp, NULL);*/
+
+    hent = gethostbyname(netarg);
+    if (hent == NULL) {
+        herror("CLIENT: couldn't find host");
+        exit(42);
+    }
+
+    sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock < 0) {
+        perror("CLIENT: socket()");
+        exit(42);
+    }
+
+    memcpy(&inaddr, hent->h_addr, hent->h_length);
+    printf("CLIENT: connecting to [%s]...\n", inet_ntoa(inaddr));
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(JNB_INETPORT);
+    memcpy(&addr.sin_addr.s_addr, hent->h_addr, hent->h_length);
+    if (connect(sock, (struct sockaddr *) &addr, sizeof (addr)) == -1) {
+        perror("CLIENT: connect()");
+        exit(42);
+    }
+
+    printf("CLIENT: Got socket. Sending HELLO packet...\n");
+    pkt.cmd = NETCMD_HELLO;
+    pkt.arg = client_player_num;
+    sendPacketToSock(sock, &pkt);
+
+    printf("CLIENT: Waiting for ACK from server...\n");
+    
+    addrlen = sizeof (addr);
+    br = read(sock, buf, NETPKTBUFSIZE);
+    if (br < 0) {
+        perror("CLIENT: read()");
+        close(sock);
+        exit(42);
+    }
+
+    if (br != NETPKTBUFSIZE) {
+        printf("CLIENT: Bogus packet size (%d of %d). FIXME.\n",
+                br, NETPKTBUFSIZE);
+        close(sock);
+        exit(42);
+    }
+
+    bufToPacket(buf, &pkt);
+
+    if (pkt.cmd == NETCMD_NACK) {
+        printf("CLIENT: Server forbid us from playing.\n");
+        close(sock);
+        exit(42);
+    }
+
+    if (pkt.cmd != NETCMD_ACK) {
+        printf("CLIENT: Unexpected packet (cmd=0x%lX).\n", pkt.cmd);
+        close(sock);
+        exit(42);
+    }
+
+    printf("CLIENT: Server accepted our connection.\n");
+
+    wait_for_greenlight();
+#endif
+}
+
+
 static flip_pixels(unsigned char *pixels)
 {
 	int x,y;
@@ -230,14 +971,15 @@ static flip_pixels(unsigned char *pixels)
 	}
 }
 
+
 int main(int argc, char *argv[])
 {
-	FILE *handle;
-	int c1, c2 = 0, c3, c4;
+	unsigned char *handle;
+	int c1 = 0, c2 = 0, c3 = 0, c4 = 0;
 	int l1;
 	int s1, s2, s3, s4;
-	int closest_player = 0, dist, cur_dist;
-	int end_loop_flag, fade_flag;
+	int closest_player = 0, dist, cur_dist = 0;
+	int end_loop_flag = 0, fade_flag;
 	int mod_vol, sfx_vol, mod_fade_direction;
 	char str1[100];
 	char pal[768];
@@ -254,8 +996,9 @@ int main(int argc, char *argv[])
 
 	while (1) {
 
-		if (menu() != 0)
-			deinit_program();
+		if (!is_net)
+			if (menu() != 0)
+				deinit_program();
 
 		if (key_pressed(1) == 1) {
 			break;
@@ -277,17 +1020,20 @@ int main(int argc, char *argv[])
 		register_background(background_pic, pal);
 		flippage(0);
 
-		s1 = rnd(250) + 50;
-		s2 = rnd(150) + 50;
-		for (c1 = 0; c1 < NUM_FLIES; c1++) {
-			while (1) {
-				flies[c1].x = s1 + rnd(101) - 50;
-				flies[c1].y = s2 + rnd(101) - 50;
-				if (ban_map[flies[c1].y >> 4][flies[c1].x >> 4] == BAN_VOID)
-					break;
+		if (flies_enabled) {
+			s1 = rnd(250) + 50;
+			s2 = rnd(150) + 50;
+
+			for (c1 = 0; c1 < NUM_FLIES; c1++) {
+				while (1) {
+					flies[c1].x = s1 + rnd(101) - 50;
+					flies[c1].y = s2 + rnd(101) - 50;
+					if (ban_map[flies[c1].y >> 4][flies[c1].x >> 4] == BAN_VOID)
+						break;
+				}
+				flies[c1].back_defined[0] = 0;
+				flies[c1].back_defined[1] = 0;
 			}
-			flies[c1].back_defined[0] = 0;
-			flies[c1].back_defined[1] = 0;
 		}
 
 		mod_vol = sfx_vol = 10;
@@ -296,7 +1042,10 @@ int main(int argc, char *argv[])
 		dj_set_mod_volume((char)mod_vol);
 		dj_set_sfx_volume((char)mod_vol);
 		dj_start_mod();
-		dj_play_sfx(SFX_FLY, SFX_FLY_FREQ, 0, 0, 0, 4);
+
+		if (flies_enabled)
+			dj_play_sfx(SFX_FLY, SFX_FLY_FREQ, 0, 0, 0, 4);
+
 		dj_set_nosound(0);
 
 		lord_of_the_flies = bunnies_in_space = jetpack = pogostick = blood_is_thicker_than_water = 0;
@@ -308,10 +1057,14 @@ int main(int argc, char *argv[])
 
 		update_count = 1;
 		while (1) {
-
 			while (update_count) {
 
 				if (key_pressed(1) == 1) {
+					if (is_server) {
+						serverTellEveryoneGoodbye();
+					} else {
+						tellServerGoodbye();
+					}
 					end_loop_flag = 1;
 					memset(pal, 0, 768);
 					mod_fade_direction = 0;
@@ -391,6 +1144,14 @@ int main(int argc, char *argv[])
 					last_keys[0] = 0;
 				}
 
+				if (is_server) {
+					update_players_from_clients();
+				} else {
+					if (!update_players_from_server()) {
+						break;  /* got a BYE packet */
+					}
+				}
+
 				steer_players();
 
 				dj_mix();
@@ -420,74 +1181,16 @@ int main(int argc, char *argv[])
 							if ((labs(player[c1].y - player[c2].y) >> 16) > 5) {
 								if (player[c1].y < player[c2].y) {
 									if (player[c1].y_add >= 0) {
-										player[c1].y_add = -player[c1].y_add;
-										if (player[c1].y_add > -262144L)
-											player[c1].y_add = -262144L;
-										player[c1].jump_abort = 1;
-										player[c2].dead_flag = 1;
-										if (player[c2].anim != 6) {
-											player[c2].anim = 6;
-											player[c2].frame = 0;
-											player[c2].frame_tick = 0;
-											player[c2].image = player_anims[player[c2].anim].frame[player[c2].frame].image + player[c2].direction * 9;
-											if (main_info.no_gore == 0) {
-												for (c4 = 0; c4 < 6; c4++)
-													add_object(OBJ_FUR, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c2 * 8);
-												for (c4 = 0; c4 < 6; c4++)
-													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
-												for (c4 = 0; c4 < 6; c4++)
-													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
-												for (c4 = 0; c4 < 8; c4++)
-													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
-												for (c4 = 0; c4 < 10; c4++)
-													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
-											}
-											dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
-											player[c1].bumps++;
-											player[c1].bumped[c2]++;
-											s1 = player[c1].bumps % 100;
-											add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
-											add_leftovers(1, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
-											add_leftovers(0, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
-											add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
-										}
+										if (is_server)
+											serverSendKillPacket(c1, c2);
 									} else {
 										if (player[c2].y_add < 0)
 											player[c2].y_add = 0;
 									}
 								} else {
 									if (player[c2].y_add >= 0) {
-										player[c2].y_add = -player[c2].y_add;
-										if (player[c2].y_add > -262144L)
-											player[c2].y_add = -262144L;
-										player[c2].jump_abort = 1;
-										player[c1].dead_flag = 1;
-										if (player[c1].anim != 6) {
-											player[c1].anim = 6;
-											player[c1].frame = 0;
-											player[c1].frame_tick = 0;
-											player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
-											if (main_info.no_gore == 0) {
-												for (c4 = 0; c4 < 6; c4++)
-													add_object(OBJ_FUR, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c1 * 8);
-												for (c4 = 0; c4 < 6; c4++)
-													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
-												for (c4 = 0; c4 < 7; c4++)
-													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
-												for (c4 = 0; c4 < 8; c4++)
-													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
-												for (c4 = 0; c4 < 10; c4++)
-													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
-											}
-											dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
-											player[c2].bumps++;
-											player[c2].bumped[c1]++;
-											s1 = player[c2].bumps % 100;
-											add_leftovers(0, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
-											add_leftovers(1, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
-											add_leftovers(0, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
-											add_leftovers(1, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
-										}
+										if (is_server)
+											serverSendKillPacket(c2, c1);
 									} else {
 										if (player[c1].y_add < 0)
 											player[c1].y_add = 0;
@@ -535,7 +1238,7 @@ int main(int argc, char *argv[])
 				dj_mix();
 
 				main_info.page_info[main_info.draw_page].num_pobs = 0;
-				for (c1 = 0; c1 < 4; c1++) {
+				for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
 					if (player[c1].enabled == 1)
 						main_info.page_info[main_info.draw_page].num_pobs++;
 				}
@@ -544,106 +1247,108 @@ int main(int argc, char *argv[])
 
 				dj_mix();
 
-				/* get center of fly swarm */
-				s1 = s2 = 0;
-				for (c1 = 0; c1 < NUM_FLIES; c1++) {
-					s1 += flies[c1].x;
-					s2 += flies[c1].y;
-				}
-				s1 /= NUM_FLIES;
-				s2 /= NUM_FLIES;
+				if (flies_enabled) {
+					/* get center of fly swarm */
+					s1 = s2 = 0;
+					for (c1 = 0; c1 < NUM_FLIES; c1++) {
+						s1 += flies[c1].x;
+						s2 += flies[c1].y;
+					}
+					s1 /= NUM_FLIES;
+					s2 /= NUM_FLIES;
 
-				if (update_count == 1) {
-					/* get closest player to fly swarm */
-					dist = 0x7fff;
-					for (c1 = 0; c1 < 4; c1++) {
-						if (player[c1].enabled == 1) {
-							cur_dist = (int)sqrt((s1 - ((player[c1].x >> 16) + 8)) * (s1 - ((player[c1].x >> 16) + 8)) + (s2 - ((player[c1].y >> 16) + 8)) * (s2 - ((player[c1].y >> 16) + 8)));
-							if (cur_dist < dist) {
-								closest_player = c1;
-								dist = cur_dist;
+					if (update_count == 1) {
+						/* get closest player to fly swarm */
+						dist = 0x7fff;
+						for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
+							if (player[c1].enabled == 1) {
+								cur_dist = (int)sqrt((s1 - ((player[c1].x >> 16) + 8)) * (s1 - ((player[c1].x >> 16) + 8)) + (s2 - ((player[c1].y >> 16) + 8)) * (s2 - ((player[c1].y >> 16) + 8)));
+								if (cur_dist < dist) {
+									closest_player = c1;
+									dist = cur_dist;
+								}
 							}
 						}
+						/* update fly swarm sound */
+						s3 = 32 - dist / 3;
+						if (s3 < 0)
+							s3 = 0;
+						dj_set_sfx_channel_volume(4, (char)(s3));
 					}
-					/* update fly swarm sound */
-					s3 = 32 - dist / 3;
-					if (s3 < 0)
+
+					for (c1 = 0; c1 < NUM_FLIES; c1++) {
+						/* get closest player to fly */
+						dist = 0x7fff;
+						for (c2 = 0; c2 < JNB_MAX_PLAYERS; c2++) {
+							if (player[c2].enabled == 1) {
+								cur_dist = (int)sqrt((flies[c1].x - ((player[c2].x >> 16) + 8)) * (flies[c1].x - ((player[c2].x >> 16) + 8)) + (flies[c1].y - ((player[c2].y >> 16) + 8)) * (flies[c1].y - ((player[c2].y >> 16) + 8)));
+								if (cur_dist < dist) {
+									closest_player = c2;
+									dist = cur_dist;
+								}
+							}
+						}
+						flies[c1].old_x = flies[c1].x;
+						flies[c1].old_y = flies[c1].y;
 						s3 = 0;
-					dj_set_sfx_channel_volume(4, (char)(s3));
-				}
-
-				for (c1 = 0; c1 < NUM_FLIES; c1++) {
-					/* get closest player to fly */
-					dist = 0x7fff;
-					for (c2 = 0; c2 < 4; c2++) {
-						if (player[c2].enabled == 1) {
-							cur_dist = (int)sqrt((flies[c1].x - ((player[c2].x >> 16) + 8)) * (flies[c1].x - ((player[c2].x >> 16) + 8)) + (flies[c1].y - ((player[c2].y >> 16) + 8)) * (flies[c1].y - ((player[c2].y >> 16) + 8)));
-							if (cur_dist < dist) {
-								closest_player = c2;
-								dist = cur_dist;
+						if ((s1 - flies[c1].x) > 30)
+							s3 += 1;
+						else if ((s1 - flies[c1].x) < -30)
+							s3 -= 1;
+						if (dist < 30) {
+							if (((player[closest_player].x >> 16) + 8) > flies[c1].x) {
+								if (lord_of_the_flies == 0)
+									s3 -= 1;
+								else
+									s3 += 1;
+							} else {
+								if (lord_of_the_flies == 0)
+									s3 += 1;
+								else
+									s3 -= 1;
 							}
 						}
-					}
-					flies[c1].old_x = flies[c1].x;
-					flies[c1].old_y = flies[c1].y;
-					s3 = 0;
-					if ((s1 - flies[c1].x) > 30)
-						s3 += 1;
-					else if ((s1 - flies[c1].x) < -30)
-						s3 -= 1;
-					if (dist < 30) {
-						if (((player[closest_player].x >> 16) + 8) > flies[c1].x) {
-							if (lord_of_the_flies == 0)
-								s3 -= 1;
-							else
-								s3 += 1;
-						} else {
-							if (lord_of_the_flies == 0)
-								s3 += 1;
-							else
-								s3 -= 1;
+						s4 = rnd(3) - 1 + s3;
+						if ((flies[c1].x + s4) < 16)
+							s4 = 0;
+						if ((flies[c1].x + s4) > 351)
+							s4 = 0;
+						if (ban_map[flies[c1].y >> 4][(flies[c1].x + s4) >> 4] != BAN_VOID)
+							s4 = 0;
+						flies[c1].x += s4;
+						s3 = 0;
+						if ((s2 - flies[c1].y) > 30)
+							s3 += 1;
+						else if ((s2 - flies[c1].y) < -30)
+							s3 -= 1;
+						if (dist < 30) {
+							if (((player[closest_player].y >> 16) + 8) > flies[c1].y) {
+								if (lord_of_the_flies == 0)
+									s3 -= 1;
+								else
+									s3 += 1;
+							} else {
+								if (lord_of_the_flies == 0)
+									s3 += 1;
+								else
+									s3 -= 1;
+							}
 						}
+						s4 = rnd(3) - 1 + s3;
+						if ((flies[c1].y + s4) < 0)
+							s4 = 0;
+						if ((flies[c1].y + s4) > 239)
+							s4 = 0;
+						if (ban_map[(flies[c1].y + s4) >> 4][flies[c1].x >> 4] != BAN_VOID)
+							s4 = 0;
+						flies[c1].y += s4;
 					}
-					s4 = rnd(3) - 1 + s3;
-					if ((flies[c1].x + s4) < 16)
-						s4 = 0;
-					if ((flies[c1].x + s4) > 351)
-						s4 = 0;
-					if (ban_map[flies[c1].y >> 4][(flies[c1].x + s4) >> 4] != BAN_VOID)
-						s4 = 0;
-					flies[c1].x += s4;
-					s3 = 0;
-					if ((s2 - flies[c1].y) > 30)
-						s3 += 1;
-					else if ((s2 - flies[c1].y) < -30)
-						s3 -= 1;
-					if (dist < 30) {
-						if (((player[closest_player].y >> 16) + 8) > flies[c1].y) {
-							if (lord_of_the_flies == 0)
-								s3 -= 1;
-							else
-								s3 += 1;
-						} else {
-							if (lord_of_the_flies == 0)
-								s3 += 1;
-							else
-								s3 -= 1;
-						}
-					}
-					s4 = rnd(3) - 1 + s3;
-					if ((flies[c1].y + s4) < 0)
-						s4 = 0;
-					if ((flies[c1].y + s4) > 239)
-						s4 = 0;
-					if (ban_map[(flies[c1].y + s4) >> 4][flies[c1].x >> 4] != BAN_VOID)
-						s4 = 0;
-					flies[c1].y += s4;
 				}
 
 				dj_mix();
 
 				s1 = 0;
-				for (c1 = 0; c1 < 4; c1++) {
+				for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
 					if (player[c1].enabled == 1) {
 						main_info.page_info[main_info.draw_page].pobs[s1].x = player[c1].x >> 16;
 						main_info.page_info[main_info.draw_page].pobs[s1].y = player[c1].y >> 16;
@@ -660,7 +1365,8 @@ int main(int argc, char *argv[])
 
 					dj_mix();
 
-					draw_flies(main_info.draw_page);
+					if (flies_enabled)
+						draw_flies(main_info.draw_page);
 
 					draw_end();
 				}
@@ -717,7 +1423,8 @@ int main(int argc, char *argv[])
 				if (update_count == 1) {
 					draw_begin();
 
-					redraw_flies_background(main_info.draw_page);
+					if (flies_enabled)
+						redraw_flies_background(main_info.draw_page);
 
 					redraw_pob_backgrounds(main_info.draw_page);
 
@@ -729,10 +1436,34 @@ int main(int argc, char *argv[])
 				update_count--;
 			}
 
+			if ( (player[client_player_num].dead_flag == 0) &&
+				(
+				 (player[client_player_num].action_left) ||
+				 (player[client_player_num].action_right) ||
+				 (player[client_player_num].action_up) ||
+				 (player[client_player_num].jump_ready == 0)
+				)
+			   ) {
+				tellServerNewPosition();
+			}
+
 			update_count = intr_sysupdate();
 
-			if (fade_flag == 0 && end_loop_flag == 1)
+			if ((server_said_bye) || ((fade_flag == 0) && (end_loop_flag == 1)))
 				break;
+		}
+
+		if (is_server) {
+			serverTellEveryoneGoodbye();
+			close(sock);
+			sock = -1;
+		} else {
+			if (!server_said_bye) {
+				tellServerGoodbye();
+			}
+
+			close(sock);
+			sock = -1;
 		}
 
 		main_info.view_page = 0;
@@ -742,7 +1473,7 @@ int main(int argc, char *argv[])
 
 		deinit_level();
 
-		memset(mask_pic, 0, 102400L);
+		memset(mask_pic, 0, JNB_WIDTH*JNB_HEIGHT);
 		register_mask(mask_pic);
 
 		//recalculate_gob(&font_gobs, pal);
@@ -759,8 +1490,8 @@ int main(int argc, char *argv[])
 		put_text(main_info.view_page, 40, 140, "FIZZ", 2);
 		put_text(main_info.view_page, 40, 170, "MIJJI", 2);
 
-		for (c1 = 0; c1 < 4; c1++) {
-			for (c2 = 0; c2 < 4; c2++) {
+		for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
+			for (c2 = 0; c2 < JNB_MAX_PLAYERS; c2++) {
 				if (c2 != c1) {
 					sprintf(str1, "%d", player[c1].bumped[c2]);
 					put_text(main_info.view_page, 100 + c2 * 60, 80 + c1 * 30, str1, 2);
@@ -781,11 +1512,10 @@ int main(int argc, char *argv[])
 			strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 			return 1;
 		}
-		if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
+		if (read_pcx(handle, background_pic, JNB_WIDTH*JNB_HEIGHT, pal) != 0) {
 			strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		for (c1 = 0; c1 < 16; c1++) { // fix dark font
 			pal[(240 + c1) * 3 + 0] = c1 << 2;
@@ -842,6 +1572,8 @@ int main(int argc, char *argv[])
 		dj_set_nosound(1);
 		dj_stop_mod();
 
+		if (is_net)
+			break; /* don't go back to menu if in net game. */
 	}
 
 	deinit_program();
@@ -857,7 +1589,7 @@ void steer_players(void)
 
 	update_player_actions();
 
-	for (c1 = 0; c1 < 4; c1++) {
+	for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
 
 		if (player[c1].enabled == 1) {
 
@@ -1262,14 +1994,13 @@ void position_player(int player_num)
 			if (ban_map[s2][s1] == BAN_VOID && (ban_map[s2 + 1][s1] == BAN_SOLID || ban_map[s2 + 1][s1] == BAN_ICE))
 				break;
 		}
-		for (c1 = 0; c1 < 4; c1++) {
+		for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
 			if (c1 != player_num && player[c1].enabled == 1) {
 				if (abs((s1 << 4) - (player[c1].x >> 16)) < 32 && abs((s2 << 4) - (player[c1].y >> 16)) < 32)
 					break;
 			}
 		}
-		if (c1 == 4) {
-			player[player_num].dead_flag = 0;
+		if (c1 == JNB_MAX_PLAYERS) {
 			player[player_num].x = (long) s1 << 20;
 			player[player_num].y = (long) s2 << 20;
 			player[player_num].x_add = player[player_num].y_add = 0;
@@ -1280,6 +2011,12 @@ void position_player(int player_num)
 			player[player_num].frame = 0;
 			player[player_num].frame_tick = 0;
 			player[player_num].image = player_anims[player[player_num].anim].frame[player[player_num].frame].image;
+
+			if (is_server) {
+				serverSendAlive(player_num);
+				player[player_num].dead_flag = 0;
+			}
+
 			break;
 		}
 	}
@@ -1749,7 +2486,7 @@ void draw_leftovers(int page)
 
 int init_level(int level, char *pal)
 {
-	FILE *handle;
+	unsigned char *handle;
 	int c1, c2;
 	int s1, s2;
 
@@ -1757,33 +2494,29 @@ int init_level(int level, char *pal)
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
 		return 1;
 	}
-	if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
+	if (read_pcx(handle, background_pic, JNB_WIDTH*JNB_HEIGHT, pal) != 0) {
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
 		return 1;
 	}
-	fclose(handle);
 	if (flip)
 		flip_pixels(background_pic);
 	if ((handle = dat_open("mask.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'mask.pcx', aborting...\n");
 		return 1;
 	}
-	if (read_pcx(handle, mask_pic, 102400L, 0) != 0) {
+	if (read_pcx(handle, mask_pic, JNB_WIDTH*JNB_HEIGHT, 0) != 0) {
 		strcpy(main_info.error_str, "Error loading 'mask.pcx', aborting...\n");
 		return 1;
 	}
-	fclose(handle);
 	if (flip)
 		flip_pixels(mask_pic);
 	register_mask(mask_pic);
 
-	for (c1 = 0; c1 < 4; c1++) {
+	for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
 		if (player[c1].enabled == 1) {
 			player[c1].bumps = 0;
-			player[c1].bumped[0] = 0;
-			player[c1].bumped[1] = 0;
-			player[c1].bumped[2] = 0;
-			player[c1].bumped[3] = 0;
+			for (c2 = 0; c2 < JNB_MAX_PLAYERS; c2++)
+				player[c1].bumped[c2] = 0;
 			position_player(c1);
 		}
 	}
@@ -1843,9 +2576,89 @@ void deinit_level(void)
 }
 
 
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
+unsigned char *datafile_buffer = NULL;
+
+static void preread_datafile(const char *fname)
+{
+    int fd = 0;
+    int len;
+
+#ifdef ZLIB_SUPPORT
+    char *gzfilename = alloca(strlen(fname) + 4);
+    int bufsize = 0;
+    int bufpos = 0;
+    gzFile gzf;
+
+    strcpy(gzfilename, fname);
+    strcat(gzfilename, ".gz");
+
+    gzf = gzopen(gzfilename, "rb");
+    if (gzf != NULL) {
+        unsigned char *ptr;
+        do {
+            int br;
+            if (bufpos >= bufsize) {
+                bufsize += 1024 * 1024;
+                datafile_buffer = (unsigned char *) realloc(datafile_buffer, bufsize);
+                if (datafile_buffer == NULL) {
+                    perror("realloc()");
+                    exit(42);
+                }
+            }
+
+            br = gzread(gzf, datafile_buffer + bufpos, bufsize - bufpos);
+            if (br == -1) {
+                fprintf(stderr, "gzread failed.\n");
+                exit(42);
+            }
+
+            bufpos += br;
+        } while (!gzeof(gzf));
+
+        /* try to shrink buffer... */
+        ptr = (unsigned char *) realloc(datafile_buffer, bufpos);
+        if (ptr != NULL)
+            datafile_buffer = ptr;
+
+        gzclose(gzf);
+        return;
+    }
+
+    /* drop through and try for an uncompressed datafile... */
+#endif
+
+    fd = open(fname, O_RDONLY | O_BINARY);
+    if (fd == -1) {
+        fprintf(stderr, "can't open %s: %s\n", fname, strerror(errno));
+        exit(42);
+    }
+
+    len = filelength(fd);
+    datafile_buffer = (unsigned char *) malloc(len);
+    if (datafile_buffer == NULL) {
+        perror("malloc()");
+        close(fd);
+        exit(42);
+    }
+
+    if (read(fd, datafile_buffer, len) != len) {
+        perror("read()");
+        close(fd);
+        exit(42);
+    }
+
+    close(fd);
+}
+
+
 int init_program(int argc, char *argv[], char *pal)
 {
-	FILE *handle = (FILE *) NULL;
+	char *netarg = NULL;
+	unsigned char *handle = (unsigned char *) NULL;
 	int c1 = 0, c2 = 0;
 	int load_flag = 0;
 	int force2, force3;
@@ -1859,6 +2672,8 @@ int init_program(int argc, char *argv[], char *pal)
 		2, 1, 5, 8, 4, 0x7fff, 0, 0, 0, 0,
 		1, 0, 8, 5, 0, 0, 0, 0, 0, 0
 	};
+
+	memset(&net_info, 0, sizeof(net_info));
 
 #ifdef DOS
 	if (__djgpp_nearptr_enable() == 0)
@@ -1884,6 +2699,8 @@ int init_program(int argc, char *argv[], char *pal)
 				main_info.music_no_sound = 1;
 			else if (stricmp(argv[c1], "-nogore") == 0)
 				main_info.no_gore = 1;
+			else if (stricmp(argv[c1], "-noflies") == 0)
+				flies_enabled = 0;
 			else if (stricmp(argv[c1], "-nojoy") == 0)
 				main_info.joy_enabled = 0;
 			else if (stricmp(argv[c1], "-fireworks") == 0)
@@ -1898,10 +2715,29 @@ int init_program(int argc, char *argv[], char *pal)
 				flip = 1;
 			else if (stricmp(argv[c1], "-dat") == 0) {
 				if (c1 < (argc - 1)) {
-					if ((handle = fopen(argv[c1 + 1], "rb")) != NULL) {
-						fclose(handle);
+					FILE *f;
+
+					if ((f = fopen(argv[c1 + 1], "rb")) != NULL) {
+						fclose(f);
 						strcpy(datfile_name, argv[c1 + 1]);
 					}
+				}
+			} else if (stricmp(argv[c1], "-player") == 0) {
+				if (c1 < (argc - 1)) {
+					if (client_player_num < 0)
+						client_player_num = atoi(argv[c1 + 1]);
+				}
+			} else if (stricmp(argv[c1], "-server") == 0) {
+				if (c1 < (argc - 1)) {
+					is_server = 1;
+					is_net = 1;
+					netarg = argv[c1 + 1];
+				}
+			} else if (stricmp(argv[c1], "-connect") == 0) {
+				if (c1 < (argc - 1)) {
+					is_server = 0;
+					is_net = 1;
+					netarg = argv[c1 + 1];
 				}
 			} else if (stricmp(argv[c1], "-mouse") == 0) {
 				if (c1 < (argc - 1)) {
@@ -1931,6 +2767,7 @@ int init_program(int argc, char *argv[], char *pal)
 				printf("  -fullscreen              run in fullscreen mode\n");
 				printf("  -nosound                 play without sound\n");
 				printf("  -nogore                  play without blood\n");
+				printf("  -noflies                 disable flies\n");
 				printf("  -mirror                  play with mirrored level\n");
 				printf("  -scaleup                 play with doubled resolution (800x512)\n");
 				printf("  -musicnosound            play with music but without sound\n");
@@ -1938,6 +2775,14 @@ int init_program(int argc, char *argv[], char *pal)
 				return 1;
 			}
 		}
+	}
+
+	preread_datafile(datfile_name);
+
+	if (is_net) {
+		if (client_player_num < 0)
+		        client_player_num = 0;
+		player[client_player_num].enabled = 1;
 	}
 
 	main_info.pob_backbuf[0] = malloc(screen_pitch*screen_height*bytes_per_pixel);
@@ -1956,11 +2801,10 @@ int init_program(int argc, char *argv[], char *pal)
 		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 		return 1;
 	}
-	if (read_pcx(handle, background_pic, 102400L, pal) != 0) {
+	if (read_pcx(handle, background_pic, JNB_WIDTH*JNB_HEIGHT, pal) != 0) {
 		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 		return 1;
 	}
-	fclose(handle);
 
 	if ((handle = dat_open("rabbit.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'rabbit.gob', aborting...\n");
@@ -1968,10 +2812,8 @@ int init_program(int argc, char *argv[], char *pal)
 	}
 	if (register_gob(handle, &rabbit_gobs, dat_filelen("rabbit.gob", datfile_name))) {
 		/* error */
-		fclose(handle);
 		return 1;
 	}
-	fclose(handle);
 
 	if ((handle = dat_open("objects.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'objects.gob', aborting...\n");
@@ -1979,10 +2821,8 @@ int init_program(int argc, char *argv[], char *pal)
 	}
 	if (register_gob(handle, &object_gobs, dat_filelen("objects.gob", datfile_name))) {
 		/* error */
-		fclose(handle);
 		return 1;
 	}
-	fclose(handle);
 
 	if ((handle = dat_open("font.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'font.gob', aborting...\n");
@@ -1990,10 +2830,8 @@ int init_program(int argc, char *argv[], char *pal)
 	}
 	if (register_gob(handle, &font_gobs, dat_filelen("font.gob", datfile_name))) {
 		/* error */
-		fclose(handle);
 		return 1;
 	}
-	fclose(handle);
 
 	if ((handle = dat_open("numbers.gob", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'numbers.gob', aborting...\n");
@@ -2001,14 +2839,11 @@ int init_program(int argc, char *argv[], char *pal)
 	}
 	if (register_gob(handle, &number_gobs, dat_filelen("numbers.gob", datfile_name))) {
 		/* error */
-		fclose(handle);
 		return 1;
 	}
-	fclose(handle);
 
 	if (read_level() != 0) {
 		strcpy(main_info.error_str, "Error loading 'levelmap.txt', aborting...\n");
-		fclose(handle);
 		return 1;
 	}
 
@@ -2033,7 +2868,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'jump.mod', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		if ((handle = dat_open("bump.mod", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'bump.mod', aborting...\n");
@@ -2043,7 +2877,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'bump.mod', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		if ((handle = dat_open("scores.mod", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'scores.mod', aborting...\n");
@@ -2053,7 +2886,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'scores.mod', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		if ((handle = dat_open("jump.smp", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'jump.smp', aborting...\n");
@@ -2063,7 +2895,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'jump.smp', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		if ((handle = dat_open("death.smp", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'death.smp', aborting...\n");
@@ -2073,7 +2904,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'death.smp', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		if ((handle = dat_open("spring.smp", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'spring.smp', aborting...\n");
@@ -2083,7 +2913,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'spring.smp', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		if ((handle = dat_open("splash.smp", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'splash.smp', aborting...\n");
@@ -2093,7 +2922,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'splash.smp', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		if ((handle = dat_open("fly.smp", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'fly.smp', aborting...\n");
@@ -2103,7 +2931,6 @@ int init_program(int argc, char *argv[], char *pal)
 			strcpy(main_info.error_str, "Error loading 'fly.smp', aborting...\n");
 			return 1;
 		}
-		fclose(handle);
 
 		dj_get_sfx_settings(SFX_FLY, &fly);
 		fly.priority = 10;
@@ -2114,11 +2941,11 @@ int init_program(int argc, char *argv[], char *pal)
 		dj_set_sfx_settings(SFX_FLY, &fly);
 	}
 
-	if ((background_pic = malloc(102400)) == NULL)
+	if ((background_pic = malloc(JNB_WIDTH*JNB_HEIGHT)) == NULL)
 		return 1;
-	if ((mask_pic = malloc(102400)) == NULL)
+	if ((mask_pic = malloc(JNB_WIDTH*JNB_HEIGHT)) == NULL)
 		return 1;
-	memset(mask_pic, 0, 102400);
+	memset(mask_pic, 0, JNB_WIDTH*JNB_HEIGHT);
 	register_mask(mask_pic);
 
 	for (c1 = 0; c1 < 16; c1++) { // fix dark font
@@ -2191,14 +3018,19 @@ int init_program(int argc, char *argv[], char *pal)
 				strcpy(main_info.error_str, "Error loading 'calib.dat', aborting...\n");
 				return 1;
 			}
-			joy.calib_data.x1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-			joy.calib_data.x2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-			joy.calib_data.x3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-			joy.calib_data.y1 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-			joy.calib_data.y2 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-			joy.calib_data.y3 = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
-			fclose(handle);
+			joy.calib_data.x1 = (handle[0]) + (handle[1] << 8) + (handle[2] << 16) + (handle[3] << 24); handle += 4;
+			joy.calib_data.x2 = (handle[0]) + (handle[1] << 8) + (handle[2] << 16) + (handle[3] << 24); handle += 4;
+			joy.calib_data.x3 = (handle[0]) + (handle[1] << 8) + (handle[2] << 16) + (handle[3] << 24); handle += 4;
+			joy.calib_data.y1 = (handle[0]) + (handle[1] << 8) + (handle[2] << 16) + (handle[3] << 24); handle += 4;
+			joy.calib_data.y2 = (handle[0]) + (handle[1] << 8) + (handle[2] << 16) + (handle[3] << 24); handle += 4;
+			joy.calib_data.y3 = (handle[0]) + (handle[1] << 8) + (handle[2] << 16) + (handle[3] << 24); handle += 4;
 		}
+	}
+
+	if (is_server) {
+		init_server(netarg);
+	} else {
+		connect_to_server(netarg);
 	}
 
 	return 0;
@@ -2251,7 +3083,7 @@ unsigned short rnd(unsigned short max)
 
 int read_level(void)
 {
-	FILE *handle;
+	unsigned char *handle;
 	int c1, c2;
 	int chr;
 
@@ -2263,11 +3095,7 @@ int read_level(void)
 	for (c1 = 0; c1 < 16; c1++) {
 		for (c2 = 0; c2 < 22; c2++) {
 			while (1) {
-				chr = fgetc(handle);
-				if (chr == EOF) {
-					fclose(handle);
-					return 1;
-				}
+				chr = (int) *(handle++);
 				if (chr >= '0' && chr <= '4')
 					break;
 			}
@@ -2281,48 +3109,46 @@ int read_level(void)
 	for (c2 = 0; c2 < 22; c2++)
 		ban_map[16][c2] = BAN_SOLID;
 
-	fclose(handle);
 	return 0;
 
 }
 
 
-FILE *dat_open(char *file_name, char *dat_name, char *mode)
+unsigned char *dat_open(char *file_name, char *dat_name, char *mode)
 {
-	FILE *handle;
 	int num;
 	int c1;
 	char name[21];
 	int ofs;
+	unsigned char *ptr;
 
-	handle = fopen(dat_name, mode);
-	if (!handle)
+	if (datafile_buffer == NULL)
 		return 0;
 
 	memset(name, 0, sizeof(name));
 
-	num = fgetc(handle);
-	num+= (fgetc(handle) << 8);
-	num+= (fgetc(handle) << 16);
-	num+= (fgetc(handle) << 24);
-	
-	for (c1 = 0; c1 < num; c1++) {
-		if (!fread(name, 1, 12, handle)) {
-			fclose(handle);
-			return 0;
-		}
-		if (strnicmp(name, file_name, strlen(file_name)) == 0) {
-			ofs = fgetc(handle);
-			ofs += (fgetc(handle) << 8);
-			ofs += (fgetc(handle) << 16);
-			ofs += (fgetc(handle) << 24);
-			fseek(handle, ofs, SEEK_SET);
-			return handle;
-		}
-		fseek(handle, 8, SEEK_CUR);
-	}
+	num = ( (datafile_buffer[0] <<  0) +
+	        (datafile_buffer[1] <<  8) +
+	        (datafile_buffer[2] << 16) +
+	        (datafile_buffer[3] << 24) );
 
-	fclose(handle);
+	ptr = datafile_buffer + 4;
+
+	for (c1 = 0; c1 < num; c1++) {
+
+		memcpy(name, ptr, 12);
+		ptr += 12;
+
+		if (strnicmp(name, file_name, strlen(file_name)) == 0) {
+			ofs = ( (ptr[0] <<  0) +
+				(ptr[1] <<  8) +
+				(ptr[2] << 16) +
+				(ptr[3] << 24) );
+
+			return (datafile_buffer + ofs);
+		}
+		ptr += 8;
+	}
 
 	return 0;
 }
@@ -2330,59 +3156,41 @@ FILE *dat_open(char *file_name, char *dat_name, char *mode)
 
 int dat_filelen(char *file_name, char *dat_name)
 {
-	FILE *handle;
+	unsigned char *ptr;
 	int num;
 	int c1;
 	char name[21];
 	int len;
 
-	handle = fopen(dat_name, "rb");
-	if (!handle)
-		return 0;
-
 	memset(name, 0, sizeof(name));
 	
-	num = fgetc(handle);
-	num+= (fgetc(handle) << 8);
-	num+= (fgetc(handle) << 16);
-	num+= (fgetc(handle) << 24);
+	num = ( (datafile_buffer[0] <<  0) +
+	        (datafile_buffer[1] <<  8) +
+	        (datafile_buffer[2] << 16) +
+	        (datafile_buffer[3] << 24) );
+
+	ptr = datafile_buffer + 4;
 
 	for (c1 = 0; c1 < num; c1++) {
-		if (!fread(name, 1, 12, handle)) {
-			fclose(handle);
-			return 0;
-		}
-		if (strnicmp(name, file_name, strlen(file_name)) == 0) {
-			fseek(handle, 4, SEEK_CUR);
-			len = fgetc(handle);
-			len += (fgetc(handle) << 8);
-			len += (fgetc(handle) << 16);
-			len += (fgetc(handle) << 24);
 
-			fclose(handle);
+	        memcpy(name, ptr, 12);
+		ptr += 12;
+
+		if (strnicmp(name, file_name, strlen(file_name)) == 0) {
+
+			ptr += 4;
+			len = ( (ptr[0] <<  0) +
+				(ptr[1] <<  8) +
+				(ptr[2] << 16) +
+				(ptr[3] << 24) );
+
 			return len;
 		}
-		fseek(handle, 8, SEEK_CUR);
+		ptr += 8;
 	}
 
-	fclose(handle);
 	return 0;
 }
-
-
-#ifndef _MSC_VER
-int filelength(int handle)
-{
-	struct stat buf;
-
-	if (fstat(handle, &buf) == -1) {
-		perror("filelength");
-		exit(EXIT_FAILURE);
-	}
-
-	return buf.st_size;
-}
-#endif
 
 
 void write_calib_data(void)
