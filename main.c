@@ -184,6 +184,7 @@ struct {
 struct {
 	int x, y;
 	int old_x, old_y;
+	int old_draw_x, old_draw_y;
 	int back[2];
 	int back_defined[2];
 } flies[NUM_FLIES];
@@ -213,6 +214,7 @@ int main(int argc, char *argv[])
 	char str1[100];
 	char pal[768];
 	char cur_pal[768];
+	int update_count;
 
 	if (init_program(argc, argv, pal) != 0)
 		deinit_program();
@@ -276,417 +278,435 @@ int main(int argc, char *argv[])
 		main_info.view_page = 0;
 		main_info.draw_page = 1;
 
+		update_count = 1;
 		while (1) {
 
-			if (key_pressed(1) == 1) {
-				end_loop_flag = 1;
-				memset(pal, 0, 768);
-				mod_fade_direction = 0;
-			}
+			printf("update_countg: %i\n",update_count);
 
-			if (strncmp(last_keys, "kcitsogop", strlen("kcitsogop")) == 0) {
-				pogostick ^= 1;
-				last_keys[0] = 0;
-			}
-			if (strncmp(last_keys, "ecapsniseinnub", strlen("ecapsniseinnub")) == 0) {
-				bunnies_in_space ^= 1;
-				last_keys[0] = 0;
-			}
-			if (strncmp(last_keys, "kcaptej", strlen("kcaptej")) == 0) {
-				jetpack ^= 1;
-				last_keys[0] = 0;
-			}
-			if (strncmp(last_keys, "seilfehtfodrol", strlen("seilfehtfodrol")) == 0) {
-				lord_of_the_flies ^= 1;
-				last_keys[0] = 0;
-			}
-			if (strncmp(last_keys, "retawnahtrekcihtsidoolb", strlen("retawnahtrekcihtsidoolb")) == 0) {
-				blood_is_thicker_than_water ^= 1;
-				if (blood_is_thicker_than_water == 1) {
-					pal[432] = 63;
-					pal[433] = 32;
-					pal[434] = 32;
-					pal[435] = 53;
-					pal[436] = 17;
-					pal[437] = 17;
-					pal[438] = 42;
-					pal[439] = 7;
-					pal[440] = 7;
-					pal[441] = 28;
-					pal[442] = 0;
-					pal[443] = 0;
-					pal[444] = 24;
-					pal[445] = 0;
-					pal[446] = 0;
-					pal[447] = 19;
-					pal[448] = 0;
-					pal[449] = 0;
-					pal[450] = 12;
-					pal[451] = 0;
-					pal[452] = 0;
-					pal[453] = 7;
-					pal[454] = 0;
-					pal[455] = 0;
-				} else {
-					pal[432] = 63;
-					pal[433] = 63;
-					pal[434] = 63;
-					pal[435] = 40;
-					pal[436] = 53;
-					pal[437] = 62;
-					pal[438] = 19;
-					pal[439] = 42;
-					pal[440] = 60;
-					pal[441] = 0;
-					pal[442] = 33;
-					pal[443] = 60;
-					pal[444] = 3;
-					pal[445] = 32;
-					pal[446] = 46;
-					pal[447] = 3;
-					pal[448] = 26;
-					pal[449] = 33;
-					pal[450] = 3;
-					pal[451] = 19;
-					pal[452] = 21;
-					pal[453] = 1;
-					pal[454] = 8;
-					pal[455] = 8;
+			while (update_count) {
+
+				if (key_pressed(1) == 1) {
+					end_loop_flag = 1;
+					memset(pal, 0, 768);
+					mod_fade_direction = 0;
 				}
-				register_background(background_pic, pal);
-				recalculate_gob(&object_gobs, pal);
-				last_keys[0] = 0;
-			}
 
-			steer_players();
-
-			dj_mix();
-
-			for (c3 = 0; c3 < 6; c3++) {
-				if (c3 == 0) {
-					c1 = 0;
-					c2 = 1;
-				} else if (c3 == 1) {
-					c1 = 0;
-					c2 = 2;
-				} else if (c3 == 2) {
-					c1 = 0;
-					c2 = 3;
-				} else if (c3 == 3) {
-					c1 = 1;
-					c2 = 2;
-				} else if (c3 == 4) {
-					c1 = 1;
-					c2 = 3;
-				} else if (c3 == 5) {
-					c1 = 2;
-					c2 = 3;
+				if (strncmp(last_keys, "kcitsogop", strlen("kcitsogop")) == 0) {
+					pogostick ^= 1;
+					last_keys[0] = 0;
 				}
-				if (player[c1].enabled == 1 && player[c2].enabled == 1) {
-					if (labs(player[c1].x - player[c2].x) < (12L << 16) && labs(player[c1].y - player[c2].y) < (12L << 16)) {
-						if ((labs(player[c1].y - player[c2].y) >> 16) > 5) {
-							if (player[c1].y < player[c2].y) {
-								if (player[c1].y_add >= 0) {
-									player[c1].y_add = -player[c1].y_add;
-									if (player[c1].y_add > -262144L)
-										player[c1].y_add = -262144L;
-									player[c1].jump_abort = 1;
-									player[c2].dead_flag = 1;
-									if (player[c2].anim != 6) {
-										player[c2].anim = 6;
-										player[c2].frame = 0;
-										player[c2].frame_tick = 0;
-										player[c2].image = player_anims[player[c2].anim].frame[player[c2].frame].image + player[c2].direction * 9;
-										if (main_info.no_gore == 0) {
-											for (c4 = 0; c4 < 6; c4++)
-												add_object(OBJ_FUR, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c2 * 8);
-											for (c4 = 0; c4 < 6; c4++)
-												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
-											for (c4 = 0; c4 < 6; c4++)
-												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
-											for (c4 = 0; c4 < 8; c4++)
-												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
-											for (c4 = 0; c4 < 10; c4++)
-												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
+				if (strncmp(last_keys, "ecapsniseinnub", strlen("ecapsniseinnub")) == 0) {
+					bunnies_in_space ^= 1;
+					last_keys[0] = 0;
+				}
+				if (strncmp(last_keys, "kcaptej", strlen("kcaptej")) == 0) {
+					jetpack ^= 1;
+					last_keys[0] = 0;
+				}
+				if (strncmp(last_keys, "seilfehtfodrol", strlen("seilfehtfodrol")) == 0) {
+					lord_of_the_flies ^= 1;
+					last_keys[0] = 0;
+				}
+				if (strncmp(last_keys, "retawnahtrekcihtsidoolb", strlen("retawnahtrekcihtsidoolb")) == 0) {
+					blood_is_thicker_than_water ^= 1;
+					if (blood_is_thicker_than_water == 1) {
+						pal[432] = 63;
+						pal[433] = 32;
+						pal[434] = 32;
+						pal[435] = 53;
+						pal[436] = 17;
+						pal[437] = 17;
+						pal[438] = 42;
+						pal[439] = 7;
+						pal[440] = 7;
+						pal[441] = 28;
+						pal[442] = 0;
+						pal[443] = 0;
+						pal[444] = 24;
+						pal[445] = 0;
+						pal[446] = 0;
+						pal[447] = 19;
+						pal[448] = 0;
+						pal[449] = 0;
+						pal[450] = 12;
+						pal[451] = 0;
+						pal[452] = 0;
+						pal[453] = 7;
+						pal[454] = 0;
+						pal[455] = 0;
+					} else {
+						pal[432] = 63;
+						pal[433] = 63;
+						pal[434] = 63;
+						pal[435] = 40;
+						pal[436] = 53;
+						pal[437] = 62;
+						pal[438] = 19;
+						pal[439] = 42;
+						pal[440] = 60;
+						pal[441] = 0;
+						pal[442] = 33;
+						pal[443] = 60;
+						pal[444] = 3;
+						pal[445] = 32;
+						pal[446] = 46;
+						pal[447] = 3;
+						pal[448] = 26;
+						pal[449] = 33;
+						pal[450] = 3;
+						pal[451] = 19;
+						pal[452] = 21;
+						pal[453] = 1;
+						pal[454] = 8;
+						pal[455] = 8;
+					}
+					register_background(background_pic, pal);
+					recalculate_gob(&object_gobs, pal);
+					last_keys[0] = 0;
+				}
+
+				steer_players();
+
+				dj_mix();
+
+				for (c3 = 0; c3 < 6; c3++) {
+					if (c3 == 0) {
+						c1 = 0;
+						c2 = 1;
+					} else if (c3 == 1) {
+						c1 = 0;
+						c2 = 2;
+					} else if (c3 == 2) {
+						c1 = 0;
+						c2 = 3;
+					} else if (c3 == 3) {
+						c1 = 1;
+						c2 = 2;
+					} else if (c3 == 4) {
+						c1 = 1;
+						c2 = 3;
+					} else if (c3 == 5) {
+						c1 = 2;
+						c2 = 3;
+					}
+					if (player[c1].enabled == 1 && player[c2].enabled == 1) {
+						if (labs(player[c1].x - player[c2].x) < (12L << 16) && labs(player[c1].y - player[c2].y) < (12L << 16)) {
+							if ((labs(player[c1].y - player[c2].y) >> 16) > 5) {
+								if (player[c1].y < player[c2].y) {
+									if (player[c1].y_add >= 0) {
+										player[c1].y_add = -player[c1].y_add;
+										if (player[c1].y_add > -262144L)
+											player[c1].y_add = -262144L;
+										player[c1].jump_abort = 1;
+										player[c2].dead_flag = 1;
+										if (player[c2].anim != 6) {
+											player[c2].anim = 6;
+											player[c2].frame = 0;
+											player[c2].frame_tick = 0;
+											player[c2].image = player_anims[player[c2].anim].frame[player[c2].frame].image + player[c2].direction * 9;
+											if (main_info.no_gore == 0) {
+												for (c4 = 0; c4 < 6; c4++)
+													add_object(OBJ_FUR, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c2 * 8);
+												for (c4 = 0; c4 < 6; c4++)
+													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
+												for (c4 = 0; c4 < 6; c4++)
+													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
+												for (c4 = 0; c4 < 8; c4++)
+													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
+												for (c4 = 0; c4 < 10; c4++)
+													add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
+											}
+											dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
+											player[c1].bumps++;
+											player[c1].bumped[c2]++;
+											s1 = player[c1].bumps % 100;
+											add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
+											add_leftovers(1, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
+											add_leftovers(0, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+											add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
 										}
-										dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
-										player[c1].bumps++;
-										player[c1].bumped[c2]++;
-										s1 = player[c1].bumps % 100;
-										add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
-										add_leftovers(1, 360, 34 + c1 * 64, s1 / 10, &number_gobs);
-										add_leftovers(0, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
-										add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+									} else {
+										if (player[c2].y_add < 0)
+											player[c2].y_add = 0;
 									}
 								} else {
-									if (player[c2].y_add < 0)
-										player[c2].y_add = 0;
+									if (player[c2].y_add >= 0) {
+										player[c2].y_add = -player[c2].y_add;
+										if (player[c2].y_add > -262144L)
+											player[c2].y_add = -262144L;
+										player[c2].jump_abort = 1;
+										player[c1].dead_flag = 1;
+										if (player[c1].anim != 6) {
+											player[c1].anim = 6;
+											player[c1].frame = 0;
+											player[c1].frame_tick = 0;
+											player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
+											if (main_info.no_gore == 0) {
+												for (c4 = 0; c4 < 6; c4++)
+													add_object(OBJ_FUR, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c1 * 8);
+												for (c4 = 0; c4 < 6; c4++)
+													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
+												for (c4 = 0; c4 < 7; c4++)
+													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
+												for (c4 = 0; c4 < 8; c4++)
+													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
+												for (c4 = 0; c4 < 10; c4++)
+													add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
+											}
+											dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
+											player[c2].bumps++;
+											player[c2].bumped[c1]++;
+											s1 = player[c2].bumps % 100;
+											add_leftovers(0, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
+											add_leftovers(1, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
+											add_leftovers(0, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+											add_leftovers(1, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+										}
+									} else {
+										if (player[c1].y_add < 0)
+											player[c1].y_add = 0;
+									}
 								}
 							} else {
-								if (player[c2].y_add >= 0) {
-									player[c2].y_add = -player[c2].y_add;
-									if (player[c2].y_add > -262144L)
-										player[c2].y_add = -262144L;
-									player[c2].jump_abort = 1;
-									player[c1].dead_flag = 1;
-									if (player[c1].anim != 6) {
-										player[c1].anim = 6;
-										player[c1].frame = 0;
-										player[c1].frame_tick = 0;
-										player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
-										if (main_info.no_gore == 0) {
-											for (c4 = 0; c4 < 6; c4++)
-												add_object(OBJ_FUR, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 44 + c1 * 8);
-											for (c4 = 0; c4 < 6; c4++)
-												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 76);
-											for (c4 = 0; c4 < 7; c4++)
-												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 77);
-											for (c4 = 0; c4 < 8; c4++)
-												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 78);
-											for (c4 = 0; c4 < 10; c4++)
-												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
-										}
-										dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
-										player[c2].bumps++;
-										player[c2].bumped[c1]++;
-										s1 = player[c2].bumps % 100;
-										add_leftovers(0, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
-										add_leftovers(1, 360, 34 + c2 * 64, s1 / 10, &number_gobs);
-										add_leftovers(0, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
-										add_leftovers(1, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, &number_gobs);
+								if (player[c1].x < player[c2].x) {
+									if (player[c1].x_add > 0)
+										player[c1].x = player[c2].x - (12L << 16);
+									else if (player[c2].x_add < 0)
+										player[c2].x = player[c1].x + (12L << 16);
+									else {
+										player[c1].x -= player[c1].x_add;
+										player[c2].x -= player[c2].x_add;
 									}
+									l1 = player[c2].x_add;
+									player[c2].x_add = player[c1].x_add;
+									player[c1].x_add = l1;
+									if (player[c1].x_add > 0)
+										player[c1].x_add = -player[c1].x_add;
+									if (player[c2].x_add < 0)
+										player[c2].x_add = -player[c2].x_add;
 								} else {
-									if (player[c1].y_add < 0)
-										player[c1].y_add = 0;
+									if (player[c1].x_add > 0)
+										player[c2].x = player[c1].x - (12L << 16);
+									else if (player[c2].x_add < 0)
+										player[c1].x = player[c2].x + (12L << 16);
+									else {
+										player[c1].x -= player[c1].x_add;
+										player[c2].x -= player[c2].x_add;
+									}
+									l1 = player[c2].x_add;
+									player[c2].x_add = player[c1].x_add;
+									player[c1].x_add = l1;
+									if (player[c1].x_add < 0)
+										player[c1].x_add = -player[c1].x_add;
+									if (player[c2].x_add > 0)
+										player[c2].x_add = -player[c2].x_add;
 								}
 							}
+						}
+					}
+				}
+
+				dj_mix();
+
+				main_info.page_info[main_info.draw_page].num_pobs = 0;
+				for (c1 = 0; c1 < 4; c1++) {
+					if (player[c1].enabled == 1)
+						main_info.page_info[main_info.draw_page].num_pobs++;
+				}
+
+				update_objects();
+
+				dj_mix();
+
+				/* get center of fly swarm */
+				s1 = s2 = 0;
+				for (c1 = 0; c1 < NUM_FLIES; c1++) {
+					s1 += flies[c1].x;
+					s2 += flies[c1].y;
+				}
+				s1 /= NUM_FLIES;
+				s2 /= NUM_FLIES;
+
+				if (update_count == 1) {
+					/* get closest player to fly swarm */
+					dist = 0x7fff;
+					for (c1 = 0; c1 < 4; c1++) {
+						if (player[c1].enabled == 1) {
+							cur_dist = (int)sqrt((s1 - ((player[c1].x >> 16) + 8)) * (s1 - ((player[c1].x >> 16) + 8)) + (s2 - ((player[c1].y >> 16) + 8)) * (s2 - ((player[c1].y >> 16) + 8)));
+							if (cur_dist < dist) {
+								closest_player = c1;
+								dist = cur_dist;
+							}
+						}
+					}
+					/* update fly swarm sound */
+					s3 = 32 - dist / 3;
+					if (s3 < 0)
+						s3 = 0;
+					dj_set_sfx_channel_volume(4, (char)(s3));
+				}
+
+				for (c1 = 0; c1 < NUM_FLIES; c1++) {
+					/* get closest player to fly */
+					dist = 0x7fff;
+					for (c2 = 0; c2 < 4; c2++) {
+						if (player[c2].enabled == 1) {
+							cur_dist = (int)sqrt((flies[c1].x - ((player[c2].x >> 16) + 8)) * (flies[c1].x - ((player[c2].x >> 16) + 8)) + (flies[c1].y - ((player[c2].y >> 16) + 8)) * (flies[c1].y - ((player[c2].y >> 16) + 8)));
+							if (cur_dist < dist) {
+								closest_player = c2;
+								dist = cur_dist;
+							}
+						}
+					}
+					flies[c1].old_x = flies[c1].x;
+					flies[c1].old_y = flies[c1].y;
+					s3 = 0;
+					if ((s1 - flies[c1].x) > 30)
+						s3 += 1;
+					else if ((s1 - flies[c1].x) < -30)
+						s3 -= 1;
+					if (dist < 30) {
+						if (((player[closest_player].x >> 16) + 8) > flies[c1].x) {
+							if (lord_of_the_flies == 0)
+								s3 -= 1;
+							else
+								s3 += 1;
 						} else {
-							if (player[c1].x < player[c2].x) {
-								if (player[c1].x_add > 0)
-									player[c1].x = player[c2].x - (12L << 16);
-								else if (player[c2].x_add < 0)
-									player[c2].x = player[c1].x + (12L << 16);
-								else {
-									player[c1].x -= player[c1].x_add;
-									player[c2].x -= player[c2].x_add;
-								}
-								l1 = player[c2].x_add;
-								player[c2].x_add = player[c1].x_add;
-								player[c1].x_add = l1;
-								if (player[c1].x_add > 0)
-									player[c1].x_add = -player[c1].x_add;
-								if (player[c2].x_add < 0)
-									player[c2].x_add = -player[c2].x_add;
-							} else {
-								if (player[c1].x_add > 0)
-									player[c2].x = player[c1].x - (12L << 16);
-								else if (player[c2].x_add < 0)
-									player[c1].x = player[c2].x + (12L << 16);
-								else {
-									player[c1].x -= player[c1].x_add;
-									player[c2].x -= player[c2].x_add;
-								}
-								l1 = player[c2].x_add;
-								player[c2].x_add = player[c1].x_add;
-								player[c1].x_add = l1;
-								if (player[c1].x_add < 0)
-									player[c1].x_add = -player[c1].x_add;
-								if (player[c2].x_add > 0)
-									player[c2].x_add = -player[c2].x_add;
-							}
+							if (lord_of_the_flies == 0)
+								s3 += 1;
+							else
+								s3 -= 1;
 						}
 					}
-				}
-			}
-
-			dj_mix();
-
-			main_info.page_info[main_info.draw_page].num_pobs = 0;
-			for (c1 = 0; c1 < 4; c1++) {
-				if (player[c1].enabled == 1)
-					main_info.page_info[main_info.draw_page].num_pobs++;
-			}
-
-			update_objects();
-
-			dj_mix();
-
-			/* get center of fly swarm */
-			s1 = s2 = 0;
-			for (c1 = 0; c1 < NUM_FLIES; c1++) {
-				s1 += flies[c1].x;
-				s2 += flies[c1].y;
-			}
-			s1 /= NUM_FLIES;
-			s2 /= NUM_FLIES;
-
-			/* get closest player to fly swarm */
-			dist = 0x7fff;
-			for (c1 = 0; c1 < 4; c1++) {
-				if (player[c1].enabled == 1) {
-					cur_dist = (int)sqrt((s1 - ((player[c1].x >> 16) + 8)) * (s1 - ((player[c1].x >> 16) + 8)) + (s2 - ((player[c1].y >> 16) + 8)) * (s2 - ((player[c1].y >> 16) + 8)));
-					if (cur_dist < dist) {
-						closest_player = c1;
-						dist = cur_dist;
-					}
-				}
-			}
-			/* update fly swarm sound */
-			s3 = 32 - dist / 3;
-			if (s3 < 0)
-				s3 = 0;
-			dj_set_sfx_channel_volume(4, (char)(s3));
-
-			for (c1 = 0; c1 < NUM_FLIES; c1++) {
-				/* get closest player to fly */
-				dist = 0x7fff;
-				for (c2 = 0; c2 < 4; c2++) {
-					if (player[c2].enabled == 1) {
-						cur_dist = (int)sqrt((flies[c1].x - ((player[c2].x >> 16) + 8)) * (flies[c1].x - ((player[c2].x >> 16) + 8)) + (flies[c1].y - ((player[c2].y >> 16) + 8)) * (flies[c1].y - ((player[c2].y >> 16) + 8)));
-						if (cur_dist < dist) {
-							closest_player = c2;
-							dist = cur_dist;
+					s4 = rnd(3) - 1 + s3;
+					if ((flies[c1].x + s4) < 16)
+						s4 = 0;
+					if ((flies[c1].x + s4) > 351)
+						s4 = 0;
+					if (ban_map[flies[c1].y >> 4][(flies[c1].x + s4) >> 4] != BAN_VOID)
+						s4 = 0;
+					flies[c1].x += s4;
+					s3 = 0;
+					if ((s2 - flies[c1].y) > 30)
+						s3 += 1;
+					else if ((s2 - flies[c1].y) < -30)
+						s3 -= 1;
+					if (dist < 30) {
+						if (((player[closest_player].y >> 16) + 8) > flies[c1].y) {
+							if (lord_of_the_flies == 0)
+								s3 -= 1;
+							else
+								s3 += 1;
+						} else {
+							if (lord_of_the_flies == 0)
+								s3 += 1;
+							else
+								s3 -= 1;
 						}
 					}
+					s4 = rnd(3) - 1 + s3;
+					if ((flies[c1].y + s4) < 0)
+						s4 = 0;
+					if ((flies[c1].y + s4) > 239)
+						s4 = 0;
+					if (ban_map[(flies[c1].y + s4) >> 4][flies[c1].x >> 4] != BAN_VOID)
+						s4 = 0;
+					flies[c1].y += s4;
 				}
-				flies[c1].old_x = flies[c1].x;
-				flies[c1].old_y = flies[c1].y;
-				s3 = 0;
-				if ((s1 - flies[c1].x) > 30)
-					s3 += 1;
-				else if ((s1 - flies[c1].x) < -30)
-					s3 -= 1;
-				if (dist < 30) {
-					if (((player[closest_player].x >> 16) + 8) > flies[c1].x) {
-						if (lord_of_the_flies == 0)
-							s3 -= 1;
-						else
-							s3 += 1;
-					} else {
-						if (lord_of_the_flies == 0)
-							s3 += 1;
-						else
-							s3 -= 1;
+
+				dj_mix();
+
+				s1 = 0;
+				for (c1 = 0; c1 < 4; c1++) {
+					if (player[c1].enabled == 1) {
+						main_info.page_info[main_info.draw_page].pobs[s1].x = player[c1].x >> 16;
+						main_info.page_info[main_info.draw_page].pobs[s1].y = player[c1].y >> 16;
+						main_info.page_info[main_info.draw_page].pobs[s1].image = player[c1].image + c1 * 18;
+						main_info.page_info[main_info.draw_page].pobs[s1].pob_data = &rabbit_gobs;
+						s1++;
 					}
 				}
-				s4 = rnd(3) - 1 + s3;
-				if ((flies[c1].x + s4) < 16)
-					s4 = 0;
-				if ((flies[c1].x + s4) > 351)
-					s4 = 0;
-				if (ban_map[flies[c1].y >> 4][(flies[c1].x + s4) >> 4] != BAN_VOID)
-					s4 = 0;
-				flies[c1].x += s4;
-				s3 = 0;
-				if ((s2 - flies[c1].y) > 30)
-					s3 += 1;
-				else if ((s2 - flies[c1].y) < -30)
-					s3 -= 1;
-				if (dist < 30) {
-					if (((player[closest_player].y >> 16) + 8) > flies[c1].y) {
-						if (lord_of_the_flies == 0)
-							s3 -= 1;
-						else
-							s3 += 1;
-					} else {
-						if (lord_of_the_flies == 0)
-							s3 += 1;
-						else
-							s3 -= 1;
+
+				if (update_count == 1) {
+					draw_begin();
+
+					draw_pobs(main_info.draw_page);
+
+					dj_mix();
+
+					draw_flies(main_info.draw_page);
+
+					draw_end();
+				}
+
+				if (mod_fade_direction == 1) {
+					if (mod_vol < 30) {
+						mod_vol++;
+						dj_set_mod_volume((char)mod_vol);
+					}
+				} else {
+					if (mod_vol > 0) {
+						mod_vol--;
+						dj_set_mod_volume((char)mod_vol);
 					}
 				}
-				s4 = rnd(3) - 1 + s3;
-				if ((flies[c1].y + s4) < 0)
-					s4 = 0;
-				if ((flies[c1].y + s4) > 239)
-					s4 = 0;
-				if (ban_map[(flies[c1].y + s4) >> 4][flies[c1].x >> 4] != BAN_VOID)
-					s4 = 0;
-				flies[c1].y += s4;
+
+				if (mod_fade_direction == 1) {
+					if (sfx_vol < 64) {
+						sfx_vol++;
+						dj_set_sfx_volume((char)sfx_vol);
+					}
+				} else {
+					if (sfx_vol > 0) {
+						sfx_vol--;
+						dj_set_sfx_volume((char)sfx_vol);
+					}
+				}
+
+				fade_flag = 0;
+				for (c1 = 0; c1 < 768; c1++) {
+					if (cur_pal[c1] < pal[c1]) {
+						cur_pal[c1]++;
+						fade_flag = 1;
+					} else if (cur_pal[c1] > pal[c1]) {
+						cur_pal[c1]--;
+						fade_flag = 1;
+					}
+				}
+				if (fade_flag == 0 && end_loop_flag == 1)
+					break;
+
+				if (update_count == 1) {
+					main_info.draw_page ^= 1;
+					main_info.view_page ^= 1;
+
+					flippage(main_info.view_page);
+	
+					wait_vrt(1);
+				}
+
+				if (fade_flag == 1)
+					setpalette(0, 256, cur_pal);
+
+				if (update_count == 1) {
+					draw_begin();
+
+					redraw_flies_background(main_info.draw_page);
+
+					redraw_pob_backgrounds(main_info.draw_page);
+
+					draw_leftovers(main_info.draw_page);
+
+					draw_end();
+				}
+
+				update_count--;
 			}
 
-			dj_mix();
+			update_count = intr_sysupdate();
 
-			s1 = 0;
-			for (c1 = 0; c1 < 4; c1++) {
-				if (player[c1].enabled == 1) {
-					main_info.page_info[main_info.draw_page].pobs[s1].x = player[c1].x >> 16;
-					main_info.page_info[main_info.draw_page].pobs[s1].y = player[c1].y >> 16;
-					main_info.page_info[main_info.draw_page].pobs[s1].image = player[c1].image + c1 * 18;
-					main_info.page_info[main_info.draw_page].pobs[s1].pob_data = &rabbit_gobs;
-					s1++;
-				}
-			}
-
-			draw_begin();
-
-			draw_pobs(main_info.draw_page);
-
-			dj_mix();
-
-			draw_flies(main_info.draw_page);
-
-			draw_end();
-
-			if (mod_fade_direction == 1) {
-				if (mod_vol < 30) {
-					mod_vol++;
-					dj_set_mod_volume((char)mod_vol);
-				}
-			} else {
-				if (mod_vol > 0) {
-					mod_vol--;
-					dj_set_mod_volume((char)mod_vol);
-				}
-			}
-
-			if (mod_fade_direction == 1) {
-				if (sfx_vol < 64) {
-					sfx_vol++;
-					dj_set_sfx_volume((char)sfx_vol);
-				}
-			} else {
-				if (sfx_vol > 0) {
-					sfx_vol--;
-					dj_set_sfx_volume((char)sfx_vol);
-				}
-			}
-
-			fade_flag = 0;
-			for (c1 = 0; c1 < 768; c1++) {
-				if (cur_pal[c1] < pal[c1]) {
-					cur_pal[c1]++;
-					fade_flag = 1;
-				} else if (cur_pal[c1] > pal[c1]) {
-					cur_pal[c1]--;
-					fade_flag = 1;
-				}
-			}
 			if (fade_flag == 0 && end_loop_flag == 1)
 				break;
-
-			main_info.draw_page ^= 1;
-			main_info.view_page ^= 1;
-
-			flippage(main_info.view_page);
-
-			wait_vrt(1);
-
-			if (fade_flag == 1)
-				setpalette(0, 256, cur_pal);
-
-			draw_begin();
-
-			redraw_flies_background(main_info.draw_page);
-
-			redraw_pob_backgrounds(main_info.draw_page);
-
-			draw_leftovers(main_info.draw_page);
-
-			draw_end();
-
-			intr_sysupdate();
-
 		}
 
 		main_info.view_page = 0;
@@ -1649,7 +1669,9 @@ void redraw_flies_background(int page)
 
 	for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
 		if (flies[c2].back_defined[page] == 1)
-			set_pixel(page, flies[c2].old_x, flies[c2].old_y, flies[c2].back[page]);
+			set_pixel(page, flies[c2].old_draw_x, flies[c2].old_draw_y, flies[c2].back[page]);
+		flies[c2].old_draw_x = flies[c2].x;
+		flies[c2].old_draw_y = flies[c2].y;
 	}
 }
 
