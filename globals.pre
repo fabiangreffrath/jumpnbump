@@ -79,7 +79,7 @@ void tellServerPlayerMoved(int playerid, int movement_type, int newval);
 #define MOVEMENT_RIGHT 2
 #define MOVEMENT_UP    3
 
-#define JNB_VERSION "1.42"
+#define JNB_VERSION "1.51"
 
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256
@@ -88,6 +88,8 @@ extern int screen_width;
 extern int screen_height;
 extern int screen_pitch;
 extern int scale_up;
+
+extern int ai[JNB_MAX_PLAYERS];
 
 #ifndef USE_SDL
 #define KEY_PL1_LEFT 0xcb
@@ -352,6 +354,7 @@ extern char last_keys[50];
 int hook_keyb_handler(void);
 void remove_keyb_handler(void);
 int key_pressed(int key);
+int addkey(unsigned int key);
 
 /* sound-linux.c */
 #ifdef LINUX

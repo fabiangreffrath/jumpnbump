@@ -77,6 +77,23 @@ int menu(void)
 	if (menu_init() != 0)
 		return 1;
 
+  /* After a game, we have to release the keys, cause AI player
+     can still be using them */
+	addkey((KEY_PL1_LEFT & 0x7f) | 0x8000);
+	addkey((KEY_PL2_LEFT & 0x7f) | 0x8000);
+	addkey((KEY_PL3_LEFT & 0x7f) | 0x8000);
+	addkey((KEY_PL4_LEFT & 0x7f) | 0x8000);
+
+	addkey((KEY_PL1_RIGHT & 0x7f) | 0x8000);
+	addkey((KEY_PL2_RIGHT & 0x7f) | 0x8000);
+	addkey((KEY_PL3_RIGHT & 0x7f) | 0x8000);
+	addkey((KEY_PL4_RIGHT & 0x7f) | 0x8000);
+
+	addkey((KEY_PL1_JUMP & 0x7f) | 0x8000);
+	addkey((KEY_PL2_JUMP & 0x7f) | 0x8000);
+	addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
+	addkey((KEY_PL4_JUMP & 0x7f) | 0x8000);
+
 	mod_vol = 0;
 	mod_fade_direction = 1;
 	dj_ready_mod(MOD_MENU);
@@ -105,6 +122,9 @@ int menu(void)
 	while (1) {
 
 		dj_mix();
+
+	for(c1 = 0; c1 < JNB_MAX_PLAYERS; c1++)		// set AI to false
+		ai[c1] = 0;
 
 		while (update_count) {
 

@@ -1,3 +1,7 @@
+27 Jun 2004 - 1.51
+  - refactored code to make it a bit simpler
+  - Added AI by Ricardo Cruz
+
 30 Mar 2004 - 1.42
   - added support for gzip and bzip2 packed levels.
 
