@@ -1,0 +1,63 @@
+.TH jumpnbump 6 "April 21st, 2001"
+.SH NAME
+jumpnbump \- Cute multiplayer platform game with bunnies
+.SH SYNOPSIS
+jumpnbump \fR[\fB-dat \fIlevelname\fR] [\fB-port \fIport \fB-net \fIplayer hostname rport\fR] [\fB-fireworks\fR] [\fB-fullscreen\fR]
+.SH DESCRIPTION
+You, as a bunny, have to jump on your opponents to make them
+explode. It's a true multiplayer game, you can't play this alone.
+It has network support.
+.SH OPTIONS
+.IP "-dat \fIlevelname\fR"
+Load \fIlevelname\fR and use it as the level for this game.
+.IP "-port \fIport\fR"
+Use \fIport\fR as the port to listen on for a network game. Use this
+with -net.
+.IP "-net \fIplayer hostname rport"
+Connect (using a network) to another person running jump'n'bump on
+\fIhostname\fR, and listening on \fIrport\fR. You will be player
+number \fIplayer\fR.
+.IP "-fireworks"
+Run the program in "screensaver" mode. This is useful with -fullscreen.
+.IP "-fullscreen"
+Run jump'n'bump in fullscreen mode.
+.SH USAGE
+The goal of the game is to jump on the other players. Each rabbit has
+three control keys.
+.IP "Player 1 (Dott)"
+Left - Left
+.br
+Right - Right
+.br
+Jump - Up
+.IP "Player 2 (Jiffy)"
+Left - A
+.br
+Right - D
+.br
+Jump - W
+.IP "Player 3 (Fizz)"
+Left - J
+.br
+Right - L
+.br
+Jump - I
+.IP "Player 4 (Mijji)"
+Left - 4
+.br
+Right - 5
+.br
+Jump - 8
+.SH AUTHORS
+.PP
+Chuck Mason <cemason@users.sourceforge.net>, Jon Atkins <jcatki@home.com>,
+Philippe Brochard <phil.brochard@wanadoo.fr>, Gürkan Sengün <tarzeau@space.ch>,
+and "timecop" <timecop@japan.co.jp> are the authors of jump'n'bump.
+.PP
+This program is a UNIX port of the old DOS game by brainchilddesign. 
+.PP
+This manual page was written for the Debian GNU/Linux distribution because
+the original program does not have a manual page.
+.PP
+This manual page was written by Joe Wreschnig <piman@sacredchao.net>, for the
+Debian GNU/Linux system (but may be used by others).
