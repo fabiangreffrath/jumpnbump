@@ -787,6 +787,12 @@ int main(int argc, char *argv[])
 		}
 		fclose(handle);
 
+		for (c1 = 0; c1 < 16; c1++) { // fix dark font
+			pal[(240 + c1) * 3 + 0] = c1 << 2;
+			pal[(240 + c1) * 3 + 1] = c1 << 2;
+			pal[(240 + c1) * 3 + 2] = c1 << 2;
+		}
+
 		memset(cur_pal, 0, 768);
 
 		setpalette(0, 256, cur_pal);
@@ -2113,6 +2119,12 @@ int init_program(int argc, char *argv[], char *pal)
 		return 1;
 	memset(mask_pic, 0, 102400);
 	register_mask(mask_pic);
+
+	for (c1 = 0; c1 < 16; c1++) { // fix dark font
+		pal[(240 + c1) * 3 + 0] = c1 << 2;
+		pal[(240 + c1) * 3 + 1] = c1 << 2;
+		pal[(240 + c1) * 3 + 2] = c1 << 2;
+	}
 
 	setpalette(0, 256, pal);
 

@@ -578,6 +578,12 @@ int menu_init(void)
 	fclose(handle);
 	memset(menu_cur_pal, 0, 768);
 
+	for (c1 = 0; c1 < 16; c1++) { // fix dark font
+		menu_pal[(240 + c1) * 3 + 0] = c1 << 2;
+		menu_pal[(240 + c1) * 3 + 1] = c1 << 2;
+		menu_pal[(240 + c1) * 3 + 2] = c1 << 2;
+	}
+
 	recalculate_gob(&rabbit_gobs, menu_pal);
 	recalculate_gob(&font_gobs, menu_pal);
 	recalculate_gob(&object_gobs, menu_pal);
