@@ -17,6 +17,8 @@ char dj_init(void)
 	int audio_channels = 2;
 	int audio_buffers = 4096;
 
+	open_screen();
+
 	if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) < 0) {
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
 		return 0;

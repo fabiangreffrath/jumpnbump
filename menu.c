@@ -36,7 +36,7 @@ char message[NUM_MESSAGES][70] = {
 };
 
 
-char menu(void)
+int menu(void)
 {
 	int c1;
 	char esc_pressed;
@@ -309,7 +309,7 @@ char menu(void)
 							player[c1].frame_tick = 0;
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 							player[c1].jump_ready = 0;
-							dj_play_sfx(SFX_JUMP, SFX_JUMP_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+							dj_play_sfx(SFX_JUMP, (unsigned short)(SFX_JUMP_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 						}
 					} else {
 						if ((player[c1].y >> 16) >= (138 + c1 * 2)) {
@@ -319,7 +319,7 @@ char menu(void)
 							player[c1].frame_tick = 0;
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 							player[c1].jump_ready = 0;
-							dj_play_sfx(SFX_JUMP, SFX_JUMP_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+							dj_play_sfx(SFX_JUMP, (unsigned short)(SFX_JUMP_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 						}
 					}
 				}
@@ -453,6 +453,7 @@ char menu(void)
 				// clear 20 lines at x=0,y=220 in front and backbuffer
 */
 				memset((void *) get_vgaptr(0, 0, 220), 0, 8000);
+				memset((void *) get_vgaptr(1, 0, 220), 0, 8000);
 
 				cur_message++;
 				if (cur_message >= NUM_MESSAGES)
@@ -519,7 +520,7 @@ char menu(void)
 }
 
 
-char menu_init(void)
+int menu_init(void)
 {
 	FILE *handle;
 	int c1;
@@ -555,7 +556,7 @@ char menu_init(void)
 		player[c1].y = (160L + c1 * 2) << 16;
 		player[c1].x_add = 0;
 		player[c1].y_add = 0;
-		player[c1].direction = rnd(2);
+		player[c1].direction = (char)rnd(2);
 		player[c1].jump_ready = 1;
 		player[c1].anim = 0;
 		player[c1].frame = 0;

@@ -378,7 +378,7 @@ int main(int argc, char *argv[])
 											for (c4 = 0; c4 < 10; c4++)
 												add_object(OBJ_FLESH, (player[c2].x >> 16) + 6 + rnd(5), (player[c2].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
 										}
-										dj_play_sfx(SFX_DEATH, SFX_DEATH_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+										dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 										player[c1].bumps++;
 										player[c1].bumped[c2]++;
 										s1 = player[c1].bumps % 100;
@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
 											for (c4 = 0; c4 < 10; c4++)
 												add_object(OBJ_FLESH, (player[c1].x >> 16) + 6 + rnd(5), (player[c1].y >> 16) + 6 + rnd(5), (rnd(65535) - 32768) * 3, (rnd(65535) - 32768) * 3, 0, 79);
 										}
-										dj_play_sfx(SFX_DEATH, SFX_DEATH_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+										dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 										player[c2].bumps++;
 										player[c2].bumped[c1]++;
 										s1 = player[c2].bumps % 100;
@@ -491,7 +491,7 @@ int main(int argc, char *argv[])
 			dist = 0x7fff;
 			for (c1 = 0; c1 < 4; c1++) {
 				if (player[c1].enabled == 1) {
-					cur_dist = sqrt((s1 - ((player[c1].x >> 16) + 8)) * (s1 - ((player[c1].x >> 16) + 8)) + (s2 - ((player[c1].y >> 16) + 8)) * (s2 - ((player[c1].y >> 16) + 8)));
+					cur_dist = (int)sqrt((s1 - ((player[c1].x >> 16) + 8)) * (s1 - ((player[c1].x >> 16) + 8)) + (s2 - ((player[c1].y >> 16) + 8)) * (s2 - ((player[c1].y >> 16) + 8)));
 					if (cur_dist < dist) {
 						closest_player = c1;
 						dist = cur_dist;
@@ -501,13 +501,13 @@ int main(int argc, char *argv[])
 			s3 = 32 - dist / 3;
 			if (s3 < 0)
 				s3 = 0;
-			dj_set_sfx_channel_volume(4, s3);
+			dj_set_sfx_channel_volume(4, (char)(s3));
 
 			for (c1 = 0; c1 < NUM_FLIES; c1++) {
 				dist = 0x7fff;
 				for (c2 = 0; c2 < 4; c2++) {
 					if (player[c2].enabled == 1) {
-						cur_dist = sqrt((flies[c1].x - ((player[c2].x >> 16) + 8)) * (flies[c1].x - ((player[c2].x >> 16) + 8)) + (flies[c1].y - ((player[c2].y >> 16) + 8)) * (flies[c1].y - ((player[c2].y >> 16) + 8)));
+						cur_dist = (int)sqrt((flies[c1].x - ((player[c2].x >> 16) + 8)) * (flies[c1].x - ((player[c2].x >> 16) + 8)) + (flies[c1].y - ((player[c2].y >> 16) + 8)) * (flies[c1].y - ((player[c2].y >> 16) + 8)));
 						if (cur_dist < dist) {
 							closest_player = c2;
 							dist = cur_dist;
@@ -977,9 +977,9 @@ void steer_players(void)
 							player[c1].jump_ready = 0;
 							player[c1].jump_abort = 1;
 							if (pogostick == 0)
-								dj_play_sfx(SFX_JUMP, SFX_JUMP_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+								dj_play_sfx(SFX_JUMP, (unsigned short)(SFX_JUMP_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 							else
-								dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+								dj_play_sfx(SFX_SPRING, (unsigned short)(SFX_SPRING_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 						}
 						if ((ban_map[(s2 + 7) >> 4][s1 >> 4] == 0 || ban_map[(s2 + 7) >> 4][(s1 + 15) >> 4] == 0) && (ban_map[(s2 + 8) >> 4][s1 >> 4] == 2 || ban_map[(s2 + 8) >> 4][(s1 + 15) >> 4] == 2)) {
 							player[c1].y_add = -196608L;
@@ -991,9 +991,9 @@ void steer_players(void)
 							player[c1].jump_ready = 0;
 							player[c1].jump_abort = 1;
 							if (pogostick == 0)
-								dj_play_sfx(SFX_JUMP, SFX_JUMP_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+								dj_play_sfx(SFX_JUMP, (unsigned short)(SFX_JUMP_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 							else
-								dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+								dj_play_sfx(SFX_SPRING, (unsigned short)(SFX_SPRING_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 						}
 					}
 					if (pogostick == 0 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0))) {
@@ -1102,7 +1102,7 @@ void steer_players(void)
 							}
 						}
 					}
-					dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+					dj_play_sfx(SFX_SPRING, (unsigned short)(SFX_SPRING_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 				}
 				s1 = (player[c1].x >> 16);
 				s2 = (player[c1].y >> 16);
@@ -1130,9 +1130,9 @@ void steer_players(void)
 						if (player[c1].y_add >= 32768) {
 							add_object(OBJ_SPLASH, (player[c1].x >> 16) + 8, ((player[c1].y >> 16) & 0xfff0) + 15, 0, 0, OBJ_ANIM_SPLASH, 0);
 							if (blood_is_thicker_than_water == 0)
-								dj_play_sfx(SFX_SPLASH, SFX_SPLASH_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
+								dj_play_sfx(SFX_SPLASH, (unsigned short)(SFX_SPLASH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 							else
-								dj_play_sfx(SFX_SPLASH, SFX_SPLASH_FREQ + rnd(2000) - 5000, 64, 0, 0, -1);
+								dj_play_sfx(SFX_SPLASH, (unsigned short)(SFX_SPLASH_FREQ + rnd(2000) - 5000), 64, 0, 0, -1);
 						}
 					}
 					player[c1].y_add -= 1536;
@@ -1203,7 +1203,7 @@ void steer_players(void)
 }
 
 
-void position_player(short player_num)
+void position_player(int player_num)
 {
 	int c1;
 	int s1, s2;
@@ -1298,7 +1298,7 @@ void fireworks(void)
 		rabbits[c1].used = 0;
 
 	rabbits[0].used = 1;
-	rabbits[0].colour = rnd(4);
+	rabbits[0].colour = (char)rnd(4);
 	rabbits[0].x = (int) (150 + rnd(100)) << 16;
 	rabbits[0].y = 256 << 16;
 	rabbits[0].x_add = ((int) rnd(65535) << 1) - 65536;
@@ -1358,7 +1358,7 @@ void fireworks(void)
 			for (c1 = 0; c1 < 20; c1++) {
 				if (rabbits[c1].used == 0) {
 					rabbits[c1].used = 1;
-					rabbits[c1].colour = rnd(4);
+					rabbits[c1].colour = (char)rnd(4);
 					rabbits[c1].x = (int) (150 + rnd(100)) << 16;
 					rabbits[c1].y = 256 << 16;
 					rabbits[c1].x_add = ((int) rnd(65535) << 1) - 65536;
@@ -1482,7 +1482,7 @@ void fireworks(void)
 }
 
 
-void add_object(char type, short x, short y, long x_add, long y_add, short anim, short frame)
+void add_object(int type, int x, int y, int x_add, int y_add, int anim, int frame)
 {
 	int c1;
 
@@ -1727,7 +1727,7 @@ void update_objects(void)
 				if (objects[c1].x_add > 0 && objects[c1].x_add < 16384)
 					objects[c1].x_add = 16384;
 				if (objects[c1].used == 1) {
-					s1 = atan2(objects[c1].y_add, objects[c1].x_add) * 4 / M_PI;
+					s1 = (int)(atan2(objects[c1].y_add, objects[c1].x_add) * 4 / M_PI);
 					if (s1 < 0)
 						s1 += 8;
 					if (s1 < 0)
@@ -1841,7 +1841,7 @@ void update_objects(void)
 }
 
 
-char add_pob(int page, short x, short y, short image, char *pob_data)
+int add_pob(int page, int x, int y, int image, char *pob_data)
 {
 
 	if (main_info.page_info[page].num_pobs >= NUM_POBS)
@@ -1885,7 +1885,7 @@ void redraw_pob_backgrounds(int page)
 }
 
 
-char add_leftovers(int page, short x, short y, short image, char *pob_data)
+int add_leftovers(int page, int x, int y, int image, char *pob_data)
 {
 
 	if (leftovers.page[page].num_pobs >= NUM_LEFTOVERS)
@@ -1914,7 +1914,7 @@ void draw_leftovers(int page)
 }
 
 
-char init_level(short level)
+int init_level(int level)
 {
 	FILE *handle;
 	int c1, c2;
@@ -2006,7 +2006,7 @@ void deinit_level(void)
 }
 
 
-char init_program(int argc, char *argv[])
+int init_program(int argc, char *argv[])
 {
 	FILE *handle = (FILE *) NULL;
 	int c1 = 0, c2 = 0;
@@ -2246,8 +2246,6 @@ char init_program(int argc, char *argv[])
 		fly.loop_length = fly.length;
 		dj_set_sfx_settings(SFX_FLY, &fly);
 	}
-
-	open_screen();
 
 	if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
@@ -2496,7 +2494,7 @@ void read_joy(void)
 }
 
 
-char calib_joy(char type)
+int calib_joy(char type)
 {
 	int c1;
 	int x, y;
@@ -2624,7 +2622,7 @@ unsigned short rnd(unsigned short max)
 }
 
 
-char read_level(void)
+int read_level(void)
 {
 	FILE *handle;
 	int c1, c2;
@@ -2667,19 +2665,31 @@ FILE *dat_open(char *file_name, char *dat_name, char *mode)
 	char name[21];
 	int ofs;
 
-	if ((handle = fopen(dat_name, mode)) == NULL)
+	handle = fopen(dat_name, mode);
+	if (!handle)
 		return 0;
 
+	memset(name, 0, sizeof(name));
+
 	num = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+	
 	for (c1 = 0; c1 < num; c1++) {
-		fread(name, 1, 12, handle);
+		if (!fread(name, 1, 12, handle)) {
+			fclose(handle);
+			return 0;
+		}
 		if (strnicmp(name, file_name, strlen(file_name)) == 0) {
-			ofs = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			ofs = fgetc(handle);
+			ofs += (fgetc(handle) << 8);
+			ofs += (fgetc(handle) << 16);
+			ofs += (fgetc(handle) << 24);
 			fseek(handle, ofs, SEEK_SET);
 			return handle;
 		}
 		fseek(handle, 8, SEEK_CUR);
 	}
+
+	fclose(handle);
 
 	return 0;
 }
@@ -2693,16 +2703,25 @@ int dat_filelen(char *file_name, char *dat_name)
 	char name[21];
 	int len;
 
-	if ((handle = fopen(dat_name, "rb")) == NULL)
+	handle = fopen(dat_name, "rb");
+	if (!handle)
 		return 0;
 
+	memset(name, 0, sizeof(name));
+	
 	num = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
 
 	for (c1 = 0; c1 < num; c1++) {
-		fread(name, 1, 12, handle);
+		if (!fread(name, 1, 12, handle)) {
+			fclose(handle);
+			return 0;
+		}
 		if (strnicmp(name, file_name, strlen(file_name)) == 0) {
 			fseek(handle, 4, SEEK_CUR);
-			len = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+			len = fgetc(handle);
+			len += (fgetc(handle) << 8);
+			len += (fgetc(handle) << 16);
+			len += (fgetc(handle) << 24);
 
 			fclose(handle);
 			return len;

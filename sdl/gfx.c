@@ -1,9 +1,10 @@
 #include "globals.h"
 
 #define JNB_BPP 8
-static SDL_Surface *jnb_surface, *jnb_surface_page1;
+static SDL_Surface *jnb_surface;
 static int fullscreen = 0;
 static int vinited = 0;
+static unsigned char screen_buffer[JNB_WIDTH*JNB_HEIGHT*2];
 
 void open_screen(void)
 {
@@ -15,27 +16,16 @@ void open_screen(void)
 		exit(EXIT_FAILURE);
 	}
 
-	jnb_surface = SDL_SetVideoMode(JNB_WIDTH, JNB_HEIGHT, JNB_BPP, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	if (fullscreen)
+		jnb_surface = SDL_SetVideoMode(JNB_WIDTH, JNB_HEIGHT, JNB_BPP, SDL_SWSURFACE | SDL_FULLSCREEN);
+	else
+		jnb_surface = SDL_SetVideoMode(JNB_WIDTH, JNB_HEIGHT, JNB_BPP, SDL_SWSURFACE);
 	if (!jnb_surface) {
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
 
-	jnb_surface_page1 = SDL_CreateRGBSurface(SDL_HWSURFACE, JNB_WIDTH, JNB_HEIGHT, JNB_BPP, 0, 0, 0, 0);
-	if (!jnb_surface_page1) {
-		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
-		exit(EXIT_FAILURE);
-	}
-
 	SDL_ShowCursor(0);
-
-	if (fullscreen) {
-		lval = SDL_WM_ToggleFullScreen(jnb_surface);
-		if (lval != 1) {
-			fprintf(stderr, "SDL WARNING: %s\n", SDL_GetError());
-			fullscreen = 0;
-		}
-	}
 
 	vinited = 1;
 
@@ -57,22 +47,37 @@ void wait_vrt(void)
 	return;
 }
 
-void flippage(long page)
+void flippage(int page)
 {
-	SDL_Surface *which;
+	int h;
+	int w;
+	char *src;
+	char *dest;
 
-	which = (page == 1) ? jnb_surface_page1 : jnb_surface;
-
-	SDL_UpdateRect(which, 0, 0, 0, 0);
+	SDL_LockSurface(jnb_surface);
+        dest=(char *)jnb_surface->pixels;
+	if (page == 1)
+		src=&screen_buffer[JNB_WIDTH*JNB_HEIGHT];
+	else
+		src=&screen_buffer[0];
+        w=(jnb_surface->clip_rect.w>JNB_WIDTH)?(JNB_WIDTH):(jnb_surface->clip_rect.w);
+        h=(jnb_surface->clip_rect.h>JNB_HEIGHT)?(JNB_HEIGHT):(jnb_surface->clip_rect.h);
+        for (; h>0; h--)
+        {
+		memcpy(dest,src,w);
+		dest+=jnb_surface->pitch;
+		src+=JNB_WIDTH;
+        }
+        SDL_UnlockSurface(jnb_surface);
+	SDL_Flip(jnb_surface);
 }
 
-char *get_vgaptr(long page, long x, long y)
+char *get_vgaptr(int page, int x, int y)
 {
-	SDL_Surface *which;
-
-	which = (page == 1) ? jnb_surface_page1 : jnb_surface;
-
-	return (char *) &(((char *) which->pixels)[(y * JNB_WIDTH) + x]);
+	if (page == 1)
+		return &screen_buffer[JNB_WIDTH*JNB_HEIGHT+((y * JNB_WIDTH) + x)];
+	else
+		return &screen_buffer[(y * JNB_WIDTH) + x];
 }
 
 void setpalette(int index, int count, char *palette)
@@ -86,7 +91,6 @@ void setpalette(int index, int count, char *palette)
 		colors[i].b = palette[i * 3 + 2] << 2;
 	}
 	SDL_SetColors(jnb_surface, colors, index, count);
-	SDL_SetColors(jnb_surface_page1, colors, index, count);
 }
 
 void fillpalette(int red, int green, int blue)
@@ -100,10 +104,9 @@ void fillpalette(int red, int green, int blue)
 		colors[i].b = blue << 2;
 	}
 	SDL_SetColors(jnb_surface, colors, 0, 256);
-	SDL_SetColors(jnb_surface_page1, colors, 0, 256);
 }
 
-void get_block(char page, long x, long y, long width, long height, char *buffer)
+void get_block(int page, int x, int y, int width, int height, char *buffer)
 {
 	short w, h;
 	char *buffer_ptr, *vga_ptr;
@@ -133,7 +136,7 @@ void get_block(char page, long x, long y, long width, long height, char *buffer)
 
 }
 
-void put_block(char page, long x, long y, long width, long height, char *buffer)
+void put_block(int page, int x, int y, int width, int height, char *buffer)
 {
 	short w, h;
 	char *vga_ptr, *buffer_ptr;
@@ -159,7 +162,7 @@ void put_block(char page, long x, long y, long width, long height, char *buffer)
 	}
 }
 
-void put_text(char page, int x, int y, char *text, char align)
+void put_text(int page, int x, int y, char *text, int align)
 {
 	int c1;
 	int t1;
@@ -287,7 +290,7 @@ void put_text(char page, int x, int y, char *text, char align)
 	}
 }
 
-void put_pob(char page, short x, short y, short image, char *pob_data, char mask, char *mask_pic)
+void put_pob(int page, int x, int y, int image, char *pob_data, int mask, char *mask_pic)
 {
 	long c1, c2;
 	long pob_offset;
@@ -352,7 +355,7 @@ void put_pob(char page, short x, short y, short image, char *pob_data, char mask
 	}
 }
 
-char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short y2, short image2, char *pob_data2)
+int pob_col(int x1, int y1, int image1, char *pob_data1, int x2, int y2, int image2, char *pob_data2)
 {
 	short c1, c2;
 	long pob_offset1, pob_offset2;
@@ -447,27 +450,27 @@ char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short 
 	return 0;
 }
 
-short pob_width(short image, char *pob_data)
+int pob_width(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2));
 }
 
-short pob_height(short image, char *pob_data)
+int pob_height(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 2);
 }
 
-short pob_hs_x(short image, char *pob_data)
+int pob_hs_x(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 4);
 }
 
-short pob_hs_y(short image, char *pob_data)
+int pob_hs_y(int image, char *pob_data)
 {
 	return *(short *) (pob_data + *(long *) (pob_data + image * 4 + 2) + 6);
 }
 
-char read_pcx(FILE * handle, char *buffer, long buf_len, char *pal)
+int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal)
 {
 	short c1;
 	short a, b;
@@ -495,7 +498,7 @@ char read_pcx(FILE * handle, char *buffer, long buf_len, char *pal)
 }
 
 #ifndef _MSC_VER
-long filelength(int handle)
+int filelength(int handle)
 {
 	struct stat buf;
 

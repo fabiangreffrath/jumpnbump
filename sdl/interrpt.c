@@ -92,7 +92,7 @@ void keyb_handler_end()
 }
 
 
-char hook_keyb_handler(void)
+int hook_keyb_handler(void)
 {
 #ifndef USE_SDL
 	if (keyb_handler_info.enabled == 0) {
@@ -129,7 +129,7 @@ void remove_keyb_handler(void)
 }
 
 
-char key_pressed(unsigned char key)
+int key_pressed(int key)
 {
 	return keyb[(unsigned char) key];
 }
@@ -148,7 +148,7 @@ int addkey(unsigned int key)
 	return 0;
 }
 
-char intr_sysupdate()
+int intr_sysupdate()
 {
 	SDL_Event e;
 	int i = 0;

@@ -157,7 +157,7 @@ struct {
 	char but1, but2, but3;
 } mouse;
 
-char datfile_name[256];
+char datfile_name[2048];
 
 char *background_pic;
 char *mask_pic;
@@ -169,24 +169,24 @@ char *font_gobs;
 /* main.c */
 
 void steer_players(void);
-void position_player(short player_num);
+void position_player(int player_num);
 void fireworks(void);
-void add_object(char type, short x, short y, long x_add, long y_add, short anim, short frame);
+void add_object(int type, int x, int y, int x_add, int y_add, int anim, int frame);
 void update_objects(void);
-char add_pob(int page, short x, short y, short image, char *pob_data);
+int add_pob(int page, int x, int y, int image, char *pob_data);
 void draw_pobs(int page);
 void redraw_pob_backgrounds(int page);
-char add_leftovers(int page, short x, short y, short image, char *pob_data);
+int add_leftovers(int page, int x, int y, int image, char *pob_data);
 void draw_leftovers(int page);
-char init_level(short level);
+int init_level(int level);
 void deinit_level(void);
-char init_program(int argc, char *argv[]);
+int init_program(int argc, char *argv[]);
 void deinit_program(void);
 void read_joy(void);
-char calib_joy(char type);
+int calib_joy(char type);
 void read_mouse(void);
 unsigned short rnd(unsigned short max);
-char read_level(void);
+int read_level(void);
 FILE *dat_open(char *file_name, char *dat_name, char *mode);
 int dat_filelen(char *file_name, char *dat_name);
 void write_calib_data(void);
@@ -194,8 +194,8 @@ void write_calib_data(void);
 
 /* menu.c */
 
-char menu(void);
-char menu_init(void);
+int menu(void);
+int menu_init(void);
 void menu_deinit(void);
 
 
@@ -203,23 +203,23 @@ void menu_deinit(void);
 
 void open_screen(void);
 void wait_vrt(void);
-#if 0
+#ifdef DOS
 void get_block(char page, short x, short y, short width, short height, char *buffer);
 void put_block(char page, short x, short y, short width, short height, char *buffer);
+#else
+void get_block(int page, int x, int y, int width, int height, char *buffer);
+void put_block(int page, int x, int y, int width, int height, char *buffer);
 #endif
-void put_text(char page, int x, int y, char *text, char align);
-void put_pob(char page, short x, short y, short image, char *pob_data, char mask, char *mask_pic);
-char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short y2, short image2, char *pob_data2);
-short pob_width(short image, char *pob_data);
-short pob_height(short image, char *pob_data);
-short pob_hs_x(short image, char *pob_data);
-short pob_hs_y(short image, char *pob_data);
-char read_pcx(FILE * handle, char *buffer, long buf_len, char *pal);
+void put_text(int page, int x, int y, char *text, int align);
+void put_pob(int page, int x, int y, int image, char *pob_data, int mask, char *mask_pic);
+int pob_col(int x1, int y1, int image1, char *pob_data1, int x2, int y2, int image2, char *pob_data2);
+int pob_width(int image, char *pob_data);
+int pob_height(int image, char *pob_data);
+int pob_hs_x(int image, char *pob_data);
+int pob_hs_y(int image, char *pob_data);
+int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal);
 
 /* gfx.c */
-
-void get_block(char page, long x, long y, long width, long height, char *buffer);
-void put_block(char page, long x, long y, long width, long height, char *buffer);
 
 #ifdef USE_SDL
 #ifndef _MSC_VER
@@ -227,19 +227,19 @@ long filelength(int handle);
 #endif
 void setpalette(int index, int count, char *palette);
 void fillpalette(int red, int green, int blue);
-void flippage(long page);
+void flippage(int page);
 void fs_toggle();
-char *get_vgaptr(long, long, long);
-char intr_sysupdate();
+char *get_vgaptr(int, int, int);
+int intr_sysupdate();
 #endif
 
 /* interrpt.c */
 
 extern char last_keys[50];
 
-char hook_keyb_handler(void);
+int hook_keyb_handler(void);
 void remove_keyb_handler(void);
-char key_pressed(unsigned char key);
+int key_pressed(int key);
 
 /* sound-linux.c */
 #ifdef LINUX
