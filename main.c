@@ -1886,7 +1886,7 @@ int init_program(int argc, char *argv[], char *pal)
 #endif
 			else if (stricmp(argv[c1], "-scaleup") == 0)
 				set_scaling(1);
-			else if (stricmp(argv[c1], "-flip") == 0)
+			else if (stricmp(argv[c1], "-mirror") == 0)
 				flip = 1;
 			else if (stricmp(argv[c1], "-dat") == 0) {
 				if (c1 < (argc - 1)) {
@@ -1902,6 +1902,28 @@ int init_program(int argc, char *argv[], char *pal)
 					if (stricmp(argv[c1 + 1], "3") == 0)
 						force3 = 1;
 				}
+			}
+			else if (strstr(argv[1],"-v")) {
+				printf("jumpnbump %s compiled %s at %s with",JB_VERSION,__DATE__,__TIME__);
+#ifndef _SDLnet_h
+				printf("out");
+#endif
+				printf(" network support.\n");
+				return 1;
+			}
+			else if (strstr(argv[1],"-h")) {
+				printf("Usage: jumpnbump [OPTION]...\n");
+				printf("\n");
+				printf("  -dat level.dat           play a different level\n");
+				printf("  -port port               define listen port\n");
+				printf("  -net player host rport   define network players\n");
+				printf("  -fireworks               screensaver mode\n");
+				printf("  -fullscreen              run in fullscreen mode\n");
+				printf("  -nosound                 play without sound\n");
+				printf("  -nogore                  play without blood\n");
+				printf("  -mirror                  play with mirrored level\n");
+				printf("\n");
+				return 1;
 			}
 		}
 	}

@@ -65,6 +65,8 @@
 # endif
 #endif
 
+#define JB_VERSION "1.2"
+
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256
 extern int screen_width;
