@@ -5,7 +5,7 @@ CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp \
 LIBS = -lm $(SDL_LIBS) -lSDL_mixer -lSDL_net
 SDL_TARGET = sdl.a
 MODIFY_TARGET = gobpack jnbpack jnbunpack
-OBJS = fireworks.o main.o menu.o
+OBJS = fireworks.o main.o menu.o filter.o
 TARGET = jumpnbump
 BINARIES = $(TARGET) jumpnbump.svgalib jumpnbump.fbcon $(MODIFY_TARGET) \
 	jnbmenu.tcl
