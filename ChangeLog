@@ -1,3 +1,8 @@
+11 Aug 2002 - 1.35
+   - gobpack added
+   - documentation updated
+   - little fixes here and there
+
 2 Aug 2002 - 1.34
    - fixed too dark font
    - attempt to fix sound and scaleup on big endian systems
