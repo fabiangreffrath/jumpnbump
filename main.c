@@ -286,11 +286,11 @@ typedef struct
 #ifdef USE_NET
 void bufToPacket(const char *buf, NetPacket *pkt)
 {
-	SDLNet_Write32(*((unsigned long *) (buf +  0)), &pkt->cmd);
-	SDLNet_Write32(*((unsigned long *) (buf +  4)), &pkt->arg);
-	SDLNet_Write32(*((unsigned long *) (buf +  8)), &pkt->arg2);
-	SDLNet_Write32(*((unsigned long *) (buf + 12)), &pkt->arg3);
-	SDLNet_Write32(*((unsigned long *) (buf + 16)), &pkt->arg4);
+	SDLNet_Write32(*((Uint32*) (buf +  0)), &pkt->cmd);
+	SDLNet_Write32(*((Uint32*) (buf +  4)), &pkt->arg);
+	SDLNet_Write32(*((Uint32*) (buf +  8)), &pkt->arg2);
+	SDLNet_Write32(*((Uint32*) (buf + 12)), &pkt->arg3);
+	SDLNet_Write32(*((Uint32*) (buf + 16)), &pkt->arg4);
 /*
 	pkt->cmd               =        ntohl(*((unsigned long *) (buf +  0)));
 	pkt->arg               = (long) ntohl(*((unsigned long *) (buf +  4)));
@@ -303,11 +303,11 @@ void bufToPacket(const char *buf, NetPacket *pkt)
 
 void packetToBuf(const NetPacket *pkt, char *buf)
 {
-	*((unsigned long *) (buf +  0)) = SDLNet_Read32(&pkt->cmd);
-	*((unsigned long *) (buf +  4)) = SDLNet_Read32(&pkt->arg);
-	*((unsigned long *) (buf +  8)) = SDLNet_Read32(&pkt->arg2);
-	*((unsigned long *) (buf + 12)) = SDLNet_Read32(&pkt->arg3);
-	*((unsigned long *) (buf + 16)) = SDLNet_Read32(&pkt->arg4);
+	*((Uint32*) (buf +  0)) = SDLNet_Read32(&pkt->cmd);
+	*((Uint32*) (buf +  4)) = SDLNet_Read32(&pkt->arg);
+	*((Uint32*) (buf +  8)) = SDLNet_Read32(&pkt->arg2);
+	*((Uint32*) (buf + 12)) = SDLNet_Read32(&pkt->arg3);
+	*((Uint32*) (buf + 16)) = SDLNet_Read32(&pkt->arg4);
 /*
 	*((unsigned long *) (buf +  0)) = htonl(pkt->cmd);
 	*((unsigned long *) (buf +  4)) = htonl((unsigned long) pkt->arg);
@@ -344,7 +344,7 @@ void sendPacketToSock(TCPsocket s, NetPacket *pkt)
 
 void sendPacket(int playerid, NetPacket *pkt)
 {
-	if ( playerid < JNB_MAX_PLAYERS ) {
+	if ( (playerid < JNB_MAX_PLAYERS) && (playerid >= 0)) {
 		if ((player[playerid].enabled) && (playerid != client_player_num)) {
 			sendPacketToSock(net_info[playerid].sock, pkt);
 		}
@@ -361,28 +361,38 @@ void sendPacketToAll(NetPacket *pkt)
 	}
 }
 
-
+/** read a packet from the given TCPsocket
+Returns -1 if some error occured, 0 if there was no data available and 1 if a
+packet was successfully read.
+Note: the socket has to be in the supplied socketset.
+TODO: this function will bomb if a packet arrives in pieces, there is no
+inherent guarantee that the next call will be made on the same socket. */
 int grabPacket(TCPsocket s, SDLNet_SocketSet ss, NetPacket *pkt)
 {
 	static char buf[NETPKTBUFSIZE];
 	static int buf_count = 0;
 	int rc;
-	int retval = 0;
 
-	if (SDLNet_CheckSockets(ss, 0) > 0) {
-		rc = SDLNet_TCP_Recv(s, &buf[buf_count], NETPKTBUFSIZE - buf_count);
-		if (rc <= 0) {  /* closed connection? */
-			retval = -1;
-		} else if (rc != NETPKTBUFSIZE) {
-			buf_count = rc;
-		} else {
-			buf_count = 0;
-			bufToPacket(buf, pkt);
-			retval = 1;
-		}
+	if (SDLNet_CheckSockets(ss, 0) <= 0)
+		return 0;
+
+	if(!SDLNet_SocketReady(s))
+		return 0;
+
+	rc = SDLNet_TCP_Recv(s, &buf[buf_count], NETPKTBUFSIZE - buf_count);
+	if (rc <= 0) {
+		/* closed connection? */
+		return -1;
+	} else if (rc != NETPKTBUFSIZE) {
+		/* we got a partial packet. Store what we got in the static buffer and
+		return so that the next call can read the rest. Hopefully. */
+		buf_count = rc;
+		return 0;
+	} else {
+		buf_count = 0;
+		bufToPacket(buf, pkt);
+		return 1;
 	}
-
-	return(retval);
 }
 
 
@@ -740,7 +750,11 @@ void init_server(const char *netarg)
 	int wait_for_clients = ((netarg == NULL) ? 0 : atoi(netarg));
 	char *ipstr;
 
-	if ((wait_for_clients > (JNB_MAX_PLAYERS - 1)) || (wait_for_clients < 0)) {
+	/** assign player number zero as default for the server */
+	if(-1 == client_player_num)
+		client_player_num = 0;
+
+	if ((wait_for_clients >= JNB_MAX_PLAYERS) || (wait_for_clients < 0)) {
 		printf("SERVER: Waiting for bogus client count (%d).\n", wait_for_clients);
 		exit(42);
 	}
@@ -817,14 +831,23 @@ void init_server(const char *netarg)
 
 		printf("SERVER: Client claims to be player #%ld.\n", pkt.arg);
 
-		if (pkt.arg > JNB_MAX_PLAYERS) {
-			printf("SERVER:  (that's an invalid player number.)\n");
-		} else {
-			if (player[pkt.arg].enabled) {
-				printf("SERVER:  (that player number is already taken.)\n");
-			} else {
-				negatory = 0;
+		if (-1 == pkt.arg) {
+			int i;
+			for(i=0; i!=JNB_MAX_PLAYERS; ++i) {
+				if(!player[i].enabled) {
+					printf("SERVER: assigning %d as player number\n", i);
+					pkt.arg = i;
+					break;
+				}
 			}
+		}
+
+		if ((pkt.arg>=JNB_MAX_PLAYERS)||(pkt.arg<0)) {
+			printf("SERVER:  (that's an invalid player number.)\n");
+		} else if (player[pkt.arg].enabled) {
+			printf("SERVER:  (that player number is already taken.)\n");
+		} else {
+			negatory = 0;
 		}
 
 		if (negatory) {
@@ -882,13 +905,10 @@ void connect_to_server(char *netarg)
 	}
 	atexit(SDLNet_Quit);
 	
-	player[client_player_num].enabled = 1;
-
 	SDLNet_ResolveHost(&addr, NULL, JNB_INETPORT);
 	ipstr = SDLNet_ResolveIP(&addr);
 	SDLNet_ResolveHost(&addr, ipstr, JNB_INETPORT);
 	printf("CLIENT: we are %s (%i.%i.%i.%i:%i).\n", ipstr, (addr.host >> 0) & 0xff, (addr.host >> 8) & 0xff, (addr.host >> 16) & 0xff, (addr.host >> 24) & 0xff, addr.port);
-	net_info[client_player_num].addr = addr;
 
 	if (SDLNet_ResolveHost(&hent, netarg, JNB_INETPORT) < 0) {
 		fprintf(stderr, "CLIENT: couldn't find host: %s\n", SDLNet_GetError());
@@ -944,6 +964,9 @@ void connect_to_server(char *netarg)
 		exit(42);
 	}
 
+	client_player_num = pkt.arg;
+	player[client_player_num].enabled = 1;
+	net_info[client_player_num].addr = addr;
 	printf("CLIENT: Server accepted our connection.\n");
 
 	wait_for_greenlight();
@@ -2809,11 +2832,16 @@ int init_program(int argc, char *argv[], char *pal)
 
 	preread_datafile(datfile_name);
 
+#if 0
+/** It should not be necessary to assign a default player number here. The
+server assigns one in init_server, the client gets one assigned by the server,
+all provided the user didn't choose one on the commandline. */
 	if (is_net) {
 		if (client_player_num < 0)
 		        client_player_num = 0;
 		player[client_player_num].enabled = 1;
 	}
+#endif
 
 	main_info.pob_backbuf[0] = malloc(screen_pitch*screen_height*bytes_per_pixel);
 	main_info.pob_backbuf[1] = malloc(screen_pitch*screen_height*bytes_per_pixel);
