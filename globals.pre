@@ -247,7 +247,7 @@ typedef struct {
 } mouse_t;
 
 extern main_info_t main_info;
-extern player_t player[4];
+extern player_t player[JNB_MAX_PLAYERS];
 extern player_anim_t player_anims[7];
 extern object_t objects[NUM_OBJECTS];
 extern joy_t joy;
@@ -289,8 +289,8 @@ int init_program(int argc, char *argv[], char *pal);
 void deinit_program(void);
 unsigned short rnd(unsigned short max);
 int read_level(void);
-unsigned char *dat_open(char *file_name, char *dat_name, char *mode);
-int dat_filelen(char *file_name, char *dat_name);
+unsigned char *dat_open(char *file_name);
+int dat_filelen(char *file_name);
 void write_calib_data(void);
 
 

@@ -53,7 +53,7 @@ void fireworks(void)
 
 	register_background(NULL, NULL);
 
-	if ((handle = dat_open("level.pcx", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("level.pcx")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
 		return;
 	}

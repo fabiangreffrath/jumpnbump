@@ -1523,7 +1523,7 @@ int main(int argc, char *argv[])
 
 		flippage(main_info.view_page);
 
-		if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("menu.pcx")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 			return 1;
 		}
@@ -2509,7 +2509,7 @@ int init_level(int level, char *pal)
 	int c1, c2;
 	int s1, s2;
 
-	if ((handle = dat_open("level.pcx", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("level.pcx")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
 		return 1;
 	}
@@ -2519,7 +2519,7 @@ int init_level(int level, char *pal)
 	}
 	if (flip)
 		flip_pixels(background_pic);
-	if ((handle = dat_open("mask.pcx", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("mask.pcx")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'mask.pcx', aborting...\n");
 		return 1;
 	}
@@ -2827,7 +2827,7 @@ int init_program(int argc, char *argv[], char *pal)
 		}
 	}
 
-	if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("menu.pcx")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
 		return 1;
 	}
@@ -2836,38 +2836,38 @@ int init_program(int argc, char *argv[], char *pal)
 		return 1;
 	}
 
-	if ((handle = dat_open("rabbit.gob", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("rabbit.gob")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'rabbit.gob', aborting...\n");
 		return 1;
 	}
-	if (register_gob(handle, &rabbit_gobs, dat_filelen("rabbit.gob", datfile_name))) {
+	if (register_gob(handle, &rabbit_gobs, dat_filelen("rabbit.gob"))) {
 		/* error */
 		return 1;
 	}
 
-	if ((handle = dat_open("objects.gob", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("objects.gob")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'objects.gob', aborting...\n");
 		return 1;
 	}
-	if (register_gob(handle, &object_gobs, dat_filelen("objects.gob", datfile_name))) {
+	if (register_gob(handle, &object_gobs, dat_filelen("objects.gob"))) {
 		/* error */
 		return 1;
 	}
 
-	if ((handle = dat_open("font.gob", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("font.gob")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'font.gob', aborting...\n");
 		return 1;
 	}
-	if (register_gob(handle, &font_gobs, dat_filelen("font.gob", datfile_name))) {
+	if (register_gob(handle, &font_gobs, dat_filelen("font.gob"))) {
 		/* error */
 		return 1;
 	}
 
-	if ((handle = dat_open("numbers.gob", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("numbers.gob")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'numbers.gob', aborting...\n");
 		return 1;
 	}
-	if (register_gob(handle, &number_gobs, dat_filelen("numbers.gob", datfile_name))) {
+	if (register_gob(handle, &number_gobs, dat_filelen("numbers.gob"))) {
 		/* error */
 		return 1;
 	}
@@ -2890,7 +2890,7 @@ int init_program(int argc, char *argv[], char *pal)
 		dj_set_nosound(1);
 		dj_start();
 
-		if ((handle = dat_open("jump.mod", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("jump.mod")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'jump.mod', aborting...\n");
 			return 1;
 		}
@@ -2899,7 +2899,7 @@ int init_program(int argc, char *argv[], char *pal)
 			return 1;
 		}
 
-		if ((handle = dat_open("bump.mod", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("bump.mod")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'bump.mod', aborting...\n");
 			return 1;
 		}
@@ -2908,7 +2908,7 @@ int init_program(int argc, char *argv[], char *pal)
 			return 1;
 		}
 
-		if ((handle = dat_open("scores.mod", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("scores.mod")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'scores.mod', aborting...\n");
 			return 1;
 		}
@@ -2917,47 +2917,47 @@ int init_program(int argc, char *argv[], char *pal)
 			return 1;
 		}
 
-		if ((handle = dat_open("jump.smp", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("jump.smp")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'jump.smp', aborting...\n");
 			return 1;
 		}
-		if (dj_load_sfx(handle, 0, dat_filelen("jump.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_JUMP) != 0) {
+		if (dj_load_sfx(handle, 0, dat_filelen("jump.smp"), DJ_SFX_TYPE_SMP, SFX_JUMP) != 0) {
 			strcpy(main_info.error_str, "Error loading 'jump.smp', aborting...\n");
 			return 1;
 		}
 
-		if ((handle = dat_open("death.smp", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("death.smp")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'death.smp', aborting...\n");
 			return 1;
 		}
-		if (dj_load_sfx(handle, 0, dat_filelen("death.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_DEATH) != 0) {
+		if (dj_load_sfx(handle, 0, dat_filelen("death.smp"), DJ_SFX_TYPE_SMP, SFX_DEATH) != 0) {
 			strcpy(main_info.error_str, "Error loading 'death.smp', aborting...\n");
 			return 1;
 		}
 
-		if ((handle = dat_open("spring.smp", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("spring.smp")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'spring.smp', aborting...\n");
 			return 1;
 		}
-		if (dj_load_sfx(handle, 0, dat_filelen("spring.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_SPRING) != 0) {
+		if (dj_load_sfx(handle, 0, dat_filelen("spring.smp"), DJ_SFX_TYPE_SMP, SFX_SPRING) != 0) {
 			strcpy(main_info.error_str, "Error loading 'spring.smp', aborting...\n");
 			return 1;
 		}
 
-		if ((handle = dat_open("splash.smp", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("splash.smp")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'splash.smp', aborting...\n");
 			return 1;
 		}
-		if (dj_load_sfx(handle, 0, dat_filelen("splash.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_SPLASH) != 0) {
+		if (dj_load_sfx(handle, 0, dat_filelen("splash.smp"), DJ_SFX_TYPE_SMP, SFX_SPLASH) != 0) {
 			strcpy(main_info.error_str, "Error loading 'splash.smp', aborting...\n");
 			return 1;
 		}
 
-		if ((handle = dat_open("fly.smp", datfile_name, "rb")) == 0) {
+		if ((handle = dat_open("fly.smp")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'fly.smp', aborting...\n");
 			return 1;
 		}
-		if (dj_load_sfx(handle, 0, dat_filelen("fly.smp", datfile_name), DJ_SFX_TYPE_SMP, SFX_FLY) != 0) {
+		if (dj_load_sfx(handle, 0, dat_filelen("fly.smp"), DJ_SFX_TYPE_SMP, SFX_FLY) != 0) {
 			strcpy(main_info.error_str, "Error loading 'fly.smp', aborting...\n");
 			return 1;
 		}
@@ -3045,7 +3045,7 @@ int init_program(int argc, char *argv[], char *pal)
 			}
 		}
 		if (load_flag == 1) {
-			if ((handle = dat_open("calib.dat", datfile_name, "rb")) == 0) {
+			if ((handle = dat_open("calib.dat")) == 0) {
 				strcpy(main_info.error_str, "Error loading 'calib.dat', aborting...\n");
 				return 1;
 			}
@@ -3128,7 +3128,7 @@ int read_level(void)
 	int c1, c2;
 	int chr;
 
-	if ((handle = dat_open("levelmap.txt", datfile_name, "rb")) == 0) {
+	if ((handle = dat_open("levelmap.txt")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'levelmap.txt', aborting...\n");
 		return 1;
 	}
@@ -3155,7 +3155,7 @@ int read_level(void)
 }
 
 
-unsigned char *dat_open(char *file_name, char *dat_name, char *mode)
+unsigned char *dat_open(char *file_name)
 {
 	int num;
 	int c1;
@@ -3195,7 +3195,7 @@ unsigned char *dat_open(char *file_name, char *dat_name, char *mode)
 }
 
 
-int dat_filelen(char *file_name, char *dat_name)
+int dat_filelen(char *file_name)
 {
 	unsigned char *ptr;
 	int num;

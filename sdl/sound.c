@@ -480,18 +480,21 @@ char dj_ready_mod(char mod_num)
 
 	switch (mod_num) {
 	case MOD_MENU:
-		fp = dat_open("jump.mod", datfile_name, "rb");
-		len = dat_filelen("jump.mod", datfile_name);
+		fp = dat_open("jump.mod");
+		len = dat_filelen("jump.mod");
 		break;
 	case MOD_GAME:
-		fp = dat_open("bump.mod", datfile_name, "rb");
-		len = dat_filelen("bump.mod", datfile_name);
+		fp = dat_open("bump.mod");
+		len = dat_filelen("bump.mod");
 		break;
 	case MOD_SCORES:
-		fp = dat_open("scores.mod", datfile_name, "rb");
-		len = dat_filelen("scores.mod", datfile_name);
+		fp = dat_open("scores.mod");
+		len = dat_filelen("scores.mod");
 		break;
 	default:
+		fprintf(stderr, "bogus parameter to dj_ready_mod()\n");
+		fp = NULL;
+		len = 0;
 		break;
 	}
 
