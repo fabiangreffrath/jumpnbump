@@ -6,10 +6,6 @@
  *
  * Copyright (C) 2002 Florian Schulze <crow@icculus.org>
  *
- * Portions of this code are from the MPEG software simulation group
- * idct implementation. This code will be replaced with a new
- * implementation soon.
- *
  * This file is part of Jump'n'Bump.
  *
  * Jump'n'Bump is free software; you can redistribute it and/or modify
@@ -92,7 +88,6 @@ extern int screen_width;
 extern int screen_height;
 extern int screen_pitch;
 extern int scale_up;
-extern int bytes_per_pixel;
 
 #ifndef USE_SDL
 #define KEY_PL1_LEFT 0xcb

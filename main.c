@@ -6,10 +6,6 @@
  *
  * Copyright (C) 2002 Florian Schulze <crow@icculus.org>
  *
- * Portions of this code are from the MPEG software simulation group
- * idct implementation. This code will be replaced with a new
- * implementation soon.
- *
  * This file is part of Jump'n'Bump.
  *
  * Jump'n'Bump is free software; you can redistribute it and/or modify
@@ -2465,9 +2461,9 @@ void draw_pobs(int page)
 		main_info.page_info[page].pobs[c1].back_buf_ofs = back_buf_ofs;
 		get_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), (unsigned char *)main_info.pob_backbuf[page] + back_buf_ofs);
 		if (scale_up)
-			back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * 4 * bytes_per_pixel;
+			back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * 4;
 		else
-			back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * bytes_per_pixel;
+			back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data);
 		put_pob(page, main_info.page_info[page].pobs[c1].x, main_info.page_info[page].pobs[c1].y, main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data, 1, mask_pic);
 	}
 
@@ -2843,8 +2839,8 @@ all provided the user didn't choose one on the commandline. */
 	}
 #endif
 
-	main_info.pob_backbuf[0] = malloc(screen_pitch*screen_height*bytes_per_pixel);
-	main_info.pob_backbuf[1] = malloc(screen_pitch*screen_height*bytes_per_pixel);
+	main_info.pob_backbuf[0] = malloc(screen_pitch*screen_height);
+	main_info.pob_backbuf[1] = malloc(screen_pitch*screen_height);
 
 	for (c1 = 0; c1 < 7; c1++) {
 		player_anims[c1].num_frames = player_anim_data[c1 * 10];

@@ -61,8 +61,7 @@ InputPath=.\Release\jumpnbump.exe
 SOURCE="$(InputPath)"
 
 BuildCmds= \
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Release\gobpack.exe" "..\VisualC6\pack\Release\jnbpack.exe" \
-	
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Release\gobpack.exe" "..\VisualC6\pack\Release\jnbpack.exe"
 
 "$(ProjDir)\..\data\font.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -111,8 +110,7 @@ InputPath=.\Debug\jumpnbump.exe
 SOURCE="$(InputPath)"
 
 BuildCmds= \
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Debug\gobpack.exe" "..\VisualC6\pack\Debug\jnbpack.exe" \
-	
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Debug\gobpack.exe" "..\VisualC6\pack\Debug\jnbpack.exe"
 
 "$(ProjDir)\..\data\font.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -139,6 +137,10 @@ BuildCmds= \
 # Begin Group "Quellcodedateien"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+# Begin Source File
+
+SOURCE=..\filter.c
+# End Source File
 # Begin Source File
 
 SOURCE=..\fireworks.c
@@ -178,6 +180,10 @@ SOURCE=..\config.h
 # Begin Source File
 
 SOURCE=..\dj.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\filter.h
 # End Source File
 # Begin Source File
 
