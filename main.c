@@ -224,8 +224,8 @@ static flip_pixels(unsigned char *pixels)
 	for (y = 0; y < JNB_HEIGHT; y++) {
 		for (x = 0; x < (352/2); x++) {
 			temp = pixels[y*JNB_WIDTH+x];
-			pixels[y*JNB_WIDTH+x] = pixels[y*JNB_WIDTH+(352-x)];
-			pixels[y*JNB_WIDTH+(352-x)] = temp;
+			pixels[y*JNB_WIDTH+x] = pixels[y*JNB_WIDTH+(352-x)-1];
+			pixels[y*JNB_WIDTH+(352-x)-1] = temp;
 		}
 	}
 }
@@ -1906,7 +1906,7 @@ int init_program(int argc, char *argv[], char *pal)
 				}
 			}
 			else if (strstr(argv[1],"-v")) {
-				printf("jumpnbump %s compiled %s at %s with",JB_VERSION,__DATE__,__TIME__);
+				printf("jumpnbump %s compiled %s at %s with",JNB_VERSION,__DATE__,__TIME__);
 #ifndef _SDLnet_h
 				printf("out");
 #endif
@@ -1926,6 +1926,7 @@ int init_program(int argc, char *argv[], char *pal)
 				printf("  -nosound                 play without sound\n");
 				printf("  -nogore                  play without blood\n");
 				printf("  -mirror                  play with mirrored level\n");
+				printf("  -scaleup                 play with doubled resolution (800x512)\n");
 				printf("\n");
 				return 1;
 			}
