@@ -493,6 +493,7 @@ char dj_ready_mod(char mod_num)
 	fclose(fp);
 
 	current_music = Mix_LoadMUS(filename);
+	unlink(filename);
 	if (current_music == NULL) {
 		fprintf(stderr, "Couldn't load music: %s\n", SDL_GetError());
 		return 0;

@@ -65,7 +65,7 @@
 # endif
 #endif
 
-#define JB_VERSION "1.2"
+#define JB_VERSION "1.3"
 
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256
