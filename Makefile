@@ -2,8 +2,8 @@ OBJS = sdl/gfx.o sdl/interrpt.o sdl/sound.o sdl/input.o fireworks.o main.o menu.
 TARGET = jumpnbump
 
 CC = gcc
-CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -I. $(shell sdl-config --cflags)
-LIBS = -lm $(shell sdl-config --libs) -lSDL_mixer
+CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -I. $(shell sdl-config --cflags) -DUSE_NET
+LIBS = -lm $(shell sdl-config --libs) -lSDL_mixer -lSDL_net
 
 .PHONY: data
 

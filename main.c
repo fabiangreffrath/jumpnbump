@@ -33,24 +33,7 @@
 #define USE_NET
 
 #ifdef USE_NET
-#ifdef _MSC_VER
-#include <winsock2.h>
-#define EAGAIN TRY_AGAIN
-#define net_error WSAGetLastError()
-#else // _MSC_VER
-#include <unistd.h>
-#include <netdb.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#define net_error errno
-#endif
+#include <SDL_net.h>
 #endif // USE_NET
 
 #ifndef M_PI
@@ -262,15 +245,16 @@ int filelength(int handle)
 int client_player_num = -1;
 int is_server = 1;
 int is_net = 0;
-int sock = -1;
 
 #ifdef USE_NET
+TCPsocket sock = NULL;
+SDLNet_SocketSet socketset = NULL;
+
 typedef struct
 {
-    int sock;
-    /*struct timeval last_timestamp;*/
-    struct sockaddr *addr;
-    int addrlen;
+	TCPsocket sock;
+	IPaddress addr;
+	SDLNet_SocketSet socketset;
 } NetInfo;
 
 NetInfo net_info[JNB_MAX_PLAYERS];
@@ -301,64 +285,59 @@ typedef struct
 #ifdef USE_NET
 void bufToPacket(const char *buf, NetPacket *pkt)
 {
+	SDLNet_Write32(*((unsigned long *) (buf +  0)), &pkt->cmd);
+	SDLNet_Write32(*((unsigned long *) (buf +  4)), &pkt->arg);
+	SDLNet_Write32(*((unsigned long *) (buf +  8)), &pkt->arg2);
+	SDLNet_Write32(*((unsigned long *) (buf + 12)), &pkt->arg3);
+	SDLNet_Write32(*((unsigned long *) (buf + 16)), &pkt->arg4);
 /*
-	SDLNet_Write32(*((unsigned long *) (buf +  0)), pkt->cmd);
-	SDLNet_Write32(*((unsigned long *) (buf +  4)), pkt->arg);
-	SDLNet_Write32(*((unsigned long *) (buf +  8)), pkt->arg2);
-	SDLNet_Write32(*((unsigned long *) (buf + 12)), pkt->arg3);
-	SDLNet_Write32(*((unsigned long *) (buf + 16)), pkt->arg4);
-*/
 	pkt->cmd               =        ntohl(*((unsigned long *) (buf +  0)));
 	pkt->arg               = (long) ntohl(*((unsigned long *) (buf +  4)));
 	pkt->arg2              = (long) ntohl(*((unsigned long *) (buf +  8)));
 	pkt->arg3              = (long) ntohl(*((unsigned long *) (buf + 12)));
 	pkt->arg4              = (long) ntohl(*((unsigned long *) (buf + 16)));
+*/
 }
 
 
 void packetToBuf(const NetPacket *pkt, char *buf)
 {
+	*((unsigned long *) (buf +  0)) = SDLNet_Read32(&pkt->cmd);
+	*((unsigned long *) (buf +  4)) = SDLNet_Read32(&pkt->arg);
+	*((unsigned long *) (buf +  8)) = SDLNet_Read32(&pkt->arg2);
+	*((unsigned long *) (buf + 12)) = SDLNet_Read32(&pkt->arg3);
+	*((unsigned long *) (buf + 16)) = SDLNet_Read32(&pkt->arg4);
 /*
-	*((unsigned long *) (buf +  0)) = SDLNet_Read32(pkt->cmd);
-	*((unsigned long *) (buf +  4)) = SDLNet_Read32((unsigned long) pkt->arg);
-	*((unsigned long *) (buf +  8)) = SDLNet_Read32((unsigned long) pkt->arg2);
-	*((unsigned long *) (buf + 12)) = SDLNet_Read32((unsigned long) pkt->arg3);
-	*((unsigned long *) (buf + 16)) = SDLNet_Read32((unsigned long) pkt->arg4);
-*/
 	*((unsigned long *) (buf +  0)) = htonl(pkt->cmd);
 	*((unsigned long *) (buf +  4)) = htonl((unsigned long) pkt->arg);
 	*((unsigned long *) (buf +  8)) = htonl((unsigned long) pkt->arg2);
 	*((unsigned long *) (buf + 12)) = htonl((unsigned long) pkt->arg3);
 	*((unsigned long *) (buf + 16)) = htonl((unsigned long) pkt->arg4);
+*/
 }
 
 
-void sendPacketToSock(int s, NetPacket *pkt)
+void sendPacketToSock(TCPsocket s, NetPacket *pkt)
 {
-#ifdef USE_NET
-    int bytes_left = NETPKTBUFSIZE;
-    int bw;
-    char buf[NETPKTBUFSIZE];
-    char *ptr = buf;
+	int bytes_left = NETPKTBUFSIZE;
+	int bw;
+	char buf[NETPKTBUFSIZE];
+	char *ptr = buf;
 
-    packetToBuf(pkt, buf);
-    while (bytes_left > 0) {
-        bw = send(s, ptr, bytes_left, 0);  /* this might block. For now, we'll deal. */
-        if (bw < 0) {
-            if (h_errno != EAGAIN) {
-		fprintf(stderr, "SERVER: send(): %i", net_error);
-                //perror("SERVER: write()");
-                close(s);
-                exit(42);
-            }
-        } else if (bw == 0) {
-            SDL_Delay(1);
-        } else {
-            bytes_left -= bw;
-            ptr += bw;
-        }
-    }
-#endif
+	packetToBuf(pkt, buf);
+	while (bytes_left > 0) {
+		bw = SDLNet_TCP_Send(s, ptr, bytes_left);
+		if (bw < 0) {
+			fprintf(stderr, "SERVER: SDLNet_TCP_Send(): %s\n", SDLNet_GetError());
+			SDLNet_TCP_Close(s);
+			exit(42);
+		} else if (bw == 0) {
+			SDL_Delay(1);
+		} else {
+			bytes_left -= bw;
+			ptr += bw;
+		}
+	}
 }
 
 
@@ -382,35 +361,25 @@ void sendPacketToAll(NetPacket *pkt)
 }
 
 
-int grabPacket(int s, NetPacket *pkt)
+int grabPacket(TCPsocket s, SDLNet_SocketSet ss, NetPacket *pkt)
 {
-#ifdef USE_NET
-    char buf[NETPKTBUFSIZE];
-    struct timeval tv;
-    fd_set rfds;
-    int rc;
-    int retval = 0;
+	char buf[NETPKTBUFSIZE];
+	int rc;
+	int retval = 0;
 
-    FD_ZERO(&rfds);
-    FD_SET(s, &rfds);
-    tv.tv_sec = tv.tv_usec = 0;    /* don't block. */
-    if (select(s + 1, &rfds, NULL, NULL, &tv)) {
-        rc = recv(s, buf, NETPKTBUFSIZE, 0);
-        if (rc <= 0) {  /* closed connection? */
-            retval = -1;
-        } else if (rc != NETPKTBUFSIZE) { // !!! FIXME: buffer these?
-            printf("NETWORK: -BUG- ... dropped a packet! (had %d of %d bytes).\b",
-                    rc, NETPKTBUFSIZE);
-        } else {
-            bufToPacket(buf, pkt);
-            retval = 1;
-        }
-    }
+	if (SDLNet_CheckSockets(ss, 0) > 0) {
+		rc = SDLNet_TCP_Recv(s, buf, NETPKTBUFSIZE);
+		if (rc <= 0) {  /* closed connection? */
+			retval = -1;
+		} else if (rc != NETPKTBUFSIZE) { // !!! FIXME: buffer these?
+			printf("NETWORK: -BUG- ... dropped a packet! (had %d of %d bytes).\b", rc, NETPKTBUFSIZE);
+		} else {
+			bufToPacket(buf, pkt);
+			retval = 1;
+		}
+	}
 
-    return(retval);
-#endif
-
-    return 0;
+	return(retval);
 }
 
 
@@ -422,17 +391,17 @@ int serverRecvPacket(NetPacket *pkt)
 	assert(is_server);
 
 	for (i = 0; i < JNB_MAX_PLAYERS; i++) {
-		int s = net_info[i].sock;
+		TCPsocket s = net_info[i].sock;
 
 		if ((i == client_player_num) || (!player[i].enabled))
 			continue;
 
-		rc = grabPacket(s, pkt);
+		rc = grabPacket(s, net_info[i].socketset, pkt);
 		if (rc < 0) {
 			NetPacket pkt;
 
 			player[i].enabled = 0;
-			close(s);
+			SDLNet_TCP_Close(s);
 			pkt.cmd = NETCMD_BYE;
 			pkt.arg = i;
 			pkt.arg2 = 0;
@@ -457,13 +426,13 @@ void wait_for_greenlight(void)
 
 	do {
 		int rc;
-		while ((rc = grabPacket(sock, &pkt)) == 0) {
+		while ((rc = grabPacket(sock, socketset, &pkt)) == 0) {
 			SDL_Delay(100);  /* nap and then try again. */
 		}
 
 		if (rc < 0) {
 			printf("CLIENT: Lost connection.\n");
-			close(sock);
+			SDLNet_TCP_Close(sock);
 			exit(42);
 		}
 	} while (pkt.cmd != NETCMD_GREENLIGHT);
@@ -655,7 +624,7 @@ int update_players_from_server(void)
 
 	assert(!is_server);
 
-	while ((rc = grabPacket(sock, &pkt)) != 0) {
+	while ((rc = grabPacket(sock, socketset, &pkt)) != 0) {
 		if (rc < 0) {
 			printf("CLIENT: Lost connection.\n");
 			pkt.cmd = NETCMD_BYE;
@@ -664,8 +633,9 @@ int update_players_from_server(void)
 
 		if (pkt.cmd == NETCMD_BYE) {
 			if (pkt.arg == client_player_num) {
-				close(sock);
-				sock = -1;
+				SDLNet_FreeSocketSet(socketset);
+				SDLNet_TCP_Close(sock);
+				sock = NULL;
 				server_said_bye = 1;
 				return(0);
 			} else {
@@ -723,320 +693,255 @@ void serverSendKillPacket(int killer, int victim)
 #ifdef USE_NET
 void update_players_from_clients(void)
 {
-#ifdef USE_NET
-    int i;
-    NetPacket pkt;
-    int playerid;
+	int i;
+	NetPacket pkt;
+	int playerid;
 
-    assert(is_server);
+	assert(is_server);
 
-    while ((playerid = serverRecvPacket(&pkt)) >= 0) {
-        if (pkt.cmd == NETCMD_BYE) {
-            pkt.arg = playerid;  /* just in case. */
-            sendPacketToAll(&pkt);
-            player[playerid].enabled = 0;
-            close(net_info[playerid].sock);
-        } else if (pkt.cmd == NETCMD_POSITION) {
-            pkt.arg = playerid;  /* just in case. */
-            processPositionPacket(&pkt);
-            for (i = 0; i < (sizeof (net_info) / sizeof (net_info[0])); i++) {
-                if (i != playerid) {
-                    sendPacket(i, &pkt);
-                }
-            }
-        } else if (pkt.cmd == NETCMD_MOVE) {
-            pkt.arg = playerid;  /* just in case. */
-            //pkt.arg3 = player[playerid].x;
-            //pkt.arg4 = player[playerid].y;
-            processMovePacket(&pkt);
-            sendPacketToAll(&pkt);
-        } else {
-            printf("SERVER: Got unknown packet (0x%lX).\n", pkt.cmd);
-        }
-    }
-#endif
+	while ((playerid = serverRecvPacket(&pkt)) >= 0) {
+		if (pkt.cmd == NETCMD_BYE) {
+			pkt.arg = playerid;  /* just in case. */
+			sendPacketToAll(&pkt);
+			player[playerid].enabled = 0;
+			SDLNet_FreeSocketSet(net_info[playerid].socketset);
+			SDLNet_TCP_Close(net_info[playerid].sock);
+		} else if (pkt.cmd == NETCMD_POSITION) {
+			pkt.arg = playerid;  /* just in case. */
+			processPositionPacket(&pkt);
+			for (i = 0; i < JNB_MAX_PLAYERS; i++) {
+				if (i != playerid) {
+					sendPacket(i, &pkt);
+				}
+			}
+		} else if (pkt.cmd == NETCMD_MOVE) {
+			pkt.arg = playerid;  /* just in case. */
+			//pkt.arg3 = player[playerid].x;
+			//pkt.arg4 = player[playerid].y;
+			processMovePacket(&pkt);
+			sendPacketToAll(&pkt);
+		} else {
+			printf("SERVER: Got unknown packet (0x%lX).\n", pkt.cmd);
+		}
+	}
 }
 
 
 void init_server(const char *netarg)
 {
-#ifdef USE_NET
-    NetPacket pkt;
-    char ipstr[128];
-    struct hostent *hent;
-    struct sockaddr_in addr;
-    struct in_addr inaddr;
-    int i;
-    int wait_for_clients = ((netarg == NULL) ? 0 : atoi(netarg));
-#ifdef _MSC_VER
-WORD wVersionRequested;
-WSADATA wsaData;
-int err;
- 
-wVersionRequested = MAKEWORD( 2, 2 );
- 
-err = WSAStartup( wVersionRequested, &wsaData );
-if ( err != 0 ) {
-    /* Tell the user that we could not find a usable */
-    /* WinSock DLL.                                  */
-        fprintf(stderr, "SERVER: WSAStartup failed!");
-    return;
-}
-#endif
+	NetPacket pkt;
+	IPaddress addr;
+	int i;
+	int wait_for_clients = ((netarg == NULL) ? 0 : atoi(netarg));
+	char *ipstr;
 
-    if ((wait_for_clients > (JNB_MAX_PLAYERS - 1)) || (wait_for_clients < 0)) {
-        printf("SERVER: Waiting for bogus client count (%d).\n", wait_for_clients);
-        exit(42);
-    }
+	if ((wait_for_clients > (JNB_MAX_PLAYERS - 1)) || (wait_for_clients < 0)) {
+		printf("SERVER: Waiting for bogus client count (%d).\n", wait_for_clients);
+		exit(42);
+	}
 
-    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sock < 0) {
-        fprintf(stderr, "SERVER: socket(): %i", net_error);
-	//perror("SERVER: socket()");
-        exit(42);
-    }
+	if (SDLNet_Init() < 0) {
+		exit(42);
+	}
+	atexit(SDLNet_Quit);
+	
+	SDLNet_ResolveHost(&addr, NULL, JNB_INETPORT);
+	ipstr = SDLNet_ResolveIP(&addr);
+	SDLNet_ResolveHost(&addr, ipstr, JNB_INETPORT);
+	printf("SERVER: we are %s (%i.%i.%i.%i:%i).\n", ipstr, (addr.host >> 0) & 0xff, (addr.host >> 8) & 0xff, (addr.host >> 16) & 0xff, (addr.host >> 24) & 0xff, addr.port);
+	net_info[client_player_num].addr = addr;
 
-    memset(&addr, '\0', sizeof (addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(JNB_INETPORT);
-    addr.sin_addr.s_addr = INADDR_ANY;
-    if (bind(sock, (struct sockaddr *) &addr,
-            sizeof (addr)) == -1) {
-		fprintf(stderr, "SERVER: bind(): %i", net_error);
-        //perror("SERVER: bind()");
-        close(sock);
-        exit(42);
-    }
+	addr.host = INADDR_ANY;
+	sock = SDLNet_TCP_Open(&addr);
+	if (sock == NULL) {
+		fprintf(stderr, "SERVER: SDLNet_TCP_Open(): %s\n", SDLNet_GetError());
+		exit(42);
+	}
 
-    if (listen(sock, wait_for_clients) == -1) {
-		fprintf(stderr, "SERVER: listen(): %i", net_error);
-        //perror("SERVER: listen()");
-        close(sock);
-        exit(42);
-    }
+	player[client_player_num].enabled = 1;
 
-    player[client_player_num].enabled = 1;
+	printf("SERVER: waiting for (%d) clients...\n", wait_for_clients);
 
-    gethostname(ipstr, sizeof (ipstr));
-    hent = gethostbyname(ipstr);
-    if (hent != NULL) {
-        memcpy(&inaddr, hent->h_addr, hent->h_length);
-        strncpy(ipstr, inet_ntoa(inaddr), sizeof (ipstr));
-    }
+	socketset = SDLNet_AllocSocketSet(JNB_MAX_PLAYERS + 1);
+	SDLNet_TCP_AddSocket(socketset, sock);
 
-    printf("SERVER: we are [%s].\n", ipstr);
+	while (wait_for_clients > 0)
+	{
+		char buf[NETPKTBUFSIZE];
+		IPaddress *from;
+		int negatory = 1;
+		int br;
+		TCPsocket s;
 
-    addr.sin_addr.s_addr = inaddr.s_addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(JNB_INETPORT);
-    net_info[client_player_num].addr = malloc(sizeof (addr));
-    memcpy(net_info[client_player_num].addr, &addr, sizeof (addr));
-    net_info[client_player_num].addrlen = sizeof (addr);
-    /*gettimeofday(&net_info[client_player_num].last_timestamp, NULL);*/
+		/* Wait for events */
+		SDLNet_CheckSockets(socketset, ~0);
+		if ( SDLNet_SocketReady(sock) ) {
+			s = SDLNet_TCP_Accept(sock);
 
-    printf("SERVER: waiting for (%d) clients...\n", wait_for_clients);
+			if (s == NULL)
+			{
+				fprintf(stderr, "SERVER: SDLNet_TCP_Accept(): %s", SDLNet_GetError());
+				SDLNet_TCP_Close(sock);
+				exit(42);
+			}
+		} else
+			continue;
 
-    while (wait_for_clients > 0)
-    {
-        char buf[NETPKTBUFSIZE];
-        struct sockaddr_in from;
-        int fromlen = sizeof (from);
-        int negatory = 1;
-        int br;
-        int s;
+		br = SDLNet_TCP_Recv(s, buf, NETPKTBUFSIZE);
+		if (br < 0) {
+			fprintf(stderr, "SERVER: SDLNet_TCP_Recv(): %s\n", SDLNet_GetError());
+			SDLNet_TCP_Close(s);
+			SDLNet_TCP_Close(sock);
+			exit(42);
+		}
 
-        s = accept(sock, (struct sockaddr *) &from, &fromlen);
-        if (s < 0)
-        {
-		fprintf(stderr, "SERVER: accept(): %i", net_error);
-            //perror("SERVER: accept()");
-            close(sock);
-            exit(42);
-        } /* if */
+		from = SDLNet_TCP_GetPeerAddress(s);
+		ipstr = SDLNet_ResolveIP(from);
+		printf("SERVER: Got data from %s (%i.%i.%i.%i:%i).\n", ipstr, (from->host >> 0) & 0xff, (from->host >> 8) & 0xff, (from->host >> 16) & 0xff, (from->host >> 24) & 0xff, from->port);
 
-        br = recv(s, buf, NETPKTBUFSIZE, 0);
-        if (br < 0) {
-		fprintf(stderr, "SERVER: recv(): %i", net_error);
-            close(s);
-            close(sock);
-            exit(42);
-        }
+		if (br != NETPKTBUFSIZE) {
+			printf("SERVER: Bogus packet.\n");
+			continue;
+		}
 
-        strncpy(ipstr, inet_ntoa(from.sin_addr), sizeof (ipstr));
-        printf("SERVER: Got data from [%s].\n", ipstr);
+		bufToPacket(buf, &pkt);
+		if (pkt.cmd != NETCMD_HELLO) {
+			printf("SERVER: Bogus packet.\n");
+			continue;
+		}
 
-        if (br != NETPKTBUFSIZE) {
-            printf("SERVER: Bogus packet.\n");
-            continue;
-        }
+		printf("SERVER: Client claims to be player #%ld.\n", pkt.arg);
 
-        bufToPacket(buf, &pkt);
-        if (pkt.cmd != NETCMD_HELLO) {
-            printf("SERVER: Bogus packet.\n");
-            continue;
-        }
+		if (pkt.arg > JNB_MAX_PLAYERS) {
+			printf("SERVER:  (that's an invalid player number.)\n");
+		} else {
+			if (player[pkt.arg].enabled) {
+				printf("SERVER:  (that player number is already taken.)\n");
+			} else {
+				negatory = 0;
+			}
+		}
 
-        printf("SERVER: Client claims to be player #%ld.\n", pkt.arg);
+		if (negatory) {
+			printf("SERVER: Forbidding connection.\n");
+			pkt.cmd = NETCMD_NACK;
+			sendPacketToSock(s, &pkt);
+			SDLNet_TCP_Close(s);
+		} else {
+			player[pkt.arg].enabled = 1;
+			net_info[pkt.arg].sock = s;
+			net_info[pkt.arg].addr = *from;
+			net_info[pkt.arg].socketset = SDLNet_AllocSocketSet(1);
+			SDLNet_TCP_AddSocket(net_info[pkt.arg].socketset, net_info[pkt.arg].sock);
+			wait_for_clients--;
+			printf("SERVER: Granting connection. (%d) to go.\n", wait_for_clients);
+			pkt.cmd = NETCMD_ACK;
+			sendPacket(pkt.arg, &pkt);
+		}
+	}
 
-        if (pkt.arg > (sizeof (player) / sizeof (player[0]))) {
-            printf("SERVER:  (that's an invalid player number.)\n");
-        } else {
-            if (player[pkt.arg].enabled) {
-                printf("SERVER:  (that player number is already taken.)\n");
-            } else {
-                negatory = 0;
-            }
-        }
+	SDLNet_TCP_Close(sock);  /* done with the listen socket. */
+	SDLNet_FreeSocketSet(socketset);
+	sock = NULL;
+	socketset = NULL;
 
-        if (negatory) {
-            printf("SERVER: Forbidding connection.\n");
-            pkt.cmd = NETCMD_NACK;
-            sendPacketToSock(s, &pkt);
-            close(s);
-        } else {
-            player[pkt.arg].enabled = 1;
-            net_info[pkt.arg].sock = s;
-            net_info[pkt.arg].addr = malloc(fromlen);
-            memcpy(net_info[pkt.arg].addr, &from, fromlen);
-            net_info[pkt.arg].addrlen = fromlen;
-            /*memcpy(&net_info[pkt.arg].last_timestamp, &pkt.timestamp, sizeof (pkt.timestamp));*/
-            wait_for_clients--;
-            printf("SERVER: Granting connection. (%d) to go.\n", wait_for_clients);
-            pkt.cmd = NETCMD_ACK;
-            sendPacket(pkt.arg, &pkt);
-        }
-    }
+	printf("SERVER: Got all our connections. Greenlighting clients...\n");
 
-    close(sock);  /* done with the listen socket. */
-    sock = -1;
-
-    printf("SERVER: Got all our connections. Greenlighting clients...\n");
-
-    pkt.cmd = NETCMD_GREENLIGHT;
-    pkt.arg = 0;
-    for (i = 0; i < (sizeof (net_info) / sizeof (net_info[0])); i++) {
-        if (player[i].enabled) {
-            pkt.arg |= (1 << i);
-        }
-    }
-    sendPacketToAll(&pkt);
-#endif
+	pkt.cmd = NETCMD_GREENLIGHT;
+	pkt.arg = 0;
+	for (i = 0; i < JNB_MAX_PLAYERS; i++) {
+		if (player[i].enabled) {
+			pkt.arg |= (1 << i);
+		}
+	}
+	sendPacketToAll(&pkt);
 }
 
 
 void connect_to_server(char *netarg)
 {
-#ifdef USE_NET
-    NetPacket pkt;
-    char buf[NETPKTBUFSIZE];
-    char ipstr[128];
-    struct hostent *hent;
-    struct sockaddr_in addr;
-    struct in_addr inaddr;
-    int addrlen;
-    int br;
-#ifdef _MSC_VER
-WORD wVersionRequested;
-WSADATA wsaData;
-int err;
- 
-wVersionRequested = MAKEWORD( 2, 2 );
- 
-err = WSAStartup( wVersionRequested, &wsaData );
-if ( err != 0 ) {
-    /* Tell the user that we could not find a usable */
-    /* WinSock DLL.                                  */
-        fprintf(stderr, "SERVER: WSAStartup failed!");
-    return;
-}
-#endif
+	NetPacket pkt;
+	char buf[NETPKTBUFSIZE];
+	char *ipstr;
+	IPaddress hent;
+	IPaddress addr;
+	int br;
 
-    if (netarg == NULL) {
-        printf("CLIENT: Need to specify host to connect to.\n");
-        exit(42);
-    }
+	if (netarg == NULL) {
+		printf("CLIENT: Need to specify host to connect to.\n");
+		exit(42);
+	}
 
-    player[client_player_num].enabled = 1;
-    gethostname(ipstr, sizeof (ipstr));
-    hent = gethostbyname(ipstr);
-    if (hent != NULL) {
-        net_info[client_player_num].addr = malloc(hent->h_length);
-        memcpy(&net_info[client_player_num].addr, &hent->h_addr, hent->h_length);
-        net_info[client_player_num].addrlen = hent->h_length;
-        memcpy(&inaddr, hent->h_addr, hent->h_length);
-        strncpy(ipstr, inet_ntoa(inaddr), sizeof (ipstr));
-    }
-    printf("CLIENT: we are [%s].\n", ipstr);
+	if (SDLNet_Init() < 0) {
+		exit(42);
+	}
+	atexit(SDLNet_Quit);
+	
+	player[client_player_num].enabled = 1;
 
-    /*gettimeofday(&net_info[client_player_num].last_timestamp, NULL);*/
+	SDLNet_ResolveHost(&addr, NULL, JNB_INETPORT);
+	ipstr = SDLNet_ResolveIP(&addr);
+	SDLNet_ResolveHost(&addr, ipstr, JNB_INETPORT);
+	printf("CLIENT: we are %s (%i.%i.%i.%i:%i).\n", ipstr, (addr.host >> 0) & 0xff, (addr.host >> 8) & 0xff, (addr.host >> 16) & 0xff, (addr.host >> 24) & 0xff, addr.port);
+	net_info[client_player_num].addr = addr;
 
-    hent = gethostbyname(netarg);
-    if (hent == NULL) {
-		fprintf(stderr, "CLIENT: couldn't find host: %i", net_error);
-        //perror("CLIENT: couldn't find host");
-        exit(42);
-    }
+	if (SDLNet_ResolveHost(&hent, netarg, JNB_INETPORT) < 0) {
+		fprintf(stderr, "CLIENT: couldn't find host: %s\n", SDLNet_GetError());
+		exit(42);
+	}
 
-    sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sock < 0) {
-		fprintf(stderr, "CLIENT: socket(): %i", net_error);
-        //perror("CLIENT: socket()");
-        exit(42);
-    }
+	sock = SDLNet_TCP_Open(&hent);
+	if (sock == NULL) {
+		fprintf(stderr, "CLIENT: SDLNet_TCP_Open(): %s\n", SDLNet_GetError());
+		exit(42);
+	}
 
-    memcpy(&inaddr, hent->h_addr, hent->h_length);
-    printf("CLIENT: connecting to [%s]...\n", inet_ntoa(inaddr));
+	socketset = SDLNet_AllocSocketSet(1);
+	SDLNet_TCP_AddSocket(socketset, sock);
 
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(JNB_INETPORT);
-    memcpy(&addr.sin_addr.s_addr, hent->h_addr, hent->h_length);
-    if (connect(sock, (struct sockaddr *) &addr, sizeof (addr)) == -1) {
-		fprintf(stderr, "CLIENT: connect(): %i", net_error);
-        //perror("CLIENT: connect()");
-        exit(42);
-    }
+	printf("CLIENT: connected to %s...\n", SDLNet_ResolveIP(&hent));
 
-    printf("CLIENT: Got socket. Sending HELLO packet...\n");
-    pkt.cmd = NETCMD_HELLO;
-    pkt.arg = client_player_num;
-    sendPacketToSock(sock, &pkt);
+	printf("CLIENT: Sending HELLO packet...\n");
+	pkt.cmd = NETCMD_HELLO;
+	pkt.arg = client_player_num;
+	sendPacketToSock(sock, &pkt);
 
-    printf("CLIENT: Waiting for ACK from server...\n");
-    
-    addrlen = sizeof (addr);
-    br = recv(sock, buf, NETPKTBUFSIZE, 0);
-    if (br < 0) {
-		fprintf(stderr, "CLIENT: recv(): %i", net_error);
-        //perror("CLIENT: recv()");
-        close(sock);
-        exit(42);
-    }
+	printf("CLIENT: Waiting for ACK from server...\n");
 
-    if (br != NETPKTBUFSIZE) {
-        printf("CLIENT: Bogus packet size (%d of %d). FIXME.\n",
-                br, NETPKTBUFSIZE);
-        close(sock);
-        exit(42);
-    }
+	br = SDLNet_TCP_Recv(sock, buf, NETPKTBUFSIZE);
+	if (br < 0) {
+		fprintf(stderr, "CLIENT: recv(): %s\n", SDLNet_GetError);
+		SDLNet_FreeSocketSet(socketset);
+		SDLNet_TCP_Close(sock);
+		exit(42);
+	}
 
-    bufToPacket(buf, &pkt);
+	if (br != NETPKTBUFSIZE) {
+		printf("CLIENT: Bogus packet size (%d of %d). FIXME.\n", br, NETPKTBUFSIZE);
+		SDLNet_FreeSocketSet(socketset);
+		SDLNet_TCP_Close(sock);
+		exit(42);
+	}
 
-    if (pkt.cmd == NETCMD_NACK) {
-        printf("CLIENT: Server forbid us from playing.\n");
-        close(sock);
-        exit(42);
-    }
+	bufToPacket(buf, &pkt);
 
-    if (pkt.cmd != NETCMD_ACK) {
-        printf("CLIENT: Unexpected packet (cmd=0x%lX).\n", pkt.cmd);
-        close(sock);
-        exit(42);
-    }
+	if (pkt.cmd == NETCMD_NACK) {
+		printf("CLIENT: Server forbid us from playing.\n");
+		SDLNet_FreeSocketSet(socketset);
+		SDLNet_TCP_Close(sock);
+		exit(42);
+	}
 
-    printf("CLIENT: Server accepted our connection.\n");
+	if (pkt.cmd != NETCMD_ACK) {
+		printf("CLIENT: Unexpected packet (cmd=0x%lX).\n", pkt.cmd);
+		SDLNet_FreeSocketSet(socketset);
+		SDLNet_TCP_Close(sock);
+		exit(42);
+	}
 
-    wait_for_greenlight();
-#endif
+	printf("CLIENT: Server accepted our connection.\n");
+
+	wait_for_greenlight();
 }
 #endif // USE_NET
 
@@ -1560,15 +1465,15 @@ int main(int argc, char *argv[])
 		if (is_net) {
 			if (is_server) {
 				serverTellEveryoneGoodbye();
-				close(sock);
-				sock = -1;
+				SDLNet_TCP_Close(sock);
+				sock = NULL;
 			} else {
 				if (!server_said_bye) {
 					tellServerGoodbye();
 				}
 
-				close(sock);
-				sock = -1;
+				SDLNet_TCP_Close(sock);
+				sock = NULL;
 			}
 		}
 #endif
@@ -2746,7 +2651,8 @@ static void preread_datafile(const char *fname)
 
     fd = open(fname, O_RDONLY | O_BINARY);
     if (fd == -1) {
-        fprintf(stderr, "can't open %s: %s\n", fname, strerror(errno));
+        fprintf(stderr, "can't open %s:", fname);
+	perror("");
         exit(42);
     }
 
