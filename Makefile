@@ -7,7 +7,7 @@ LIBS = -lm $(shell sdl-config --libs) -lSDL_mixer
 
 .PHONY: data
 
-all: $(TARGET) jnbpack jnbunpack data
+all: $(TARGET) jnbpack jnbunpack gobpack data
 
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
@@ -17,6 +17,9 @@ jnbpack: modify/jnbpack.o
 
 jnbunpack: modify/jnbunpack.o
 	$(CC) $(LFLAGS) -o jnbunpack modify/jnbunpack.o $(LIBS)
+
+gobpack: modify/gobpack.o
+	$(CC) $(LFLAGS) -o gobpack modify/gobpack.o $(LIBS)
 
 data: jnbpack
 	$(MAKE) -C data

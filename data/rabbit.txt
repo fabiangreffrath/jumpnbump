@@ -1,0 +1,578 @@
+num_images: 72
+
+image: 1
+x: 0
+y: 0
+width: 13
+height: 15
+hotspot_x: -2
+hotspot_y: -1
+
+image: 2
+x: 19
+y: 0
+width: 14
+height: 14
+hotspot_x: -2
+hotspot_y: 0
+
+image: 3
+x: 38
+y: 0
+width: 14
+height: 16
+hotspot_x: -2
+hotspot_y: 2
+
+image: 4
+x: 57
+y: 0
+width: 13
+height: 16
+hotspot_x: -3
+hotspot_y: 2
+
+image: 5
+x: 76
+y: 0
+width: 14
+height: 14
+hotspot_x: -3
+hotspot_y: -2
+
+image: 6
+x: 95
+y: 0
+width: 15
+height: 14
+hotspot_x: -1
+hotspot_y: 0
+
+image: 7
+x: 114
+y: 0
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 0
+
+image: 8
+x: 133
+y: 0
+width: 17
+height: 16
+hotspot_x: 1
+hotspot_y: 0
+
+image: 9
+x: 152
+y: 0
+width: 17
+height: 13
+hotspot_x: -1
+hotspot_y: -3
+
+image: 10
+x: 171
+y: 0
+width: 13
+height: 15
+hotspot_x: -1
+hotspot_y: -1
+
+image: 11
+x: 190
+y: 0
+width: 14
+height: 14
+hotspot_x: 0
+hotspot_y: 0
+
+image: 12
+x: 209
+y: 0
+width: 14
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 13
+x: 228
+y: 0
+width: 13
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 14
+x: 247
+y: 0
+width: 14
+height: 14
+hotspot_x: 1
+hotspot_y: -1
+
+image: 15
+x: 266
+y: 0
+width: 15
+height: 14
+hotspot_x: 0
+hotspot_y: 1
+
+image: 16
+x: 285
+y: 0
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 17
+x: 304
+y: 0
+width: 17
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 18
+x: 323
+y: 0
+width: 17
+height: 13
+hotspot_x: 2
+hotspot_y: -4
+
+image: 19
+x: 342
+y: 0
+width: 13
+height: 15
+hotspot_x: -2
+hotspot_y: -1
+
+image: 20
+x: 361
+y: 0
+width: 14
+height: 14
+hotspot_x: -2
+hotspot_y: 0
+
+image: 21
+x: 380
+y: 0
+width: 14
+height: 16
+hotspot_x: -2
+hotspot_y: 2
+
+image: 22
+x: 0
+y: 18
+width: 13
+height: 16
+hotspot_x: -3
+hotspot_y: 2
+
+image: 23
+x: 19
+y: 18
+width: 14
+height: 14
+hotspot_x: -3
+hotspot_y: -2
+
+image: 24
+x: 38
+y: 18
+width: 15
+height: 14
+hotspot_x: -1
+hotspot_y: 0
+
+image: 25
+x: 57
+y: 18
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 0
+
+image: 26
+x: 76
+y: 18
+width: 17
+height: 16
+hotspot_x: 1
+hotspot_y: 0
+
+image: 27
+x: 95
+y: 18
+width: 17
+height: 13
+hotspot_x: -1
+hotspot_y: -3
+
+image: 28
+x: 114
+y: 18
+width: 13
+height: 15
+hotspot_x: -1
+hotspot_y: -1
+
+image: 29
+x: 133
+y: 18
+width: 14
+height: 14
+hotspot_x: 0
+hotspot_y: 0
+
+image: 30
+x: 152
+y: 18
+width: 14
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 31
+x: 171
+y: 18
+width: 13
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 32
+x: 190
+y: 18
+width: 14
+height: 14
+hotspot_x: 1
+hotspot_y: -1
+
+image: 33
+x: 209
+y: 18
+width: 15
+height: 14
+hotspot_x: 0
+hotspot_y: 1
+
+image: 34
+x: 228
+y: 18
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 35
+x: 247
+y: 18
+width: 17
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 36
+x: 266
+y: 18
+width: 17
+height: 13
+hotspot_x: 2
+hotspot_y: -4
+
+image: 37
+x: 285
+y: 18
+width: 13
+height: 15
+hotspot_x: -2
+hotspot_y: -1
+
+image: 38
+x: 304
+y: 18
+width: 14
+height: 14
+hotspot_x: -2
+hotspot_y: 0
+
+image: 39
+x: 323
+y: 18
+width: 14
+height: 16
+hotspot_x: -2
+hotspot_y: 2
+
+image: 40
+x: 342
+y: 18
+width: 13
+height: 16
+hotspot_x: -3
+hotspot_y: 2
+
+image: 41
+x: 361
+y: 18
+width: 14
+height: 14
+hotspot_x: -3
+hotspot_y: -2
+
+image: 42
+x: 380
+y: 18
+width: 15
+height: 14
+hotspot_x: -1
+hotspot_y: 0
+
+image: 43
+x: 0
+y: 36
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 0
+
+image: 44
+x: 19
+y: 36
+width: 17
+height: 16
+hotspot_x: 1
+hotspot_y: 0
+
+image: 45
+x: 38
+y: 36
+width: 17
+height: 13
+hotspot_x: -1
+hotspot_y: -3
+
+image: 46
+x: 57
+y: 36
+width: 13
+height: 15
+hotspot_x: -1
+hotspot_y: -1
+
+image: 47
+x: 76
+y: 36
+width: 14
+height: 14
+hotspot_x: 0
+hotspot_y: 0
+
+image: 48
+x: 95
+y: 36
+width: 14
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 49
+x: 114
+y: 36
+width: 13
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 50
+x: 133
+y: 36
+width: 14
+height: 14
+hotspot_x: 1
+hotspot_y: -1
+
+image: 51
+x: 152
+y: 36
+width: 15
+height: 14
+hotspot_x: 0
+hotspot_y: 1
+
+image: 52
+x: 171
+y: 36
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 53
+x: 190
+y: 36
+width: 17
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 54
+x: 209
+y: 36
+width: 17
+height: 13
+hotspot_x: 2
+hotspot_y: -4
+
+image: 55
+x: 228
+y: 36
+width: 13
+height: 15
+hotspot_x: -2
+hotspot_y: -1
+
+image: 56
+x: 247
+y: 36
+width: 14
+height: 14
+hotspot_x: -2
+hotspot_y: -1
+
+image: 57
+x: 266
+y: 36
+width: 14
+height: 16
+hotspot_x: -2
+hotspot_y: 2
+
+image: 58
+x: 285
+y: 36
+width: 13
+height: 16
+hotspot_x: -3
+hotspot_y: 2
+
+image: 59
+x: 304
+y: 36
+width: 14
+height: 14
+hotspot_x: -3
+hotspot_y: -2
+
+image: 60
+x: 323
+y: 36
+width: 15
+height: 14
+hotspot_x: -1
+hotspot_y: 0
+
+image: 61
+x: 342
+y: 36
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 0
+
+image: 62
+x: 361
+y: 36
+width: 17
+height: 16
+hotspot_x: 1
+hotspot_y: 0
+
+image: 63
+x: 380
+y: 36
+width: 17
+height: 13
+hotspot_x: -1
+hotspot_y: -3
+
+image: 64
+x: 0
+y: 54
+width: 13
+height: 15
+hotspot_x: -1
+hotspot_y: -1
+
+image: 65
+x: 19
+y: 54
+width: 14
+height: 14
+hotspot_x: 0
+hotspot_y: 0
+
+image: 66
+x: 38
+y: 54
+width: 14
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 67
+x: 57
+y: 54
+width: 13
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 68
+x: 76
+y: 54
+width: 14
+height: 14
+hotspot_x: 1
+hotspot_y: -1
+
+image: 69
+x: 95
+y: 54
+width: 15
+height: 14
+hotspot_x: 0
+hotspot_y: 1
+
+image: 70
+x: 114
+y: 54
+width: 16
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 71
+x: 133
+y: 54
+width: 17
+height: 16
+hotspot_x: 0
+hotspot_y: 2
+
+image: 72
+x: 152
+y: 54
+width: 17
+height: 13
+hotspot_x: 2
+hotspot_y: -4
+

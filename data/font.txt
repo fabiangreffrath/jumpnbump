@@ -1,0 +1,650 @@
+num_images: 81
+
+image: 1
+x: 0
+y: 0
+width: 4
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 2
+x: 14
+y: 0
+width: 5
+height: 4
+hotspot_x: 0
+hotspot_y: -1
+
+image: 3
+x: 28
+y: 0
+width: 3
+height: 4
+hotspot_x: 0
+hotspot_y: -1
+
+image: 4
+x: 42
+y: 0
+width: 5
+height: 12
+hotspot_x: 0
+hotspot_y: 0
+
+image: 5
+x: 56
+y: 0
+width: 6
+height: 12
+hotspot_x: 0
+hotspot_y: 0
+
+image: 6
+x: 70
+y: 0
+width: 3
+height: 5
+hotspot_x: 0
+hotspot_y: -8
+
+image: 7
+x: 84
+y: 0
+width: 5
+height: 3
+hotspot_x: 0
+hotspot_y: -4
+
+image: 8
+x: 98
+y: 0
+width: 3
+height: 3
+hotspot_x: 0
+hotspot_y: -8
+
+image: 9
+x: 112
+y: 0
+width: 6
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 10
+x: 126
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 11
+x: 140
+y: 0
+width: 5
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 12
+x: 154
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 13
+x: 168
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 14
+x: 182
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 15
+x: 196
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 16
+x: 210
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 17
+x: 224
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 18
+x: 238
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 19
+x: 252
+y: 0
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 20
+x: 266
+y: 0
+width: 4
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 21
+x: 280
+y: 0
+width: 4
+height: 9
+hotspot_x: 0
+hotspot_y: -3
+
+image: 22
+x: 294
+y: 0
+width: 12
+height: 11
+hotspot_x: 0
+hotspot_y: 0
+
+image: 23
+x: 308
+y: 0
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 24
+x: 322
+y: 0
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 25
+x: 336
+y: 0
+width: 9
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 26
+x: 350
+y: 0
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 27
+x: 364
+y: 0
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 28
+x: 378
+y: 0
+width: 8
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 29
+x: 0
+y: 14
+width: 9
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 30
+x: 14
+y: 14
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 31
+x: 28
+y: 14
+width: 4
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 32
+x: 42
+y: 14
+width: 8
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 33
+x: 56
+y: 14
+width: 10
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 34
+x: 70
+y: 14
+width: 7
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 35
+x: 84
+y: 14
+width: 11
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 36
+x: 98
+y: 14
+width: 10
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 37
+x: 112
+y: 14
+width: 9
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 38
+x: 126
+y: 14
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 39
+x: 140
+y: 14
+width: 9
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 40
+x: 154
+y: 14
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 41
+x: 168
+y: 14
+width: 8
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 42
+x: 182
+y: 14
+width: 8
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 43
+x: 196
+y: 14
+width: 9
+height: 10
+hotspot_x: 0
+hotspot_y: -1
+
+image: 44
+x: 210
+y: 14
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 45
+x: 224
+y: 14
+width: 12
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 46
+x: 238
+y: 14
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 47
+x: 252
+y: 14
+width: 8
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 48
+x: 266
+y: 14
+width: 9
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 49
+x: 280
+y: 14
+width: 7
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 50
+x: 294
+y: 14
+width: 8
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 51
+x: 308
+y: 14
+width: 6
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 52
+x: 322
+y: 14
+width: 8
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 53
+x: 336
+y: 14
+width: 7
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 54
+x: 350
+y: 14
+width: 5
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 55
+x: 364
+y: 14
+width: 8
+height: 10
+hotspot_x: 0
+hotspot_y: -3
+
+image: 56
+x: 378
+y: 14
+width: 7
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 57
+x: 0
+y: 28
+width: 4
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 58
+x: 14
+y: 28
+width: 5
+height: 12
+hotspot_x: 0
+hotspot_y: -1
+
+image: 59
+x: 28
+y: 28
+width: 8
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 60
+x: 42
+y: 28
+width: 4
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 61
+x: 56
+y: 28
+width: 11
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 62
+x: 70
+y: 28
+width: 8
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 63
+x: 84
+y: 28
+width: 7
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 64
+x: 98
+y: 28
+width: 8
+height: 10
+hotspot_x: 0
+hotspot_y: -3
+
+image: 65
+x: 112
+y: 28
+width: 8
+height: 10
+hotspot_x: 0
+hotspot_y: -3
+
+image: 66
+x: 126
+y: 28
+width: 6
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 67
+x: 140
+y: 28
+width: 7
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 68
+x: 154
+y: 28
+width: 5
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 69
+x: 168
+y: 28
+width: 7
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 70
+x: 182
+y: 28
+width: 7
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 71
+x: 196
+y: 28
+width: 10
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 72
+x: 210
+y: 28
+width: 8
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 73
+x: 224
+y: 28
+width: 8
+height: 10
+hotspot_x: 0
+hotspot_y: -3
+
+image: 74
+x: 238
+y: 28
+width: 7
+height: 7
+hotspot_x: 0
+hotspot_y: -3
+
+image: 75
+x: 252
+y: 28
+width: 6
+height: 3
+hotspot_x: 0
+hotspot_y: -4
+
+image: 76
+x: 266
+y: 28
+width: 7
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 77
+x: 280
+y: 28
+width: 7
+height: 10
+hotspot_x: 0
+hotspot_y: 0
+
+image: 78
+x: 294
+y: 28
+width: 9
+height: 11
+hotspot_x: 0
+hotspot_y: 1
+
+image: 79
+x: 308
+y: 28
+width: 9
+height: 11
+hotspot_x: 0
+hotspot_y: 1
+
+image: 80
+x: 322
+y: 28
+width: 7
+height: 9
+hotspot_x: 0
+hotspot_y: -1
+
+image: 81
+x: 336
+y: 28
+width: 9
+height: 11
+hotspot_x: 0
+hotspot_y: 1
+

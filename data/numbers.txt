@@ -1,0 +1,82 @@
+num_images: 10
+
+image: 1
+x: 0
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 2
+x: 18
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 3
+x: 36
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 4
+x: 54
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 5
+x: 72
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 6
+x: 90
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 7
+x: 108
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 8
+x: 126
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 9
+x: 144
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+
+image: 10
+x: 162
+y: 0
+width: 16
+height: 22
+hotspot_x: 0
+hotspot_y: 0
+

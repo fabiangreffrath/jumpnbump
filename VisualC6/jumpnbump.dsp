@@ -60,9 +60,23 @@ ProjDir=.
 InputPath=.\Release\jumpnbump.exe
 SOURCE="$(InputPath)"
 
-"$(ProjDir)\..\data\jumpbump.dat" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\pack\Release\jnbpack.exe"
+BuildCmds= \
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Release\gobpack.exe" "..\VisualC6\pack\Release\jnbpack.exe"
 
+"$(ProjDir)\..\data\font.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\rabbit.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\numbers.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\objects.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\jumpbump.dat" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
 # End Custom Build
 
 !ELSEIF  "$(CFG)" == "jumpnbump - Win32 Debug"
@@ -95,9 +109,23 @@ ProjDir=.
 InputPath=.\Debug\jumpnbump.exe
 SOURCE="$(InputPath)"
 
-"$(ProjDir)\..\data\jumpbump.dat" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\pack\Debug\jnbpack.exe"
+BuildCmds= \
+	call "$(ProjDir)\..\data\pack.bat" "$(ProjDir)\..\data" "..\VisualC6\gobpack\Debug\gobpack.exe" "..\VisualC6\pack\Debug\jnbpack.exe"
 
+"$(ProjDir)\..\data\font.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\rabbit.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\numbers.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\objects.gob" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(ProjDir)\..\data\jumpbump.dat" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
 # End Custom Build
 
 !ENDIF 

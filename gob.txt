@@ -1,0 +1,52 @@
+             THE FORMAT OF GOBFILES
+
+Do YOU want to make your own GOB-files?
+Then you have to know the GOB format!
+Here you can find a brief desciption of it.
+(this is all about how the file is saved)
+Note: Everything is saved in Intel byteorder,
+ie the least significant byte first.
+
+
+                  THE HEADER
+
+Offset   Size   Description
+ 0        2      Number of images in the file
+
+
+For I=1 to Number of images
+
+   Offset   Size   Description
+    2+I*4    4      Offset in file to image data
+
+End repeat
+
+
+The above offsets are offsets from the beginning of
+the file. Each image has it's own image data.
+The image data is like this:
+
+
+                THE IMAGE DATA
+
+Offset   Size   Description
+ 0        2      Image width in pixels (W)
+ 2        2      Image height in pixels (H)
+ 4        2      Hotspot x
+ 6        2      Hotspot y
+ 8        W*H    Bitmap data
+
+
+The offsets above are offsets in the image data (for each image).
+
+The Hotspot x/y of a specific image works like this:
+Whenever a sprite is drawn at (x, y) with that image,
+the image is drawn at (x - hotspot x, y - hotspot y),
+where hotspot x/y are the hotspots for that image.
+
+The bitmap data is just a block of colordata for each pixel.
+It scans the image horisontally left/down. This means that
+the first byte represents the upper left pixel, the second
+represents the pixel to the right of that and so on.
+If the width is 10  pixels then the 10th byte of bitmap data
+will represent the pixel (0, 1).
