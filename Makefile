@@ -37,3 +37,5 @@ install:
 uninstall:
 	rm /usr/games/jnbpack /usr/games/jnbunpack /usr/games/jumpnbump /usr/games/jnbmenu.tcl /usr/games/jumpnbump.fbcon /usr/games/jumpnbump.svgalib /usr/games/gobpack
 
+doc:
+	rman jumpnbump.6 -f HTML >jumpnbump.html

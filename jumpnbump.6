@@ -1,8 +1,8 @@
-.TH jumpnbump 6 "August 6th, 2002"
+.TH jumpnbump 6 "August 8th, 2002"
 .SH NAME
 jumpnbump \- Cute multiplayer platform game with bunnies
 .SH SYNOPSIS
-jumpnbump \fR[\fB-dat \fIlevelname\fR] [\fB-port \fIport \fB-net \fIplayer hostname rport\fR] [\fB-fireworks\fR] [\fB-fullscreen\fR]
+jumpnbump \fR[\fB-dat \fIlevelname\fR] [\fB-port \fIport \fB-net \fIplayer hostname rport\fR] [\fB-fireworks\fR] [\fB-fullscreen\fR] [\fB-nosound\fR] [\fB-musicnosound\fR] [\fB-nogore\fR] [\fB-mirror\fR] [\fB-scaleup\fR] [\fB-v\fR] [\fB-h\fR]
 .SH DESCRIPTION
 You, as a bunny, have to jump on your opponents to make them
 explode. It's a true multiplayer game, you can't play this alone.
@@ -23,6 +23,8 @@ Run the program in "screensaver" mode. This is useful with -fullscreen.
 Run jump'n'bump in fullscreen mode.
 .IP "-nosound"
 Run jump'n'bump without sound.
+.IP "-musicnosound"
+Run jump'n'bump with music but no sound effects.
 .IP "-nogore"
 Play without blood, familymode.
 .IP "-mirror"
@@ -74,43 +76,33 @@ lordoftheflies - the flies are attracted
 bloodisthickerthanwater - water turns to blood
 .SH LEVELS
 There are two programs to help you make your own levels: jnbpack and jnbunpack.
-
-.br
+.PP
 jnbpack -o /tmp/newlevel.dat <file1> <file2> <file3> etc
-
-.br
+.PP
 or you can just put all the files in a dir, cd to that dir and do
-
-.br
+.PP
 jnbpack -o /tmp/newlevel.dat *
-
-.br
+.PP
 and it will put all the files in the current dir inside the packfile.
 Don't try things like jnbpack -o stuff.dat ../file.c because it will add
 "../file.c" as the filename in the packfile, which won't work.
-
-.br
+.PP
 jnbunpack level.dat
 .br
 will unpack it in the current directory.
-
-.br
+.PP
 With gobpack you can convert .gob files (which are sprites, described in
 gob.txt) into .pcx files which you can edit with gimp for example, then
 convert back to a .gob and use it in your own level.
-
-.br
+.PP
 gobpack -u font menu.pcx
-
-.br
+.PP
 will unpack font.gob using the color palette from menu.pcx and write the
 files font.pcx font.txt. The other gob files should use level.pcx for the
 correct palette.
-
-.br
+.PP
 gobpack font
-
-.br
+.PP
 will generate font.gob from font.pcx and the specifications in font.txt.
 The .pcx files should be resaved with another program, as they are not
 packed and are thus very large.
@@ -128,5 +120,3 @@ the original program does not have a manual page.
 .PP
 This manual page was written by Joe Wreschnig <piman@sacredchao.net>, for the
 Debian GNU/Linux system (but may be used by others).
-
-
