@@ -4,10 +4,6 @@
  * 
  * Copyright (C) 2002 Florian Schulze - crow@icculus.org
  *
- * Portions of this code are from the MPEG software simulation group
- * idct implementation. This code will be replaced with a new
- * implementation soon.
- *
  * This file is part of Jump'n'Bump.
  *
  * Jump'n'Bump is free software; you can redistribute it and/or modify
