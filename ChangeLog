@@ -1,3 +1,10 @@
+22 Feb 2002 - 1.0
+   - working sound
+   - new scaling graphics mode
+   - cleaned up code
+
+===========================================================================
+This is the changelog of the linux version from which this port is derived.
 
 25 Feb 2001 - 0.69
    initial linux port, worked fine with freebsd too (chuck mason)

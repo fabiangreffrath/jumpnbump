@@ -1,3 +1,32 @@
+/*
+ * main.c
+ * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
+ * 
+ * Copyright (C) 2001 tarzeau@space.ch
+ *
+ * Copyright (C) 2002 Florian Schulze - crow@icculus.org
+ *
+ * Portions of this code are from the MPEG software simulation group
+ * idct implementation. This code will be replaced with a new
+ * implementation soon.
+ *
+ * This file is part of Jump'n'Bump.
+ *
+ * Jump'n'Bump is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Jump'n'Bump is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include "globals.h"
 
 #ifndef M_PI
@@ -155,7 +184,7 @@ struct {
 struct {
 	int x, y;
 	int old_x, old_y;
-	pixel_t back[2];
+	int back[2];
 	int back_defined[2];
 } flies[NUM_FLIES];
 
@@ -324,7 +353,8 @@ int main(int argc, char *argv[])
 					pal[454] = 8;
 					pal[455] = 8;
 				}
-				//register_background(background_pic, pal);
+				register_background(background_pic, pal);
+				recalculate_gob(&object_gobs, pal);
 				last_keys[0] = 0;
 			}
 
@@ -1602,12 +1632,11 @@ void draw_pobs(int page)
 
 	for (c1 = main_info.page_info[page].num_pobs - 1; c1 >= 0; c1--) {
 		main_info.page_info[page].pobs[c1].back_buf_ofs = back_buf_ofs;
-		get_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), &main_info.pob_backbuf[page][back_buf_ofs]);
-#ifdef SCALE_UP2
-		back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * 4 * JNB_BYTESPP;
-#else
-		back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data);
-#endif
+		get_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), (unsigned char *)main_info.pob_backbuf[page] + back_buf_ofs);
+		if (scale_up)
+			back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * 4 * bytes_per_pixel;
+		else
+			back_buf_ofs += pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data) * bytes_per_pixel;
 		put_pob(page, main_info.page_info[page].pobs[c1].x, main_info.page_info[page].pobs[c1].y, main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data, 1, mask_pic);
 	}
 
@@ -1630,7 +1659,7 @@ void redraw_pob_backgrounds(int page)
 	int c1;
 
 	for (c1 = 0; c1 < main_info.page_info[page].num_pobs; c1++)
-		put_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), &main_info.pob_backbuf[page][main_info.page_info[page].pobs[c1].back_buf_ofs]);
+		put_block(page, main_info.page_info[page].pobs[c1].x - pob_hs_x(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), main_info.page_info[page].pobs[c1].y - pob_hs_y(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_width(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), pob_height(main_info.page_info[page].pobs[c1].image, main_info.page_info[page].pobs[c1].pob_data), (unsigned char *)main_info.pob_backbuf[page] + main_info.page_info[page].pobs[c1].back_buf_ofs);
 
 }
 
@@ -1803,6 +1832,8 @@ int init_program(int argc, char *argv[], char *pal)
 			else if (stricmp(argv[c1], "-fullscreen") == 0)
 				fs_toggle();
 #endif
+			else if (stricmp(argv[c1], "-scaleup") == 0)
+				set_scaling(1);
 			else if (stricmp(argv[c1], "-dat") == 0) {
 				if (c1 < (argc - 1)) {
 					if ((handle = fopen(argv[c1 + 1], "rb")) != NULL) {
@@ -1820,6 +1851,9 @@ int init_program(int argc, char *argv[], char *pal)
 			}
 		}
 	}
+
+	main_info.pob_backbuf[0] = malloc(screen_pitch*screen_height*bytes_per_pixel);
+	main_info.pob_backbuf[1] = malloc(screen_pitch*screen_height*bytes_per_pixel);
 
 	for (c1 = 0; c1 < 7; c1++) {
 		player_anims[c1].num_frames = player_anim_data[c1 * 10];
@@ -2077,7 +2111,6 @@ int init_program(int argc, char *argv[], char *pal)
 
 }
 
-
 void deinit_program(void)
 {
 #ifdef DOS
@@ -2106,6 +2139,9 @@ void deinit_program(void)
 
 	if (main_info.error_str[0] != 0) {
 		printf(main_info.error_str);
+#ifdef _MSC_VER
+		MessageBox(0, main_info.error_str, "Jump'n'Bump", 0);
+#endif
 		exit(1);
 	} else
 		exit(0);

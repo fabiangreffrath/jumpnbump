@@ -1,3 +1,32 @@
+/*
+ * sound.c
+ * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
+ * 
+ * Copyright (C) 2001 tarzeau@space.ch
+ *
+ * Copyright (C) 2002 Florian Schulze - crow@icculus.org
+ *
+ * Portions of this code are from the MPEG software simulation group
+ * idct implementation. This code will be replaced with a new
+ * implementation soon.
+ *
+ * This file is part of Jump'n'Bump.
+ *
+ * Jump'n'Bump is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Jump'n'Bump is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include "globals.h"
 #include <limits.h>
 
@@ -223,11 +252,15 @@ char dj_init(void)
 
 	open_screen();
 
+	if (main_info.no_sound)
+		return 0;
+
 	audio_buffers = SAMPLECOUNT*audio_rate/11025;
 
 	if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) < 0) {
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
-		return 0;
+		main_info.no_sound = 1;
+		return 1;
 	}
 
 	Mix_QuerySpec(&audio_rate, &audio_format, &audio_channels);
@@ -245,6 +278,9 @@ char dj_init(void)
 
 void dj_deinit(void)
 {
+	if (main_info.no_sound)
+		return;
+
 	Mix_HaltMusic();
 	if (current_music)
 		Mix_FreeMusic(current_music);
@@ -305,6 +341,9 @@ char dj_set_num_sfx_channels(char num_channels)
 
 void dj_set_sfx_volume(char volume)
 {
+	if (main_info.no_sound)
+		return;
+
 	SDL_LockAudio();
 	global_sfx_volume = volume*2;
 	SDL_UnlockAudio();
@@ -313,6 +352,9 @@ void dj_set_sfx_volume(char volume)
 void dj_play_sfx(unsigned char sfx_num, unsigned short freq, char volume, char panning, unsigned short delay, char channel)
 {
 	int slot;
+
+	if (main_info.no_sound)
+		return;
 
 	if (channel<0) {
 		for (slot=0; slot<MAX_CHANNELS; slot++)
@@ -331,18 +373,27 @@ void dj_play_sfx(unsigned char sfx_num, unsigned short freq, char volume, char p
 
 char dj_get_sfx_settings(unsigned char sfx_num, sfx_data *data)
 {
+	if (main_info.no_sound)
+		return 0;
+
 	memcpy(data, &sounds[sfx_num], sizeof(sfx_data));
 	return 0;
 }
 
 char dj_set_sfx_settings(unsigned char sfx_num, sfx_data *data)
 {
+	if (main_info.no_sound)
+		return 0;
+
 	memcpy(&sounds[sfx_num], data, sizeof(sfx_data));
 	return 0;
 }
 
 void dj_set_sfx_channel_volume(char channel_num, char volume)
 {
+	if (main_info.no_sound)
+		return;
+
 	SDL_LockAudio();
 	updateSoundParams(channel_num, volume*2);
 	SDL_UnlockAudio();
@@ -350,6 +401,9 @@ void dj_set_sfx_channel_volume(char channel_num, char volume)
 
 void dj_stop_sfx_channel(char channel_num)
 {
+	if (main_info.no_sound)
+		return;
+
 	SDL_LockAudio();
 	stopchan(channel_num);
 	SDL_UnlockAudio();
@@ -357,6 +411,9 @@ void dj_stop_sfx_channel(char channel_num)
 
 char dj_load_sfx(FILE * file_handle, char *filename, int file_length, char sfx_type, unsigned char sfx_num)
 {
+	if (main_info.no_sound)
+		return 0;
+
 	sounds[sfx_num].buf = malloc(file_length);
 	fread(sounds[sfx_num].buf, 1, file_length, file_handle);
 	sounds[sfx_num].length = file_length / 2;
@@ -365,6 +422,9 @@ char dj_load_sfx(FILE * file_handle, char *filename, int file_length, char sfx_t
 
 void dj_free_sfx(unsigned char sfx_num)
 {
+	if (main_info.no_sound)
+		return;
+
 	free(sounds[sfx_num].buf);
 	memset(&sounds[sfx_num], 0, sizeof(sfx_data));
 }
@@ -381,6 +441,10 @@ char dj_ready_mod(char mod_num)
 #endif
 	FILE *fp;
 	int len;
+
+	if (main_info.no_sound)
+		return 0;
+
 	switch (mod_num) {
 	case MOD_MENU:
 		fp = dat_open("jump.mod", datfile_name, "rb");
@@ -423,6 +487,9 @@ char dj_ready_mod(char mod_num)
 
 char dj_start_mod(void)
 {
+	if (main_info.no_sound)
+		return 0;
+
 	Mix_VolumeMusic(0);
 	Mix_PlayMusic(current_music, -1);
 
@@ -431,11 +498,17 @@ char dj_start_mod(void)
 
 void dj_stop_mod(void)
 {
+	if (main_info.no_sound)
+		return;
+
 	Mix_HaltMusic();
 }
 
 void dj_set_mod_volume(char volume)
 {
+	if (main_info.no_sound)
+		return;
+
 	Mix_VolumeMusic(volume);
 }
 

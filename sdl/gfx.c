@@ -1,32 +1,84 @@
+/*
+ * gfx.c
+ * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
+ * 
+ * Copyright (C) 2001 tarzeau@space.ch
+ *
+ * Copyright (C) 2002 Florian Schulze - crow@icculus.org
+ *
+ * Portions of this code are from the MPEG software simulation group
+ * idct implementation. This code will be replaced with a new
+ * implementation soon.
+ *
+ * This file is part of Jump'n'Bump.
+ *
+ * Jump'n'Bump is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Jump'n'Bump is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include "globals.h"
+
+int screen_width=400;
+int screen_height=256;
+int screen_pitch=400;
+int scale_up=0;
+int bytes_per_pixel=1;
+int dirty_block_shift=4;
 
 static int current_pal[256];
 static SDL_Surface *jnb_surface;
 static int fullscreen = 0;
 static int vinited = 0;
-static pixel_t screen_buffer[2][JNB_SURFACE_WIDTH*JNB_SURFACE_HEIGHT];
+static void *screen_buffer[2];
 static int drawing_enable = 0;
-static pixel_t *background = NULL;
+static void *background = NULL;
 static int background_drawn;
-static pixel_t *mask = NULL;
-static int dirty_blocks[2][25*16];
-#ifdef SCALE_UP2
-#define DIRTY_BLOCK_SHIFT 5
-#else
-#define DIRTY_BLOCK_SHIFT 4
-#endif
+static void *mask = NULL;
+static int dirty_blocks[2][25*16*2];
 
-pixel_t *get_vgaptr(int page, int x, int y)
+void *get_vgaptr(int page, int x, int y)
 {
 	assert(drawing_enable==1);
 
-	return &screen_buffer[page][y*JNB_SURFACE_WIDTH+x];
+	return (unsigned char *)screen_buffer[page] + (y*screen_pitch)+(x*bytes_per_pixel);
 }
 
+
+void set_scaling(int scale)
+{
+	if (scale==1) {
+		screen_width=800;
+		screen_height=512;
+		scale_up=1;
+		bytes_per_pixel=2;
+		dirty_block_shift=5;
+		screen_pitch=screen_width*bytes_per_pixel;
+	} else {
+		screen_width=400;
+		screen_height=256;
+		scale_up=0;
+		bytes_per_pixel=1;
+		dirty_block_shift=4;
+		screen_pitch=screen_width*bytes_per_pixel;
+	}
+}
 
 void open_screen(void)
 {
 	int lval = 0;
+	int bpp;
+	int flags;
 
 	lval = SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_AUDIO);
 	if (lval < 0) {
@@ -34,10 +86,14 @@ void open_screen(void)
 		exit(EXIT_FAILURE);
 	}
 
-	if (fullscreen)
-		jnb_surface = SDL_SetVideoMode(JNB_SURFACE_WIDTH, JNB_SURFACE_HEIGHT, JNB_BPP, SDL_HWSURFACE | SDL_FULLSCREEN);
+	if (scale_up)
+		bpp = 16;
 	else
-		jnb_surface = SDL_SetVideoMode(JNB_SURFACE_WIDTH, JNB_SURFACE_HEIGHT, JNB_BPP, SDL_HWSURFACE);
+		bpp = 8;
+	flags = SDL_SWSURFACE;
+	if (fullscreen)
+		flags |= SDL_FULLSCREEN;
+	jnb_surface = SDL_SetVideoMode(screen_width, screen_height, bpp, flags);
 
 	if (!jnb_surface) {
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
@@ -50,6 +106,14 @@ void open_screen(void)
 
 	memset(current_pal, 0, sizeof(current_pal));
 	memset(dirty_blocks, 0, sizeof(dirty_blocks));
+
+	screen_buffer[0]=malloc(screen_width*screen_height*bytes_per_pixel);
+	screen_buffer[1]=malloc(screen_width*screen_height*bytes_per_pixel);
+
+/*
+	dirty_blocks[0]=malloc(sizeof(int)*25*16+1000);
+	dirty_blocks[1]=malloc(sizeof(int)*25*16+1000);
+*/
 
 	return;
 }
@@ -75,46 +139,79 @@ void wait_vrt(int mix)
 void clear_page(int page, int color)
 {
 	int i,j;
-	pixel_t *buf = get_vgaptr(page, 0, 0);
 
 	assert(drawing_enable==1);
 
 	for (i=0; i<(25*16); i++)
 		dirty_blocks[page][i] = 1;
 
-	for (i=0; i<JNB_SURFACE_HEIGHT; i++)
-		for (j=0; j<JNB_SURFACE_WIDTH; j++)
-			*buf++ = color;
+	if (bytes_per_pixel==1) {
+		unsigned char *buf = get_vgaptr(page, 0, 0);
+
+		for (i=0; i<screen_height; i++)
+			for (j=0; j<screen_width; j++)
+				*buf++ = color;
+	} else if (bytes_per_pixel==2) {
+		unsigned short *buf = get_vgaptr(page, 0, 0);
+
+		for (i=0; i<screen_height; i++)
+			for (j=0; j<screen_width; j++)
+				*buf++ = color;
+	} else {
+		unsigned int *buf = get_vgaptr(page, 0, 0);
+
+		for (i=0; i<screen_height; i++)
+			for (j=0; j<screen_width; j++)
+				*buf++ = color;
+	}
 }
 
 
-void clear_lines(int page, int y, int count, pixel_t color)
+void clear_lines(int page, int y, int count, int color)
 {
 	int i,j;
 
 	assert(drawing_enable==1);
 
-#ifdef SCALE_UP2
-	count *= 2;
-	y *= 2;
-#endif
+	if (scale_up) {
+		count *= 2;
+		y *= 2;
+	}
 
-	for (i=0; i<count; i++) {
-		if ((i+y)<JNB_SURFACE_HEIGHT) {
-			pixel_t *buf = get_vgaptr(page, 0, i+y);
-			for (j=0; j<JNB_SURFACE_WIDTH; j++)
-				*buf++ = color;
+	if (bytes_per_pixel==1) {
+		for (i=0; i<count; i++) {
+			if ((i+y)<screen_height) {
+				unsigned char *buf = get_vgaptr(page, 0, i+y);
+				for (j=0; j<screen_width; j++)
+					*buf++ = color;
+			}
+		}
+	} else if (bytes_per_pixel==2) {
+		for (i=0; i<count; i++) {
+			if ((i+y)<screen_height) {
+				unsigned short *buf = get_vgaptr(page, 0, i+y);
+				for (j=0; j<screen_width; j++)
+					*buf++ = color;
+			}
+		}
+	} else {
+		for (i=0; i<count; i++) {
+			if ((i+y)<screen_height) {
+				unsigned int *buf = get_vgaptr(page, 0, i+y);
+				for (j=0; j<screen_width; j++)
+					*buf++ = color;
+			}
 		}
 	}
-	count = ((y+count)>>DIRTY_BLOCK_SHIFT) - (y>>DIRTY_BLOCK_SHIFT) + 1;
-	y >>= DIRTY_BLOCK_SHIFT;
+	count = ((y+count)>>dirty_block_shift) - (y>>dirty_block_shift) + 1;
+	y >>= dirty_block_shift;
 	for (i=0; i<count; i++)
 		for (j=0; j<25; j++)
 			dirty_blocks[page][(y+i)*25+j] = 1;
 }
 
 
-pixel_t get_color(int color, char pal[768])
+int get_color(int color, char pal[768])
 {
 	assert(color<256);
 	assert(pal);
@@ -122,33 +219,47 @@ pixel_t get_color(int color, char pal[768])
 }
 
 
-pixel_t get_pixel(int page, int x, int y)
+int get_pixel(int page, int x, int y)
 {
 	assert(drawing_enable==1);
-#ifdef SCALE_UP2
-	x *= 2;
-	y *= 2;
-#endif
-	assert(x<JNB_SURFACE_WIDTH);
-	assert(y<JNB_SURFACE_HEIGHT);
 
-	return *get_vgaptr(page, x, y);
+	if (scale_up) {
+		x *= 2;
+		y *= 2;
+	}
+
+	assert(x<screen_width);
+	assert(y<screen_height);
+
+	if (bytes_per_pixel==1)
+		return *(unsigned char *)get_vgaptr(page, x, y);
+	else if (bytes_per_pixel==2)
+		return *(unsigned short *)get_vgaptr(page, x, y);
+	else
+		return *(unsigned int *)get_vgaptr(page, x, y);
 }
 
 
-void set_pixel(int page, int x, int y, pixel_t color)
+void set_pixel(int page, int x, int y, int color)
 {
 	assert(drawing_enable==1);
-#ifdef SCALE_UP2
-	x *= 2;
-	y *= 2;
-#endif
-	assert(x<JNB_SURFACE_WIDTH);
-	assert(y<JNB_SURFACE_HEIGHT);
 
-	dirty_blocks[page][(y>>DIRTY_BLOCK_SHIFT)*25+(x>>DIRTY_BLOCK_SHIFT)] = 1;
+	if (scale_up) {
+		x *= 2;
+		y *= 2;
+	}
 
-	*get_vgaptr(page, x, y) = color;
+	assert(x<screen_width);
+	assert(y<screen_height);
+
+	dirty_blocks[page][(y>>dirty_block_shift)*25+(x>>dirty_block_shift)] = 1;
+
+	if (bytes_per_pixel==1)
+		*(unsigned char *)get_vgaptr(page, x, y) = color;
+	else if (bytes_per_pixel==2)
+		*(unsigned short *)get_vgaptr(page, x, y) = color;
+	else
+		*(unsigned int *)get_vgaptr(page, x, y) = color;
 }
 
 
@@ -460,8 +571,8 @@ void Super2xSaI (unsigned char *src, unsigned int src_pitch, int src_bytes_per_p
 
 void flippage(int page)
 {
-	int x,y,h,w;
-	pixel_t *src;
+	int x,y;
+	unsigned char *src;
 	unsigned char *dest;
 
 	assert(drawing_enable==0);
@@ -483,39 +594,28 @@ void flippage(int page)
 #else
 	dest=(unsigned char *)jnb_surface->pixels;
 	src=screen_buffer[page];
-	for (y=0; y<JNB_SURFACE_HEIGHT; y++) {
-		//memset(&dest[y*jnb_surface->pitch],0,JNB_SURFACE_WIDTH*JNB_BYTESPP);
+	for (y=0; y<screen_height; y++) {
+		//memset(&dest[y*jnb_surface->pitch],0,JNB_SURFACE_WIDTH*bytes_per_pixel);
 		for (x=0; x<25; x++) {
 			int count;
 			int test_x;
 
 			count=0;
 			test_x=x;
-			while ( (test_x<25) && (dirty_blocks[page][(y>>DIRTY_BLOCK_SHIFT)*25+test_x]) ) {
+			while ( (test_x<25) && (dirty_blocks[page][(y>>dirty_block_shift)*25+test_x]) ) {
 				count++;
 				test_x++;
 			}
 			if (count) {
-				memcpy(	&dest[y*jnb_surface->pitch+(x<<DIRTY_BLOCK_SHIFT)*JNB_BYTESPP],
-					&src[y*JNB_SURFACE_WIDTH+(x<<DIRTY_BLOCK_SHIFT)],
-					((16<<DIRTY_BLOCK_SHIFT)>>4)*JNB_BYTESPP*count);
-				//*((pixel_t *)(&dest[(y>>DIRTY_BLOCK_SHIFT)*jnb_surface->pitch+x*JNB_BYTESPP]))=0xe0e0;
+				memcpy(	&dest[y*jnb_surface->pitch+(x<<dirty_block_shift)*bytes_per_pixel],
+					&src[y*screen_pitch+((x<<dirty_block_shift)*bytes_per_pixel)],
+					((16<<dirty_block_shift)>>4)*bytes_per_pixel*count);
+				//*((pixel_t *)(&dest[(y>>dirty_block_shift)*jnb_surface->pitch+x*bytes_per_pixel]))=0xe0e0;
 			}
 			x = test_x;
 		}
 	}
 	memset(&dirty_blocks[page], 0, sizeof(int)*25*16);
-/*
-        dest=(unsigned char *)jnb_surface->pixels;
-	src=screen_buffer[page];
-        w=(jnb_surface->clip_rect.w>JNB_SURFACE_WIDTH)?(JNB_SURFACE_WIDTH):(jnb_surface->clip_rect.w);
-        h=(jnb_surface->clip_rect.h>JNB_SURFACE_HEIGHT)?(JNB_SURFACE_HEIGHT):(jnb_surface->clip_rect.h);
-        for (; h>0; h--) {
-		memcpy(dest,src,w*JNB_BYTESPP);
-		dest+=jnb_surface->pitch;
-		src+=JNB_SURFACE_WIDTH;
-        }
-*/
 #endif
         SDL_UnlockSurface(jnb_surface);
 	SDL_Flip(jnb_surface);
@@ -563,9 +663,8 @@ void setpalette(int index, int count, char *palette)
 		colors[i+index].b = palette[i * 3 + 2] << 2;
 		current_pal[i+index] = SDL_MapRGB(jnb_surface->format, colors[i+index].r, colors[i+index].g, colors[i+index].b);
 	}
-#ifndef SCALE_UP
-	SDL_SetColors(jnb_surface, &colors[index], index, count);
-#endif
+	if (!scale_up)
+		SDL_SetColors(jnb_surface, &colors[index], index, count);
 }
 
 
@@ -582,34 +681,33 @@ void fillpalette(int red, int green, int blue)
 		colors[i].b = blue << 2;
 		current_pal[i] = SDL_MapRGB(jnb_surface->format, colors[i].r, colors[i].g, colors[i].b);
 	}
-#ifndef SCALE_UP
-	SDL_SetColors(jnb_surface, colors, 0, 256);
-#endif
+	if (!scale_up)
+		SDL_SetColors(jnb_surface, colors, 0, 256);
 }
 
 
-void get_block(int page, int x, int y, int width, int height, pixel_t *buffer)
+void get_block(int page, int x, int y, int width, int height, void *buffer)
 {
+	unsigned char *buffer_ptr, *vga_ptr;
 	int h;
-	pixel_t *buffer_ptr, *vga_ptr;
 
 	assert(drawing_enable==1);
 
-#ifdef SCALE_UP2
-	x *= 2;
-	y *= 2;
-	width *= 2;
-	height *= 2;
-#endif
+	if (scale_up) {
+		x *= 2;
+		y *= 2;
+		width *= 2;
+		height *= 2;
+	}
 
 	if (x < 0)
 		x = 0;
 	if (y < 0)
 		y = 0;
-	if (y + height >= JNB_SURFACE_HEIGHT)
-		height = JNB_SURFACE_HEIGHT - y;
-	if (x + width >= JNB_SURFACE_WIDTH)
-		width = JNB_SURFACE_WIDTH - x;
+	if (y + height >= screen_height)
+		height = screen_height - y;
+	if (x + width >= screen_width)
+		width = screen_width - x;
 	if (width<=0)
 		return;
 	if(height<=0)
@@ -618,36 +716,36 @@ void get_block(int page, int x, int y, int width, int height, pixel_t *buffer)
 	vga_ptr = get_vgaptr(page, x, y);
 	buffer_ptr = buffer;
 	for (h = 0; h < height; h++) {
-		memcpy(buffer_ptr, vga_ptr, width * JNB_BYTESPP);
-		vga_ptr += JNB_SURFACE_WIDTH;
-		buffer_ptr += width;
+		memcpy(buffer_ptr, vga_ptr, width * bytes_per_pixel);
+		vga_ptr += screen_pitch;
+		buffer_ptr += width * bytes_per_pixel;
 	}
 
 }
 
 
-void put_block(int page, int x, int y, int width, int height, pixel_t *buffer)
+void put_block(int page, int x, int y, int width, int height, void *buffer)
 {
 	int h;
-	pixel_t *vga_ptr, *buffer_ptr;
+	unsigned char *vga_ptr, *buffer_ptr;
 
 	assert(drawing_enable==1);
 
-#ifdef SCALE_UP2
-	x *= 2;
-	y *= 2;
-	width *= 2;
-	height *= 2;
-#endif
+	if (scale_up) {
+		x *= 2;
+		y *= 2;
+		width *= 2;
+		height *= 2;
+	}
 
 	if (x < 0)
 		x = 0;
 	if (y < 0)
 		y = 0;
-	if (y + height >= JNB_SURFACE_HEIGHT)
-		height = JNB_SURFACE_HEIGHT - y;
-	if (x + width >= JNB_SURFACE_WIDTH)
-		width = JNB_SURFACE_WIDTH - x;
+	if (y + height >= screen_height)
+		height = screen_height - y;
+	if (x + width >= screen_width)
+		width = screen_width - x;
 	if (width<=0)
 		return;
 	if(height<=0)
@@ -656,14 +754,14 @@ void put_block(int page, int x, int y, int width, int height, pixel_t *buffer)
 	vga_ptr = get_vgaptr(page, x, y);
 	buffer_ptr = buffer;
 	for (h = 0; h < height; h++) {
-		memcpy(vga_ptr, buffer_ptr, width * JNB_BYTESPP);
-		vga_ptr += JNB_SURFACE_WIDTH;
-		buffer_ptr += width;
+		memcpy(vga_ptr, buffer_ptr, width * bytes_per_pixel);
+		vga_ptr += screen_pitch;
+		buffer_ptr += width * bytes_per_pixel;
 	}
-	width = ((x+width)>>DIRTY_BLOCK_SHIFT) - (x>>DIRTY_BLOCK_SHIFT) + 1;
-	height = ((y+height)>>DIRTY_BLOCK_SHIFT) - (y>>DIRTY_BLOCK_SHIFT) + 1;
-	x >>= DIRTY_BLOCK_SHIFT;
-	y >>= DIRTY_BLOCK_SHIFT;
+	width = ((x+width)>>dirty_block_shift) - (x>>dirty_block_shift) + 1;
+	height = ((y+height)>>dirty_block_shift) - (y>>dirty_block_shift) + 1;
+	x >>= dirty_block_shift;
+	y >>= dirty_block_shift;
 	while (width--)
 		for (h=0; h<height; h++)
 			dirty_blocks[page][(y+h)*25+(x+width)] = 1;
@@ -802,13 +900,10 @@ void put_text(int page, int x, int y, char *text, int align)
 }
 
 
-void put_pob(int page, int x, int y, int image, gob_t *gob, int use_mask, unsigned char *mask_pic)
+void put_pob(int page, int x, int y, int image, gob_t *gob, int use_mask, void *mask_pic)
 {
 	int c1, c2;
-	int pob_offset;
-	pixel_t *pob_ptr;
-	pixel_t *vga_ptr;
-	pixel_t *mask_ptr;
+	int pob_x, pob_y;
 	int width, height;
 	int draw_width, draw_height;
 	int colour;
@@ -818,66 +913,123 @@ void put_pob(int page, int x, int y, int image, gob_t *gob, int use_mask, unsign
 	assert(image>=0);
 	assert(image<gob->num_images);
 
-#ifdef SCALE_UP2
-	x *= 2;
-	y *= 2;
-#endif
+	if (scale_up) {
+		x *= 2;
+		y *= 2;
+		width = draw_width = gob->width[image]*2;
+		height = draw_height = gob->height[image]*2;
+		x -= gob->hs_x[image]*2;
+		y -= gob->hs_y[image]*2;
+	} else {
+		width = draw_width = gob->width[image];
+		height = draw_height = gob->height[image];
+		x -= gob->hs_x[image];
+		y -= gob->hs_y[image];
+	}
 
-#ifdef SCALE_UP2
-	width = draw_width = gob->width[image]*2;
-	height = draw_height = gob->height[image]*2;
-	x -= gob->hs_x[image]*2;
-	y -= gob->hs_y[image]*2;
-#else
-	width = draw_width = gob->width[image];
-	height = draw_height = gob->height[image];
-	x -= gob->hs_x[image];
-	y -= gob->hs_y[image];
-#endif
-	if ((x + width) <= 0 || x >= JNB_SURFACE_WIDTH)
+	if ((x + width) <= 0 || x >= screen_width)
 		return;
-	if ((y + height) <= 0 || y >= JNB_SURFACE_HEIGHT)
+	if ((y + height) <= 0 || y >= screen_height)
 		return;
-	pob_offset = 0;
+
+	pob_x = 0;
+	pob_y = 0;
 	if (x < 0) {
-		pob_offset -= x;
+		pob_x -= x;
 		draw_width += x;
 		x = 0;
 	}
-	if ((x + width) > JNB_SURFACE_WIDTH)
-		draw_width -= x + width - JNB_SURFACE_WIDTH;
+	if ((x + width) > screen_width)
+		draw_width -= x + width - screen_width;
 	if (y < 0) {
-		pob_offset -= y * width;
+		pob_y -= y;
 		draw_height += y;
 		y = 0;
 	}
-	if ((y + height) > JNB_SURFACE_HEIGHT)
-		draw_height -= y + height - JNB_SURFACE_HEIGHT;
+	if ((y + height) > screen_height)
+		draw_height -= y + height - screen_height;
 
-	pob_ptr = &gob->data[image][pob_offset];
-	vga_ptr = get_vgaptr(page, x, y);
-	mask_ptr = &mask[(y * JNB_SURFACE_WIDTH) + x];
-	for (c1 = 0; c1 < draw_height; c1++) {
-		for (c2 = 0; c2 < draw_width; c2++) {
-			colour = *mask_ptr;
-			if (use_mask == 0 || (use_mask == 1 && colour == 0)) {
-				colour = *pob_ptr;
-				if (colour != 0) {
-					*vga_ptr = colour;
+
+	if (bytes_per_pixel==1) {
+		unsigned char *vga_ptr;
+		unsigned char *pob_ptr;
+		unsigned char *mask_ptr;
+
+		vga_ptr = get_vgaptr(page, x, y);
+		pob_ptr = ((unsigned char *)gob->data[image]) + ((pob_y * width) + pob_x);
+		mask_ptr = ((unsigned char *)mask) + ((y * screen_pitch) + (x*bytes_per_pixel));
+		for (c1 = 0; c1 < draw_height; c1++) {
+			for (c2 = 0; c2 < draw_width; c2++) {
+				colour = *mask_ptr;
+				if (use_mask == 0 || (use_mask == 1 && colour == 0)) {
+					colour = *pob_ptr;
+					if (colour != 0) {
+						*vga_ptr = colour;
+					}
 				}
+				vga_ptr++;
+				pob_ptr++;
+				mask_ptr++;
 			}
-			vga_ptr++;
-			pob_ptr++;
-			mask_ptr++;
+			pob_ptr += width - c2;
+			vga_ptr += (screen_width - c2);
+			mask_ptr += (screen_width - c2);
 		}
-		pob_ptr += width - c2;
-		vga_ptr += (JNB_SURFACE_WIDTH - c2);
-		mask_ptr += (JNB_SURFACE_WIDTH - c2);
+	} else if (bytes_per_pixel==2) {
+		unsigned short *vga_ptr;
+		unsigned short *pob_ptr;
+		unsigned short *mask_ptr;
+
+		vga_ptr = get_vgaptr(page, x, y);
+		pob_ptr = (unsigned short *)(((unsigned char *)gob->data[image]) + ((pob_y * width) + pob_x));
+		mask_ptr = (unsigned short *)(((unsigned char *)mask) + ((y * screen_pitch) + (x*bytes_per_pixel)));
+		for (c1 = 0; c1 < draw_height; c1++) {
+			for (c2 = 0; c2 < draw_width; c2++) {
+				colour = *mask_ptr;
+				if (use_mask == 0 || (use_mask == 1 && colour == 0)) {
+					colour = *pob_ptr;
+					if (colour != 0) {
+						*vga_ptr = colour;
+					}
+				}
+				vga_ptr++;
+				pob_ptr++;
+				mask_ptr++;
+			}
+			pob_ptr += width - c2;
+			vga_ptr += (screen_width - c2);
+			mask_ptr += (screen_width - c2);
+		}
+	} else {
+		unsigned int *vga_ptr;
+		unsigned int *pob_ptr;
+		unsigned int *mask_ptr;
+
+		vga_ptr = get_vgaptr(page, x, y);
+		pob_ptr = (unsigned int *)(((unsigned char *)gob->data[image]) + ((pob_y * width) + pob_x));
+		mask_ptr = (unsigned int *)(((unsigned char *)mask) + ((y * screen_pitch) + (x*bytes_per_pixel)));
+		for (c1 = 0; c1 < draw_height; c1++) {
+			for (c2 = 0; c2 < draw_width; c2++) {
+				colour = *mask_ptr;
+				if (use_mask == 0 || (use_mask == 1 && colour == 0)) {
+					colour = *pob_ptr;
+					if (colour != 0) {
+						*vga_ptr = colour;
+					}
+				}
+				vga_ptr++;
+				pob_ptr++;
+				mask_ptr++;
+			}
+			pob_ptr += width - c2;
+			vga_ptr += (screen_width - c2);
+			mask_ptr += (screen_width - c2);
+		}
 	}
-	draw_width = ((x+draw_width)>>DIRTY_BLOCK_SHIFT) - (x>>DIRTY_BLOCK_SHIFT) + 1;
-	draw_height = ((y+draw_height)>>DIRTY_BLOCK_SHIFT) - (y>>DIRTY_BLOCK_SHIFT) + 1;
-	x >>= DIRTY_BLOCK_SHIFT;
-	y >>= DIRTY_BLOCK_SHIFT;
+	draw_width = ((x+draw_width)>>dirty_block_shift) - (x>>dirty_block_shift) + 1;
+	draw_height = ((y+draw_height)>>dirty_block_shift) - (y>>dirty_block_shift) + 1;
+	x >>= dirty_block_shift;
+	y >>= dirty_block_shift;
 	while (draw_width--)
 		for (c1=0; c1<draw_height; c1++)
 			dirty_blocks[page][(y+c1)*25+(x+draw_width)] = 1;
@@ -958,22 +1110,20 @@ void register_background(char *pixels, char pal[768])
 	if (!pixels)
 		return;
 	assert(pal);
-#ifdef SCALE_UP2
-	{
+	if (scale_up) {
 		int int_pal[256];
 		int i;
 
 		for (i=0; i<256; i++)
 			int_pal[i] = SDL_MapRGB(jnb_surface->format, (Uint8)(pal[i*3+0]<<2), (Uint8)(pal[i*3+1]<<2), (Uint8)(pal[i*3+2]<<2));
-		background = malloc(JNB_SURFACE_WIDTH*JNB_SURFACE_HEIGHT*JNB_BYTESPP);
+		background = malloc(screen_pitch*screen_height);
 		assert(background);
-		Super2xSaI(pixels, JNB_WIDTH, 1, (unsigned char *)background, JNB_SURFACE_WIDTH*JNB_BYTESPP, JNB_BYTESPP, JNB_WIDTH, JNB_HEIGHT, int_pal);
+		Super2xSaI(pixels, JNB_WIDTH, 1, (unsigned char *)background, screen_pitch, bytes_per_pixel, JNB_WIDTH, JNB_HEIGHT, int_pal);
+	} else {
+		background = malloc(JNB_WIDTH*JNB_HEIGHT);
+		assert(background);
+		memcpy(background, pixels, JNB_WIDTH*JNB_HEIGHT);
 	}
-#else
-	background = malloc(JNB_WIDTH*JNB_HEIGHT);
-	assert(background);
-	memcpy(background, pixels, JNB_WIDTH*JNB_HEIGHT);
-#endif
 }
 
 int register_gob(FILE *handle, gob_t *gob, int len)
@@ -990,8 +1140,8 @@ int register_gob(FILE *handle, gob_t *gob, int len)
 	gob->height = malloc(gob->num_images*sizeof(int));
 	gob->hs_x = malloc(gob->num_images*sizeof(int));
 	gob->hs_y = malloc(gob->num_images*sizeof(int));
-	gob->data = malloc(gob->num_images*sizeof(pixel_t *));
-	gob->orig_data = malloc(gob->num_images*sizeof(unsigned char *));
+	gob->data = malloc(gob->num_images*sizeof(void *));
+	gob->orig_data = malloc(gob->num_images*sizeof(void *));
 	for (i=0; i<gob->num_images; i++) {
 		int image_size;
 		int offset;
@@ -1006,12 +1156,12 @@ int register_gob(FILE *handle, gob_t *gob, int len)
 		image_size = gob->width[i] * gob->height[i];
 		gob->orig_data[i] = malloc(image_size);
 		memcpy(gob->orig_data[i], &gob_data[offset], image_size);
-#ifdef SCALE_UP2
-		image_size = gob->width[i] * gob->height[i] * 4 * JNB_BYTESPP;
-		gob->data[i] = malloc(image_size);
-#else
-		gob->data[i] = gob->orig_data[i];
-#endif
+		if (scale_up) {
+			image_size = gob->width[i] * gob->height[i] * 4 * bytes_per_pixel;
+			gob->data[i] = malloc(image_size);
+		} else {
+			gob->data[i] = (unsigned short *)gob->orig_data[i];
+		}
 	}
 	free(gob_data);
 	return 0;
@@ -1020,9 +1170,11 @@ int register_gob(FILE *handle, gob_t *gob, int len)
 
 void recalculate_gob(gob_t *gob, char pal[768])
 {
-#ifdef SCALE_UP2
 	int int_pal[256];
 	int i;
+
+	if (!scale_up)
+		return;
 
 	for (i=1; i<256; i++) {
 		int_pal[i] = SDL_MapRGB(jnb_surface->format, (Uint8)(pal[i*3+0]<<2), (Uint8)(pal[i*3+1]<<2), (Uint8)(pal[i*3+2]<<2));
@@ -1032,9 +1184,8 @@ void recalculate_gob(gob_t *gob, char pal[768])
 	int_pal[0] = 0;
 
 	for (i=0; i<gob->num_images; i++) {
-		Super2xSaI(gob->orig_data[i], gob->width[i], 1, (unsigned char *)gob->data[i], gob->width[i]*2*JNB_BYTESPP, JNB_BYTESPP, gob->width[i], gob->height[i], int_pal);
+		Super2xSaI(gob->orig_data[i], gob->width[i], 1, (unsigned char *)gob->data[i], gob->width[i]*2*bytes_per_pixel, bytes_per_pixel, gob->width[i], gob->height[i], int_pal);
 	}
-#endif
 }
 
 void register_mask(char *pixels)
@@ -1044,21 +1195,19 @@ void register_mask(char *pixels)
 		mask = NULL;
 	}
 	assert(pixels);
-#ifdef SCALE_UP2
-	{
+	if (scale_up) {
 		int int_pal[256];
 		int i;
 
 		int_pal[0] = 0;
 		for (i=1; i<256; i++)
-			int_pal[i] = 1;
-		mask = malloc(JNB_SURFACE_WIDTH*JNB_SURFACE_HEIGHT*JNB_BYTESPP);
+			int_pal[i] = 0xffffffff;
+		mask = malloc(screen_pitch*screen_height);
 		assert(mask);
-		Scale2x(pixels, JNB_WIDTH, 1, (unsigned char *)mask, JNB_SURFACE_WIDTH*JNB_BYTESPP, JNB_BYTESPP, JNB_WIDTH, JNB_HEIGHT, int_pal);
+		Scale2x(pixels, JNB_WIDTH, 1, (unsigned char *)mask, screen_pitch, bytes_per_pixel, JNB_WIDTH, JNB_HEIGHT, int_pal);
+	} else {
+		mask = malloc(JNB_WIDTH*JNB_HEIGHT);
+		assert(mask);
+		memcpy(mask, pixels, JNB_WIDTH*JNB_HEIGHT);
 	}
-#else
-	mask = malloc(JNB_WIDTH*JNB_HEIGHT);
-	assert(mask);
-	memcpy(mask, pixels, JNB_WIDTH*JNB_HEIGHT);
-#endif
 }

@@ -1,3 +1,32 @@
+/*
+ * globals.h
+ * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
+ * 
+ * Copyright (C) 2001 tarzeau@space.ch
+ *
+ * Copyright (C) 2002 Florian Schulze - crow@icculus.org
+ *
+ * Portions of this code are from the MPEG software simulation group
+ * idct implementation. This code will be replaced with a new
+ * implementation soon.
+ *
+ * This file is part of Jump'n'Bump.
+ *
+ * Jump'n'Bump is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Jump'n'Bump is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #ifndef __GLOBALS_H
 #define __GLOBALS_H
 
@@ -22,6 +51,8 @@
 #endif
 
 #ifdef _MSC_VER
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
 # include <sys/stat.h>
 # include <io.h>
 # include <SDL.h>
@@ -36,24 +67,11 @@
 
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256
-
-#ifndef SCALE_UP
-#define SCALE_UP2
-#endif
-
-#if (defined(SCALE_UP) || defined(SCALE_UP2))
-#define JNB_BPP 16
-#define JNB_BYTESPP 2
-#define JNB_SURFACE_WIDTH (JNB_WIDTH*2)
-#define JNB_SURFACE_HEIGHT (JNB_HEIGHT*2)
-typedef unsigned short pixel_t;
-#else
-#define JNB_BPP 8
-#define JNB_BYTESPP 1
-#define JNB_SURFACE_WIDTH JNB_WIDTH
-#define JNB_SURFACE_HEIGHT JNB_HEIGHT
-typedef unsigned char pixel_t;
-#endif
+extern int screen_width;
+extern int screen_height;
+extern int screen_pitch;
+extern int scale_up;
+extern int bytes_per_pixel;
 
 #ifndef USE_SDL
 #define KEY_PL1_LEFT 0xcb
@@ -132,8 +150,8 @@ typedef struct {
 	int *height;
 	int *hs_x;
 	int *hs_y;
-	pixel_t **data;
-	unsigned char **orig_data;
+	void **data;
+	void **orig_data;
 } gob_t;
 
 struct {
@@ -150,7 +168,7 @@ struct {
 			int back_buf_ofs;
 		} pobs[NUM_POBS];
 	} page_info[2];
-	pixel_t pob_backbuf[2][JNB_SURFACE_WIDTH*JNB_SURFACE_HEIGHT];
+	void *pob_backbuf[2];
 } main_info;
 
 struct {
@@ -253,6 +271,7 @@ void menu_deinit(void);
 
 /* gfx.c */
 
+void set_scaling(int scale);
 void open_screen(void);
 void wait_vrt(int mix);
 void draw_begin(void);
@@ -260,30 +279,30 @@ void draw_end(void);
 void flippage(int page);
 void draw_begin(void);
 void draw_end(void);
-void clear_lines(int page, int y, int count, pixel_t color);
-pixel_t get_color(int color, char pal[768]);
-pixel_t get_pixel(int page, int x, int y);
-void set_pixel(int page, int x, int y, pixel_t color);
+void clear_lines(int page, int y, int count, int color);
+int get_color(int color, char pal[768]);
+int get_pixel(int page, int x, int y);
+void set_pixel(int page, int x, int y, int color);
 void setpalette(int index, int count, char *palette);
 void fillpalette(int red, int green, int blue);
 #ifdef DOS
 void get_block(char page, short x, short y, short width, short height, char *buffer);
 void put_block(char page, short x, short y, short width, short height, char *buffer);
 #else
-void get_block(int page, int x, int y, int width, int height, pixel_t *buffer);
-void put_block(int page, int x, int y, int width, int height, pixel_t *buffer);
+void get_block(int page, int x, int y, int width, int height, void *buffer);
+void put_block(int page, int x, int y, int width, int height, void *buffer);
 #endif
 void put_text(int page, int x, int y, char *text, int align);
-void put_pob(int page, int x, int y, int image, gob_t *gob, int mask, unsigned char *mask_pic);
+void put_pob(int page, int x, int y, int image, gob_t *gob, int mask, void *mask_pic);
 int pob_width(int image, gob_t *gob);
 int pob_height(int image, gob_t *gob);
 int pob_hs_x(int image, gob_t *gob);
 int pob_hs_y(int image, gob_t *gob);
-int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal);
+int read_pcx(FILE * handle, void *buffer, int buf_len, char *pal);
 void register_background(char *pixels, char pal[768]);
 int register_gob(FILE *handle, gob_t *gob, int len);
 void recalculate_gob(gob_t *gob, char pal[768]);
-void register_mask(char *pixels);
+void register_mask(void *pixels);
 
 /* gfx.c */
 
