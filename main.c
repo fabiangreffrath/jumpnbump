@@ -1914,6 +1914,8 @@ int init_program(int argc, char *argv[], char *pal)
 			else if (strstr(argv[1],"-h")) {
 				printf("Usage: jumpnbump [OPTION]...\n");
 				printf("\n");
+				printf("  -h                       this help\n");
+				printf("  -v                       print version\n");
 				printf("  -dat level.dat           play a different level\n");
 				printf("  -port port               define listen port\n");
 				printf("  -net player host rport   define network players\n");
