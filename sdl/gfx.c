@@ -388,21 +388,21 @@ int Init_2xSaI (unsigned int BitFormat)
 {
     if (BitFormat == 565)
     {
-	colorMask = SDL_SwapLE32(0xF7DEF7DE);
-	lowPixelMask = SDL_SwapLE32(0x08210821);
-	qcolorMask = SDL_SwapLE32(0xE79CE79C);
-	qlowpixelMask = SDL_SwapLE32(0x18631863);
-	redblueMask = SDL_SwapLE16(0xF81F);
-	greenMask = SDL_SwapLE16(0x7E0);
+	colorMask = (0xF7DEF7DE);
+	lowPixelMask = (0x08210821);
+	qcolorMask = (0xE79CE79C);
+	qlowpixelMask = (0x18631863);
+	redblueMask = (0xF81F);
+	greenMask = (0x7E0);
     }
     else if (BitFormat == 555)
     {
-	colorMask = SDL_SwapLE32(0x7BDE7BDE);
-	lowPixelMask = SDL_SwapLE32(0x04210421);
-	qcolorMask = SDL_SwapLE32(0x739C739C);
-	qlowpixelMask = SDL_SwapLE32(0x0C630C63);
-	redblueMask = SDL_SwapLE16(0x7C1F);
-	greenMask = SDL_SwapLE16(0x3E0);
+	colorMask = (0x7BDE7BDE);
+	lowPixelMask = (0x04210421);
+	qcolorMask = (0x739C739C);
+	qlowpixelMask = (0x0C630C63);
+	redblueMask = (0x7C1F);
+	greenMask = (0x3E0);
     }
     else
     {
@@ -595,8 +595,13 @@ void Super2xSaI (unsigned char *src, unsigned int src_pitch, int src_bytes_per_p
 				product1a = color[5];
 	
 			if (dst_bytes_per_pixel == 2) {
-				*((unsigned long *) (&dst_line[0][x * 4])) = product1a | (product1b << 16);
-				*((unsigned long *) (&dst_line[1][x * 4])) = product2a | (product2b << 16);
+				unsigned long tmp;
+				//*((unsigned long *) (&dst_line[0][x * 4])) = product1a | (product1b << 16);
+				//*((unsigned long *) (&dst_line[1][x * 4])) = product2a | (product2b << 16);
+				tmp = SDL_SwapLE16(product1a) | SDL_SwapLE16(product1b) << 16;
+				*((unsigned long *) (&dst_line[0][x * 4])) = SDL_SwapLE32(tmp);
+				tmp = SDL_SwapLE16(product2a) | SDL_SwapLE16(product2b) << 16;
+				*((unsigned long *) (&dst_line[1][x * 4])) = SDL_SwapLE32(tmp);
 			} else {
 				*((unsigned long *) (&dst_line[0][x * 8])) = product1a;
 				*((unsigned long *) (&dst_line[0][x * 8 + 4])) = product1b;
