@@ -29,13 +29,6 @@
 
 #include "globals.h"
 #include <SDL_endian.h>
-#if SDL_BYTEORDER == SDL_LIL_ENDIAN
-#define SWAP16(X)    (X)
-#define SWAP32(X)    (X)
-#else
-#define SWAP16(X)    SDL_Swap16(X)
-#define SWAP32(X)    SDL_Swap32(X)
-#endif
 
 #ifdef _MSC_VER
     #include "jumpnbump32.xpm"
@@ -395,21 +388,21 @@ int Init_2xSaI (unsigned int BitFormat)
 {
     if (BitFormat == 565)
     {
-	colorMask = SWAP32(0xF7DEF7DE);
-	lowPixelMask = SWAP32(0x08210821);
-	qcolorMask = SWAP32(0xE79CE79C);
-	qlowpixelMask = SWAP32(0x18631863);
-	redblueMask = SWAP16(0xF81F);
-	greenMask = SWAP16(0x7E0);
+	colorMask = SDL_SwapLE32(0xF7DEF7DE);
+	lowPixelMask = SDL_SwapLE32(0x08210821);
+	qcolorMask = SDL_SwapLE32(0xE79CE79C);
+	qlowpixelMask = SDL_SwapLE32(0x18631863);
+	redblueMask = SDL_SwapLE16(0xF81F);
+	greenMask = SDL_SwapLE16(0x7E0);
     }
     else if (BitFormat == 555)
     {
-	colorMask = SWAP32(0x7BDE7BDE);
-	lowPixelMask = SWAP32(0x04210421);
-	qcolorMask = SWAP32(0x739C739C);
-	qlowpixelMask = SWAP32(0x0C630C63);
-	redblueMask = SWAP16(0x7C1F);
-	greenMask = SWAP16(0x3E0);
+	colorMask = SDL_SwapLE32(0x7BDE7BDE);
+	lowPixelMask = SDL_SwapLE32(0x04210421);
+	qcolorMask = SDL_SwapLE32(0x739C739C);
+	qlowpixelMask = SDL_SwapLE32(0x0C630C63);
+	redblueMask = SDL_SwapLE16(0x7C1F);
+	greenMask = SDL_SwapLE16(0x3E0);
     }
     else
     {
@@ -1240,6 +1233,7 @@ void register_background(char *pixels, char pal[768])
 			int_pal[i] = SDL_MapRGB(jnb_surface->format, (Uint8)(pal[i*3+0]<<2), (Uint8)(pal[i*3+1]<<2), (Uint8)(pal[i*3+2]<<2));
 		background = malloc(screen_pitch*screen_height);
 		assert(background);
+		Init_2xSaI(565);
 		Super2xSaI(pixels, JNB_WIDTH, 1, (unsigned char *)background, screen_pitch, bytes_per_pixel, JNB_WIDTH, JNB_HEIGHT, int_pal);
 	} else {
 		background = malloc(JNB_WIDTH*JNB_HEIGHT);
@@ -1298,6 +1292,8 @@ void recalculate_gob(gob_t *gob, char pal[768])
 	if (!scale_up)
 		return;
 
+	Init_2xSaI(565);
+
 	for (i=1; i<256; i++) {
 		int_pal[i] = SDL_MapRGB(jnb_surface->format, (Uint8)(pal[i*3+0]<<2), (Uint8)(pal[i*3+1]<<2), (Uint8)(pal[i*3+2]<<2));
 		if (int_pal[i] == 0)
@@ -1326,6 +1322,7 @@ void register_mask(void *pixels)
 			int_pal[i] = 0xffffffff;
 		mask = malloc(screen_pitch*screen_height);
 		assert(mask);
+		Init_2xSaI(565);
 		Scale2x(pixels, JNB_WIDTH, 1, (unsigned char *)mask, screen_pitch, bytes_per_pixel, JNB_WIDTH, JNB_HEIGHT, int_pal);
 	} else {
 		mask = malloc(JNB_WIDTH*JNB_HEIGHT);
