@@ -400,7 +400,9 @@ int menu(void)
 
 		update_objects();
 
+		draw_begin();
 		draw_pobs(main_info.draw_page);
+		draw_end();
 
 		dj_mix();
 
@@ -442,6 +444,7 @@ int menu(void)
 				}
 				fade_count++;
 			} else {
+				draw_begin();
 				clear_lines(0, 220, 20, 0);
 				clear_lines(1, 220, 20, 0);
 
@@ -453,6 +456,7 @@ int menu(void)
 				fade_dir = 1;
 				fade_count = 0;
 				fade_tick = 0;
+				draw_end();
 			}
 			break;
 		case 1:
@@ -490,7 +494,9 @@ int menu(void)
 
 		dj_mix();
 
+		draw_begin();
 		redraw_pob_backgrounds(main_info.draw_page);
+		draw_end();
 
 	}
 
@@ -527,8 +533,7 @@ int menu_init(void)
 	fclose(handle);
 	memset(menu_cur_pal, 0, 768);
 
-	put_block(0, 0, 0, 400, 256, background_pic);
-	put_block(1, 0, 0, 400, 256, background_pic);
+	register_background(background_pic);
 
 	for (c1 = 0; c1 < 4; c1++) {
 		player[c1].enabled = 0;

@@ -3,6 +3,7 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -225,8 +226,11 @@ void menu_deinit(void);
 
 void open_screen(void);
 void wait_vrt(int mix);
+void draw_begin(void);
+void draw_end(void);
 void flippage(int page);
-void clear_page(int page, int color);
+void draw_begin(void);
+void draw_end(void);
 void clear_lines(int page, int y, int count, int color);
 int get_pixel(int page, int x, int y);
 void set_pixel(int page, int x, int y, int color);
@@ -247,6 +251,7 @@ int pob_height(int image, char *pob_data);
 int pob_hs_x(int image, char *pob_data);
 int pob_hs_y(int image, char *pob_data);
 int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal);
+void register_background(char *pixels);
 
 /* gfx.c */
 

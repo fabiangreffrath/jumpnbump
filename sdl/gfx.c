@@ -1,18 +1,25 @@
 #include "globals.h"
 
+#define SCALE_UP
 #define JNB_BPP 8
+static int current_pal[256];
 static SDL_Surface *jnb_surface;
 static int fullscreen = 0;
 static int vinited = 0;
-static unsigned char screen_buffer[JNB_WIDTH*JNB_HEIGHT*2];
+static unsigned char screen_buffer[2][JNB_WIDTH*JNB_HEIGHT];
+static int drawing_enable = 0;
+static char *background;
+static int background_drawn;
 
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
 
 char *get_vgaptr(int page, int x, int y)
 {
-	if (page == 1)
-		return &screen_buffer[JNB_WIDTH*JNB_HEIGHT+((y * JNB_WIDTH) + x)];
-	else
-		return &screen_buffer[(y * JNB_WIDTH) + x];
+	assert(drawing_enable==1);
+
+	return &screen_buffer[page][y*JNB_WIDTH+x];
 }
 
 
@@ -26,10 +33,17 @@ void open_screen(void)
 		exit(EXIT_FAILURE);
 	}
 
+#ifdef SCALE_UP
+	if (fullscreen)
+		jnb_surface = SDL_SetVideoMode(JNB_WIDTH*2, JNB_HEIGHT*2, 16, SDL_SWSURFACE | SDL_FULLSCREEN);
+	else
+		jnb_surface = SDL_SetVideoMode(JNB_WIDTH*2, JNB_HEIGHT*2, 16, SDL_SWSURFACE);
+#else
 	if (fullscreen)
 		jnb_surface = SDL_SetVideoMode(JNB_WIDTH, JNB_HEIGHT, JNB_BPP, SDL_SWSURFACE | SDL_FULLSCREEN);
 	else
 		jnb_surface = SDL_SetVideoMode(JNB_WIDTH, JNB_HEIGHT, JNB_BPP, SDL_SWSURFACE);
+#endif
 	if (!jnb_surface) {
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
@@ -38,6 +52,8 @@ void open_screen(void)
 	SDL_ShowCursor(0);
 
 	vinited = 1;
+
+	memset(current_pal, 0, sizeof(current_pal));
 
 	return;
 }
@@ -62,6 +78,8 @@ void wait_vrt(int mix)
 
 void clear_page(int page, int color)
 {
+	assert(drawing_enable==1);
+
 	memset((void *) get_vgaptr(page, 0, 0), color, JNB_WIDTH * JNB_HEIGHT);
 }
 
@@ -69,6 +87,8 @@ void clear_page(int page, int color)
 void clear_lines(int page, int y, int count, int color)
 {
 	int i;
+
+	assert(drawing_enable==1);
 
 	for (i=0; i<count; i++)
 		if ((i+y)<JNB_HEIGHT)
@@ -78,13 +98,273 @@ void clear_lines(int page, int y, int count, int color)
 
 int get_pixel(int page, int x, int y)
 {
+	assert(drawing_enable==1);
+
 	return *(char *) get_vgaptr(page, x, y);
 }
 
 
 void set_pixel(int page, int x, int y, int color)
 {
+	assert(drawing_enable==1);
+
 	*(char *) get_vgaptr(page, x, y) = color;
+}
+
+
+static uint32 colorMask = 0xF7DEF7DE;
+static uint32 lowPixelMask = 0x08210821;
+static uint32 qcolorMask = 0xE79CE79C;
+static uint32 qlowpixelMask = 0x18631863;
+static uint32 redblueMask = 0xF81F;
+static uint32 greenMask = 0x7E0;
+
+int Init_2xSaI (uint32 BitFormat)
+{
+    if (BitFormat == 565)
+    {
+	colorMask = 0xF7DEF7DE;
+	lowPixelMask = 0x08210821;
+	qcolorMask = 0xE79CE79C;
+	qlowpixelMask = 0x18631863;
+	redblueMask = 0xF81F;
+	greenMask = 0x7E0;
+    }
+    else if (BitFormat == 555)
+    {
+	colorMask = 0x7BDE7BDE;
+	lowPixelMask = 0x04210421;
+	qcolorMask = 0x739C739C;
+	qlowpixelMask = 0x0C630C63;
+	redblueMask = 0x7C1F;
+	greenMask = 0x3E0;
+    }
+    else
+    {
+	return 0;
+    }
+
+#ifdef MMX
+    Init_2xSaIMMX (BitFormat);
+#endif
+
+    return 1;
+}
+
+
+#define GET_RESULT(A, B, C, D) ((A != C || A != D) - (B != C || B != D))
+
+#define INTERPOLATE(A, B) (((A & colorMask) >> 1) + ((B & colorMask) >> 1) + (A & B & lowPixelMask))
+
+#define Q_INTERPOLATE(A, B, C, D) ((A & qcolorMask) >> 2) + ((B & qcolorMask) >> 2) + ((C & qcolorMask) >> 2) + ((D & qcolorMask) >> 2) \
+	+ ((((A & qlowpixelMask) + (B & qlowpixelMask) + (C & qlowpixelMask) + (D & qlowpixelMask)) >> 2) & qlowpixelMask)
+
+#define GET_COLOR(x) (current_pal[(x)])
+
+
+void Super2xSaI2 (uint8 *src, uint32 src_pitch, int src_bytes_per_pixel,
+		 uint8 *dst, uint32 dst_pitch, int dst_bytes_per_pixel,
+		 int width, int height)
+{
+	unsigned char *src_line[4];
+	unsigned char *dst_line[2];
+	int x, y;
+	unsigned long color[16];
+
+	/* Point to the first 3 lines. */
+	src_line[0] = src;
+	src_line[1] = src;
+	src_line[2] = src + src_pitch;
+	src_line[3] = src + (src_pitch * 2);
+	
+	dst_line[0] = dst;
+	dst_line[1] = dst + dst_pitch;
+	
+	x = 0, y = 0;
+	
+	if (src_bytes_per_pixel == 1) {
+		unsigned char *sbp;
+		sbp = src_line[0];
+		color[0] = GET_COLOR(*sbp);       color[1] = color[0];   color[2] = color[0];    color[3] = color[0];
+		color[4] = color[0];   color[5] = color[0];   color[6] = GET_COLOR(*(sbp + 1));  color[7] = GET_COLOR(*(sbp + 2));
+		sbp = src_line[2];
+		color[8] = GET_COLOR(*sbp);     color[9] = color[8];     color[10] = GET_COLOR(*(sbp + 1)); color[11] = GET_COLOR(*(sbp + 2));
+		sbp = src_line[3];
+		color[12] = GET_COLOR(*sbp);    color[13] = color[12];   color[14] = GET_COLOR(*(sbp + 1)); color[15] = GET_COLOR(*(sbp + 2));
+	} else if (src_bytes_per_pixel == 2) {
+		unsigned short *sbp;
+		sbp = (unsigned short*)src_line[0];
+		color[0] = *sbp;       color[1] = color[0];   color[2] = color[0];    color[3] = color[0];
+		color[4] = color[0];   color[5] = color[0];   color[6] = *(sbp + 1);  color[7] = *(sbp + 2);
+		sbp = (unsigned short*)src_line[2];
+		color[8] = *sbp;     color[9] = color[8];     color[10] = *(sbp + 1); color[11] = *(sbp + 2);
+		sbp = (unsigned short*)src_line[3];
+		color[12] = *sbp;    color[13] = color[12];   color[14] = *(sbp + 1); color[15] = *(sbp + 2);
+	} else {
+		unsigned long *lbp;
+		lbp = (unsigned long*)src_line[0];
+		color[0] = *lbp;       color[1] = color[0];   color[2] = color[0];    color[3] = color[0];
+		color[4] = color[0];   color[5] = color[0];   color[6] = *(lbp + 1);  color[7] = *(lbp + 2);
+		lbp = (unsigned long*)src_line[2];
+		color[8] = *lbp;     color[9] = color[8];     color[10] = *(lbp + 1); color[11] = *(lbp + 2);
+		lbp = (unsigned long*)src_line[3];
+		color[12] = *lbp;    color[13] = color[12];   color[14] = *(lbp + 1); color[15] = *(lbp + 2);
+	}
+
+	for (y = 0; y < height; y++) {
+	
+		/* Todo: x = width - 2, x = width - 1 */
+		
+		for (x = 0; x < width; x++) {
+			unsigned long product1a, product1b, product2a, product2b;
+
+//---------------------------------------  B0 B1 B2 B3    0  1  2  3
+//                                         4  5* 6  S2 -> 4  5* 6  7
+//                                         1  2  3  S1    8  9 10 11
+//                                         A0 A1 A2 A3   12 13 14 15
+//--------------------------------------
+			if (color[9] == color[6] && color[5] != color[10]) {
+				product2b = color[9];
+				product1b = product2b;
+			}
+			else if (color[5] == color[10] && color[9] != color[6]) {
+				product2b = color[5];
+				product1b = product2b;
+			}
+			else if (color[5] == color[10] && color[9] == color[6]) {
+				int r = 0;
+
+				r += GET_RESULT(color[6], color[5], color[8], color[13]);
+				r += GET_RESULT(color[6], color[5], color[4], color[1]);
+				r += GET_RESULT(color[6], color[5], color[14], color[11]);
+				r += GET_RESULT(color[6], color[5], color[2], color[7]);
+
+				if (r > 0)
+					product1b = color[6];
+				else if (r < 0)
+					product1b = color[5];
+				else
+					product1b = INTERPOLATE(color[5], color[6]);
+					
+				product2b = product1b;
+
+			}
+			else {
+				if (color[6] == color[10] && color[10] == color[13] && color[9] != color[14] && color[10] != color[12])
+					product2b = Q_INTERPOLATE(color[10], color[10], color[10], color[9]);
+				else if (color[5] == color[9] && color[9] == color[14] && color[13] != color[10] && color[9] != color[15])
+					product2b = Q_INTERPOLATE(color[9], color[9], color[9], color[10]);
+				else
+					product2b = INTERPOLATE(color[9], color[10]);
+
+				if (color[6] == color[10] && color[6] == color[1] && color[5] != color[2] && color[6] != color[0])
+					product1b = Q_INTERPOLATE(color[6], color[6], color[6], color[5]);
+				else if (color[5] == color[9] && color[5] == color[2] && color[1] != color[6] && color[5] != color[3])
+					product1b = Q_INTERPOLATE(color[6], color[5], color[5], color[5]);
+				else
+					product1b = INTERPOLATE(color[5], color[6]);
+			}
+
+			if (color[5] == color[10] && color[9] != color[6] && color[4] == color[5] && color[5] != color[14])
+				product2a = INTERPOLATE(color[9], color[5]);
+			else if (color[5] == color[8] && color[6] == color[5] && color[4] != color[9] && color[5] != color[12])
+				product2a = INTERPOLATE(color[9], color[5]);
+			else
+				product2a = color[9];
+
+			if (color[9] == color[6] && color[5] != color[10] && color[8] == color[9] && color[9] != color[2])
+				product1a = INTERPOLATE(color[9], color[5]);
+			else if (color[4] == color[9] && color[10] == color[9] && color[8] != color[5] && color[9] != color[0])
+				product1a = INTERPOLATE(color[9], color[5]);
+			else
+				product1a = color[5];
+	
+			if (dst_bytes_per_pixel == 2) {
+				*((unsigned long *) (&dst_line[0][x * 4])) = product1a | (product1b << 16);
+				*((unsigned long *) (&dst_line[1][x * 4])) = product2a | (product2b << 16);
+			} else {
+				*((unsigned long *) (&dst_line[0][x * 8])) = product1a;
+				*((unsigned long *) (&dst_line[0][x * 8 + 4])) = product1b;
+				*((unsigned long *) (&dst_line[1][x * 8])) = product2a;
+				*((unsigned long *) (&dst_line[1][x * 8 + 4])) = product2b;
+			}
+			
+			/* Move color matrix forward */
+			color[0] = color[1]; color[4] = color[5]; color[8] = color[9];   color[12] = color[13];
+			color[1] = color[2]; color[5] = color[6]; color[9] = color[10];  color[13] = color[14];
+			color[2] = color[3]; color[6] = color[7]; color[10] = color[11]; color[14] = color[15];
+			
+			if (x < width - 3) {
+				x+=3;
+				if (src_bytes_per_pixel == 1) {
+					color[3] = GET_COLOR(*(((unsigned char*)src_line[0]) + x));
+					color[7] = GET_COLOR(*(((unsigned char*)src_line[1]) + x));
+					color[11] = GET_COLOR(*(((unsigned char*)src_line[2]) + x));
+					color[15] = GET_COLOR(*(((unsigned char*)src_line[3]) + x));
+				} else if (src_bytes_per_pixel == 2) {
+					color[3] = *(((unsigned short*)src_line[0]) + x);					
+					color[7] = *(((unsigned short*)src_line[1]) + x);
+					color[11] = *(((unsigned short*)src_line[2]) + x);
+					color[15] = *(((unsigned short*)src_line[3]) + x);
+				} else {
+					color[3] = *(((unsigned long*)src_line[0]) + x);
+					color[7] = *(((unsigned long*)src_line[1]) + x);
+					color[11] = *(((unsigned long*)src_line[2]) + x);
+					color[15] = *(((unsigned long*)src_line[3]) + x);
+				}
+				x-=3;
+			}
+		}
+
+		/* We're done with one line, so we shift the source lines up */
+		src_line[0] = src_line[1];
+		src_line[1] = src_line[2];
+		src_line[2] = src_line[3];		
+
+		/* Read next line */
+		if (y + 3 >= height)
+			src_line[3] = src_line[2];
+		else
+			src_line[3] = src_line[2] + src_pitch;
+			
+		/* Then shift the color matrix up */
+		if (src_bytes_per_pixel == 1) {
+			unsigned char *sbp;
+			sbp = src_line[0];
+			color[0] = GET_COLOR(*sbp);     color[1] = color[0];    color[2] = GET_COLOR(*(sbp + 1));  color[3] = GET_COLOR(*(sbp + 2));
+			sbp = src_line[1];
+			color[4] = GET_COLOR(*sbp);     color[5] = color[4];    color[6] = GET_COLOR(*(sbp + 1));  color[7] = GET_COLOR(*(sbp + 2));
+			sbp = src_line[2];
+			color[8] = GET_COLOR(*sbp);     color[9] = color[8];    color[10] = GET_COLOR(*(sbp + 1)); color[11] = GET_COLOR(*(sbp + 2));
+			sbp = src_line[3];
+			color[12] = GET_COLOR(*sbp);    color[13] = color[12];  color[14] = GET_COLOR(*(sbp + 1)); color[15] = GET_COLOR(*(sbp + 2));
+		} else if (src_bytes_per_pixel == 2) {
+			unsigned short *sbp;
+			sbp = (unsigned short*)src_line[0];
+			color[0] = *sbp;     color[1] = color[0];    color[2] = *(sbp + 1);  color[3] = *(sbp + 2);
+			sbp = (unsigned short*)src_line[1];
+			color[4] = *sbp;     color[5] = color[4];    color[6] = *(sbp + 1);  color[7] = *(sbp + 2);
+			sbp = (unsigned short*)src_line[2];
+			color[8] = *sbp;     color[9] = color[9];    color[10] = *(sbp + 1); color[11] = *(sbp + 2);
+			sbp = (unsigned short*)src_line[3];
+			color[12] = *sbp;    color[13] = color[12];  color[14] = *(sbp + 1); color[15] = *(sbp + 2);
+		} else {
+			unsigned long *lbp;
+			lbp = (unsigned long*)src_line[0];
+			color[0] = *lbp;     color[1] = color[0];    color[2] = *(lbp + 1);  color[3] = *(lbp + 2);
+			lbp = (unsigned long*)src_line[1];
+			color[4] = *lbp;     color[5] = color[4];    color[6] = *(lbp + 1);  color[7] = *(lbp + 2);
+			lbp = (unsigned long*)src_line[2];
+			color[8] = *lbp;     color[9] = color[9];    color[10] = *(lbp + 1); color[11] = *(lbp + 2);
+			lbp = (unsigned long*)src_line[3];
+			color[12] = *lbp;    color[13] = color[12];  color[14] = *(lbp + 1); color[15] = *(lbp + 2);
+		}
+		
+		if (y < height - 1) {
+			dst_line[0] += dst_pitch * 2;
+			dst_line[1] += dst_pitch * 2;
+		}
+	}
 }
 
 
@@ -95,22 +375,50 @@ void flippage(int page)
 	char *src;
 	char *dest;
 
+	assert(drawing_enable==0);
+
 	SDL_LockSurface(jnb_surface);
         dest=(char *)jnb_surface->pixels;
-	if (page == 1)
-		src=&screen_buffer[JNB_WIDTH*JNB_HEIGHT];
-	else
-		src=&screen_buffer[0];
+	src=screen_buffer[page];
+#ifdef SCALE_UP
+	Super2xSaI2(src, JNB_WIDTH, 1, dest, jnb_surface->pitch, 2, JNB_WIDTH, JNB_HEIGHT);
+#else
         w=(jnb_surface->clip_rect.w>JNB_WIDTH)?(JNB_WIDTH):(jnb_surface->clip_rect.w);
         h=(jnb_surface->clip_rect.h>JNB_HEIGHT)?(JNB_HEIGHT):(jnb_surface->clip_rect.h);
-        for (; h>0; h--)
-        {
+        for (; h>0; h--) {
 		memcpy(dest,src,w);
 		dest+=jnb_surface->pitch;
 		src+=JNB_WIDTH;
         }
+#endif
         SDL_UnlockSurface(jnb_surface);
 	SDL_Flip(jnb_surface);
+}
+
+
+void draw_begin(void)
+{
+	assert(drawing_enable==0);
+
+	drawing_enable = 1;
+	if (background_drawn == 0) {
+		if (background) {
+			put_block(0, 0, 0, JNB_WIDTH, JNB_HEIGHT, background);
+			put_block(1, 0, 0, JNB_WIDTH, JNB_HEIGHT, background);
+		} else {
+			clear_page(0, 0);
+			clear_page(1, 0);
+		}
+		background_drawn = 1;
+	}
+}
+
+
+void draw_end(void)
+{
+	assert(drawing_enable==1);
+
+	drawing_enable = 0;
 }
 
 
@@ -119,12 +427,17 @@ void setpalette(int index, int count, char *palette)
 	SDL_Color colors[256];
 	int i;
 
+	assert(drawing_enable==0);
+
 	for (i = 0; i < count; i++) {
-		colors[i].r = palette[i * 3 + 0] << 2;
-		colors[i].g = palette[i * 3 + 1] << 2;
-		colors[i].b = palette[i * 3 + 2] << 2;
+		colors[i+index].r = palette[i * 3 + 0] << 2;
+		colors[i+index].g = palette[i * 3 + 1] << 2;
+		colors[i+index].b = palette[i * 3 + 2] << 2;
+		current_pal[i+index] = SDL_MapRGB(jnb_surface->format, colors[i+index].r, colors[i+index].g, colors[i+index].b);
 	}
-	SDL_SetColors(jnb_surface, colors, index, count);
+#ifndef SCALE_UP
+	SDL_SetColors(jnb_surface, &colors[index], index, count);
+#endif
 }
 
 
@@ -133,12 +446,17 @@ void fillpalette(int red, int green, int blue)
 	SDL_Color colors[256];
 	int i;
 
+	assert(drawing_enable==0);
+
 	for (i = 0; i < 256; i++) {
 		colors[i].r = red << 2;
 		colors[i].g = green << 2;
 		colors[i].b = blue << 2;
+		current_pal[i] = SDL_MapRGB(jnb_surface->format, colors[i].r, colors[i].g, colors[i].b);
 	}
+#ifndef SCALE_UP
 	SDL_SetColors(jnb_surface, colors, 0, 256);
+#endif
 }
 
 
@@ -146,6 +464,8 @@ void get_block(int page, int x, int y, int width, int height, char *buffer)
 {
 	short w, h;
 	char *buffer_ptr, *vga_ptr;
+
+	assert(drawing_enable==1);
 
 	if (x < 0)
 		x = 0;
@@ -178,6 +498,8 @@ void put_block(int page, int x, int y, int width, int height, char *buffer)
 	short w, h;
 	char *vga_ptr, *buffer_ptr;
 
+	assert(drawing_enable==1);
+
 	if (x < 0)
 		x = 0;
 	if (y < 0)
@@ -207,6 +529,8 @@ void put_text(int page, int x, int y, char *text, int align)
 	int width;
 	int cur_x;
 	int image;
+
+	assert(drawing_enable==1);
 
 	if (text == NULL || strlen(text) == 0)
 		return;
@@ -338,6 +662,8 @@ void put_pob(int page, int x, int y, int image, char *pob_data, int mask, char *
 	long width, height;
 	long draw_width, draw_height;
 	char colour;
+
+	assert(drawing_enable==1);
 
 	if (image < 0 || image >= *(short *) (pob_data))
 		return;
@@ -540,16 +866,8 @@ int read_pcx(FILE * handle, char *buffer, int buf_len, char *pal)
 }
 
 
-#ifndef _MSC_VER
-int filelength(int handle)
+void register_background(char *pixels)
 {
-	struct stat buf;
-
-	if (fstat(handle, &buf) == -1) {
-		perror("filelength");
-		exit(EXIT_FAILURE);
-	}
-
-	return buf.st_size;
+	background = pixels;
+	background_drawn = 0;
 }
-#endif

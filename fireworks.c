@@ -21,8 +21,7 @@ void fireworks(void)
 		char col, back[2];
 	} stars[300];
 
-	clear_page(0, 0);
-	clear_page(1, 0);
+	register_background(NULL);
 
 	if ((handle = dat_open("level.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
@@ -37,8 +36,14 @@ void fireworks(void)
 
 	fillpalette(0, 0, 0);
 
-	for (c2 = 193; c2 < 256; c2++)
+	draw_begin();
+
+	for (c2 = 193; c2 < 256; c2++) {
 		clear_lines(0, c2, 1, (c2 - 192) >> 2);
+		clear_lines(1, c2, 1, (c2 - 192) >> 2);
+	}
+
+	draw_end();
 
 	setpalette(0, 256, pal);
 
@@ -61,6 +66,7 @@ void fireworks(void)
 	rabbits[0].frame_tick = 0;
 	rabbits[0].image = player_anims[rabbits[0].anim].frame[rabbits[0].frame].image + rabbits[0].colour * 18 + rabbits[0].direction * 9;
 
+	draw_begin();
 	for (c1 = 0; c1 < 300; c1++) {
 		s1 = rnd(400);
 		s2 = rnd(256);
@@ -70,6 +76,7 @@ void fireworks(void)
 		stars[c1].col = s3;
 		stars[c1].back[0] = stars[c1].back[1] = get_pixel(0, s1, s2);
 	}
+	draw_end();
 
 	dj_set_nosound(0);
 
@@ -172,6 +179,8 @@ void fireworks(void)
 
 		update_objects();
 
+		draw_begin();
+
 		for (c1 = 0; c1 < 300; c1++) {
 			stars[c1].back[main_info.draw_page] = get_pixel(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16);
 			set_pixel(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16, stars[c1].col);
@@ -180,6 +189,8 @@ void fireworks(void)
 		dj_mix();
 
 		draw_pobs(main_info.draw_page);
+		
+		draw_end();
 
 		main_info.draw_page ^= 1;
 		main_info.view_page ^= 1;
@@ -187,6 +198,8 @@ void fireworks(void)
 		flippage(main_info.view_page);
 
 		wait_vrt(1);
+
+		draw_begin();
 
 		redraw_pob_backgrounds(main_info.draw_page);
 
@@ -196,6 +209,8 @@ void fireworks(void)
 		for (c1 = 299; c1 >= 0; c1--) {
 			set_pixel(main_info.draw_page, stars[c1].old_x >> 16, stars[c1].old_y >> 16, stars[c1].back[main_info.draw_page]);
 		}
+
+		draw_end();
 
 	}
 

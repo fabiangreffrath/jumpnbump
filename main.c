@@ -208,8 +208,7 @@ int main(int argc, char *argv[])
 		setpalette(0, 256, cur_pal);
 
 		flippage(1);
-		put_block(1, 0, 0, 400, 256, background_pic);
-		put_block(0, 0, 0, 400, 256, background_pic);
+		register_background(background_pic);
 		flippage(0);
 
 		s1 = rnd(250) + 50;
@@ -581,11 +580,15 @@ int main(int argc, char *argv[])
 				}
 			}
 
+			draw_begin();
+
 			draw_pobs(main_info.draw_page);
 
 			dj_mix();
 
 			draw_flies(main_info.draw_page);
+
+			draw_end();
 
 			if (mod_fade_direction == 1) {
 				if (mod_vol < 30) {
@@ -634,11 +637,15 @@ int main(int argc, char *argv[])
 			if (fade_flag == 1)
 				setpalette(0, 256, cur_pal);
 
+			draw_begin();
+
 			redraw_flies_background(main_info.draw_page);
 
 			redraw_pob_backgrounds(main_info.draw_page);
 
 			draw_leftovers(main_info.draw_page);
+
+			draw_end();
 
 			intr_sysupdate();
 
@@ -653,7 +660,9 @@ int main(int argc, char *argv[])
 
 		memset(mask_pic, 0, 102400L);
 
-		clear_page(main_info.view_page, 0);
+		register_background(NULL);
+
+		draw_begin();
 
 		put_text(main_info.view_page, 100, 50, "DOTT", 2);
 		put_text(main_info.view_page, 160, 50, "JIFFY", 2);
@@ -677,6 +686,8 @@ int main(int argc, char *argv[])
 		}
 
 		put_text(main_info.view_page, 200, 230, "Press ESC to continue", 2);
+
+		draw_end();
 
 		flippage(main_info.view_page);
 
@@ -712,6 +723,7 @@ int main(int argc, char *argv[])
 			intr_sysupdate();
 			wait_vrt(0);
 			setpalette(0, 256, cur_pal);
+			flippage(main_info.view_page);
 		}
 		while (key_pressed(1) == 1) {
 			dj_mix();
@@ -730,6 +742,7 @@ int main(int argc, char *argv[])
 			dj_mix();
 			wait_vrt(0);
 			setpalette(0, 256, cur_pal);
+			flippage(main_info.view_page);
 		}
 
 		fillpalette(0, 0, 0);
@@ -1993,7 +2006,7 @@ int init_program(int argc, char *argv[], char *pal)
 		if (calib_joy(0) != 0)
 			load_flag = 1;
 		else {
-			clear_page(1, 0);
+			register_background(NULL);
 
 			main_info.view_page = 1;
 			flippage(1);
@@ -2009,7 +2022,7 @@ int init_program(int argc, char *argv[], char *pal)
 			if (calib_joy(1) != 0)
 				load_flag = 1;
 			else {
-				clear_page(0, 0);
+				register_background(NULL);
 				flippage(0);
 
 				wait_vrt(0);
@@ -2218,6 +2231,22 @@ int dat_filelen(char *file_name, char *dat_name)
 	fclose(handle);
 	return 0;
 }
+
+
+#ifndef _MSC_VER
+int filelength(int handle)
+{
+	struct stat buf;
+
+	if (fstat(handle, &buf) == -1) {
+		perror("filelength");
+		exit(EXIT_FAILURE);
+	}
+
+	return buf.st_size;
+}
+#endif
+
 
 void write_calib_data(void)
 {
