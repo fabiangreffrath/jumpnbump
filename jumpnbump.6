@@ -1,8 +1,8 @@
-.TH jumpnbump 6 "August 8th, 2002"
+.TH jumpnbump 6 "August 25th, 2002"
 .SH NAME
 jumpnbump \- Cute multiplayer platform game with bunnies
 .SH SYNOPSIS
-jumpnbump \fR[\fB-dat \fIlevelname\fR] [\fB-port \fIport \fB-net \fIplayer hostname rport\fR] [\fB-fireworks\fR] [\fB-fullscreen\fR] [\fB-nosound\fR] [\fB-musicnosound\fR] [\fB-nogore\fR] [\fB-mirror\fR] [\fB-scaleup\fR] [\fB-v\fR] [\fB-h\fR]
+jumpnbump \fR[\fB-dat \fIlevelname\fR] [\fB-port \fIport \fB-net \fIplayer hostname rport\fR] [\fB-fireworks\fR] [\fB-fullscreen\fR] [\fB-nosound\fR] [\fB-musicnosound\fR] [\fB-nogore\fR] [\fB-noflies\fR] [\fB-mirror\fR] [\fB-scaleup\fR] [\fB-v\fR] [\fB-h\fR]
 .SH DESCRIPTION
 You, as a bunny, have to jump on your opponents to make them
 explode. It's a true multiplayer game, you can't play this alone.
@@ -27,6 +27,8 @@ Run jump'n'bump without sound.
 Run jump'n'bump with music but no sound effects.
 .IP "-nogore"
 Play without blood, familymode.
+.IP "-noflies"
+Disable flies.
 .IP "-mirror"
 Play with mirrored level.
 .IP "-scaleup"
@@ -34,7 +36,7 @@ Play with doublesize resolution (800x512).
 .IP "-h"
 Print help.
 .IP "-v"
-Print version.
+Print version, compile time and if network code is compiled in.
 .SH USAGE
 The goal of the game is to jump on the other players. Each rabbit has
 three control keys.
@@ -119,4 +121,5 @@ This manual page was written for the Debian GNU/Linux distribution because
 the original program does not have a manual page.
 .PP
 This manual page was written by Joe Wreschnig <piman@sacredchao.net>, for the
-Debian GNU/Linux system (but may be used by others).
+Debian GNU/Linux system (but may be used by others). The manual page is kept
+up to date by Gürkan Sengün <gurkan@linuks.mine.nu>.
