@@ -62,7 +62,7 @@ struct {
 	char joy_enabled, mouse_enabled, num_mouse_buttons;
 	char no_sound, no_gore, fireworks;
 	char error_str[256];
-  char draw_page, view_page;
+	char draw_page, view_page;
 	struct {
 		int num_pobs;
 		struct {
@@ -80,28 +80,28 @@ struct {
 	int bumps;
 	int bumped[4];
 	int x, y;
-  int x_add, y_add;
-  char direction, jump_ready, jump_abort, in_water;
-  int anim, frame, frame_tick, image;
+	int x_add, y_add;
+	char direction, jump_ready, jump_abort, in_water;
+	int anim, frame, frame_tick, image;
 } player[4];
 
 struct {
 	int num_frames;
-  int restart_frame;
-  struct {
-  	int image;
-    int ticks;
-  } frame[4];
+	int restart_frame;
+	struct {
+		int image;
+		int ticks;
+	} frame[4];
 } player_anims[7];
 
 struct {
 	char used, type;
 	int x, y;
-  int x_add, y_add;
+	int x_add, y_add;
 	int x_acc, y_acc;
-  int anim;
-  int frame, ticks;
-  int image;
+	int anim;
+	int frame, ticks;
+	int image;
 } objects[300];
 
 struct {
@@ -164,8 +164,10 @@ void menu_deinit(void);
 
 void open_screen(void);
 void wait_vrt(void);
-//void get_block(char page, short x, short y, short width, short height, char *buffer);
-//void put_block(char page, short x, short y, short width, short height, char *buffer);
+#if 0
+void get_block(char page, short x, short y, short width, short height, char *buffer);
+void put_block(char page, short x, short y, short width, short height, char *buffer);
+#endif
 void put_text(char page, int x, int y, char *text, char align);
 void put_pob(char page, short x, short y, short image, char *pob_data, char mask, char *mask_pic);
 char pob_col(short x1, short y1, short image1, char *pob_data1, short x2, short y2, short image2, char *pob_data2);
@@ -173,7 +175,7 @@ short pob_width(short image, char *pob_data);
 short pob_height(short image, char *pob_data);
 short pob_hs_x(short image, char *pob_data);
 short pob_hs_y(short image, char *pob_data);
-char read_pcx(FILE *handle, char *buffer, long buf_len, char *pal);
+char read_pcx(FILE * handle, char *buffer, long buf_len, char *pal);
 
 // gfx.s
 
@@ -188,4 +190,3 @@ volatile char last_keys[50];
 char hook_keyb_handler(void);
 void remove_keyb_handler(void);
 char key_pressed(unsigned char key);
-
