@@ -2689,6 +2689,9 @@ void deinit_level(void)
 #ifndef PATH_MAX
 #define PATH_MAX 1024
 #endif
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 unsigned char *datafile_buffer = NULL;
 
