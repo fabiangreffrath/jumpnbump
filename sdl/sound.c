@@ -1,23 +1,229 @@
 #include "globals.h"
+#include <limits.h>
 
 static Mix_Music *current_music = (Mix_Music *) NULL;
-static struct {
-	int id;
-	Mix_Chunk *chunk;
-	int used;
+
+sfx_data sounds[NUM_SFX];
+
+static int SAMPLECOUNT = 512;
+
+#define MAX_CHANNELS	32
+
+typedef struct {
+	// loop flag
 	int loop;
-} soundsamples[128];
+	// The channel step amount...
+	unsigned int step;
+	// ... and a 0.16 bit remainder of last step.
+	unsigned int stepremainder;
+	unsigned int samplerate;
+	// The channel data pointers, start and end.
+	signed short* data;
+	signed short* startdata;
+	signed short* enddata;
+	// Hardware left and right channel volume lookup.
+	int leftvol;
+	int rightvol;
+} channel_info_t;
+
+channel_info_t channelinfo[MAX_CHANNELS];
+
+// Sample rate in samples/second
+int audio_rate = 44100;
+int global_sfx_volume = 0;
+//
+// This function loops all active (internal) sound
+//  channels, retrieves a given number of samples
+//  from the raw sound data, modifies it according
+//  to the current (internal) channel parameters,
+//  mixes the per channel samples into the given
+//  mixing buffer, and clamping it to the allowed
+//  range.
+//
+// This function currently supports only 16bit.
+//
+
+static void stopchan(int i)
+{
+	if (channelinfo[i].data) {
+		memset(&channelinfo[i], 0, sizeof(channel_info_t));
+	}
+}
+
+
+//
+// This function adds a sound to the
+//  list of currently active sounds,
+//  which is maintained as a given number
+//  (eight, usually) of internal channels.
+// Returns a handle.
+//
+int addsfx(signed short *data, int len, int loop, int samplerate, int channel)
+{
+	stopchan(channel);
+
+	// We will handle the new SFX.
+	// Set pointer to raw data.
+	channelinfo[channel].data = data;
+	channelinfo[channel].startdata = data;
+      
+	/* Set pointer to end of raw data. */
+	channelinfo[channel].enddata = channelinfo[channel].data + len - 1;
+	channelinfo[channel].samplerate = samplerate;
+
+	channelinfo[channel].loop = loop;
+	channelinfo[channel].stepremainder = 0;
+
+	return channel;
+}
+
+
+static void updateSoundParams(int slot, int volume)
+{
+	int rightvol;
+	int leftvol;
+
+	// Set stepping
+	// MWM 2000-12-24: Calculates proportion of channel samplerate
+	// to global samplerate for mixing purposes.
+	// Patched to shift left *then* divide, to minimize roundoff errors
+	// as well as to use SAMPLERATE as defined above, not to assume 11025 Hz
+	channelinfo[slot].step = ((channelinfo[slot].samplerate<<16)/audio_rate);
+
+	leftvol = volume;
+	rightvol= volume;  
+
+	// Sanity check, clamp volume.
+	if (rightvol < 0)
+		rightvol = 0;
+	if (rightvol > 127)
+		rightvol = 127;
+    
+	if (leftvol < 0)
+		leftvol = 0;
+	if (leftvol > 127)
+		leftvol = 127;
+    
+	channelinfo[slot].leftvol = leftvol;
+	channelinfo[slot].rightvol = rightvol;
+}
+
+
+void mix_sound(void *unused, Uint8 *stream, int len)
+{
+	// Mix current sound data.
+	// Data, from raw sound, for right and left.
+	register int sample;
+	register int    dl;
+	register int    dr;
+
+	// Pointers in audio stream, left, right, end.
+	signed short*   leftout;
+	signed short*   rightout;
+	signed short*   leftend;
+	// Step in stream, left and right, thus two.
+	int       step;
+
+	// Mixing channel index.
+	int       chan;
+
+	// Left and right channel
+	//  are in audio stream, alternating.
+	leftout = (signed short *)stream;
+	rightout = ((signed short *)stream)+1;
+	step = 2;
+
+	// Determine end, for left channel only
+	//  (right channel is implicit).
+	leftend = leftout + (len/4)*step;
+
+	// Mix sounds into the mixing buffer.
+	// Loop over step*SAMPLECOUNT,
+	//  that is 512 values for two channels.
+	while (leftout != leftend) {
+		// Reset left/right value. 
+		//dl = 0;
+		//dr = 0;
+		dl = *leftout * 256;
+		dr = *rightout * 256;
+
+		// Love thy L2 chache - made this a loop.
+		// Now more channels could be set at compile time
+		//  as well. Thus loop those  channels.
+		for ( chan = 0; chan < MAX_CHANNELS; chan++ ) {
+			// Check channel, if active.
+			if (channelinfo[chan].data) {
+				// Get the raw data from the channel.
+				// no filtering
+				// sample = *channelinfo[chan].data;
+				// linear filtering
+				sample = (int)(((int)channelinfo[chan].data[0] * (int)(0x10000 - channelinfo[chan].stepremainder))
+					+ ((int)channelinfo[chan].data[1] * (int)(channelinfo[chan].stepremainder))) >> 16;
+
+				// Add left and right part
+				//  for this channel (sound)
+				//  to the current data.
+				// Adjust volume accordingly.
+				dl += sample * (channelinfo[chan].leftvol * global_sfx_volume) / 128;
+				dr += sample * (channelinfo[chan].rightvol * global_sfx_volume) / 128;
+				// Increment index ???
+				channelinfo[chan].stepremainder += channelinfo[chan].step;
+				// MSB is next sample???
+				channelinfo[chan].data += channelinfo[chan].stepremainder >> 16;
+				// Limit to LSB???
+				channelinfo[chan].stepremainder &= 0xffff;
+
+				// Check whether we are done.
+				if (channelinfo[chan].data >= channelinfo[chan].enddata)
+					if (channelinfo[chan].loop) {
+						channelinfo[chan].data = channelinfo[chan].startdata;
+					} else {
+						stopchan(chan);
+					}
+			}
+		}
+  
+		// Clamp to range. Left hardware channel.
+		// Has been char instead of short.
+		// if (dl > 127) *leftout = 127;
+		// else if (dl < -128) *leftout = -128;
+		// else *leftout = dl;
+
+		dl = dl / 256;
+		dr = dr / 256;
+
+		if (dl > SHRT_MAX)
+			*leftout = SHRT_MAX;
+		else if (dl < SHRT_MIN)
+			*leftout = SHRT_MIN;
+		else
+			*leftout = (signed short)dl;
+
+		// Same for right hardware channel.
+		if (dr > SHRT_MAX)
+			*rightout = SHRT_MAX;
+		else if (dr < SHRT_MIN)
+			*rightout = SHRT_MIN;
+		else
+			*rightout = (signed short)dr;
+
+		// Increment current pointers in stream
+		leftout += step;
+		rightout += step;
+	}
+}
 
 /* misc handling */
 
 char dj_init(void)
 {
-	int audio_rate = 22050;
 	Uint16 audio_format = AUDIO_U16;
 	int audio_channels = 2;
 	int audio_buffers = 4096;
 
 	open_screen();
+
+	audio_buffers = SAMPLECOUNT*audio_rate/11025;
 
 	if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) < 0) {
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
@@ -29,26 +235,20 @@ char dj_init(void)
 
 	Mix_SetMusicCMD(getenv("MUSIC_CMD"));
 
-	memset(soundsamples, 0, sizeof(soundsamples));
+	Mix_SetPostMix(mix_sound, NULL);
+
+	memset(channelinfo, 0, sizeof(channelinfo));
+	memset(sounds, 0, sizeof(sounds));
 
 	return 0;
 }
 
 void dj_deinit(void)
 {
-//      int i;
-
-	Mix_FadeOutMusic(1500);
-	SDL_Delay(1500);
 	Mix_HaltMusic();
 	if (current_music)
 		Mix_FreeMusic(current_music);
 	current_music = NULL;
-
-/*	for(i = 0; i < 128; i++) {
-		if(soundsamples[i].used && soundsamples[i].chunk)
-			Mix_FreeChunk(soundsamples[i].chunk);
-	}*/
 
 	Mix_CloseAudio();
 
@@ -105,173 +305,68 @@ char dj_set_num_sfx_channels(char num_channels)
 
 void dj_set_sfx_volume(char volume)
 {
+	SDL_LockAudio();
+	global_sfx_volume = volume*2;
+	SDL_UnlockAudio();
 }
 
 void dj_play_sfx(unsigned char sfx_num, unsigned short freq, char volume, char panning, unsigned short delay, char channel)
 {
-	int i;
-	int used_channel;
+	int slot;
 
-	for (i = 0; i < 128; i++) {
-		if (soundsamples[i].id == sfx_num)
-			break;
-	}
-	if (i == 128)
-		return;
-	else if (!soundsamples[i].used)
-		return;
-	else if (!soundsamples[i].chunk)
-		return;
+	SDL_LockAudio();
+	if (channel<0) {
+		for (slot=0; slot<MAX_CHANNELS; slot++)
+			if (channelinfo[slot].data==NULL)
+				break;
+		if (slot>=MAX_CHANNELS)
+			return;
+	} else
+		slot = channel;
 
-	used_channel = Mix_PlayChannel(channel, soundsamples[i].chunk, soundsamples[i].loop);
-	Mix_Volume(used_channel, volume * 2);
+	addsfx((short *)sounds[sfx_num].buf, sounds[sfx_num].length, sounds[sfx_num].loop, freq, slot);
+	updateSoundParams(slot, volume*2);
+	SDL_UnlockAudio();
 }
 
-char dj_get_sfx_settings(unsigned char sfx_num, sfx_data * data)
+char dj_get_sfx_settings(unsigned char sfx_num, sfx_data *data)
 {
-	int i;
-
-	data->priority = 0;
-	data->default_freq = 0;
-	data->default_volume = 0;
-	data->length = 0;
-	data->loop = 0;
-	data->loop_start = 0;
-	data->loop_length = 0;
-	data->buf = 0;
-
-	for (i = 0; i < 128; i++) {
-		if (soundsamples[i].id == sfx_num)
-			break;
-	}
-	if (i == 128)
-		return 1;
-	else if (!soundsamples[i].used)
-		return 1;
-	else if (!soundsamples[i].chunk)
-		return 1;
-
-	data->loop = soundsamples[i].loop;
-
+	memcpy(data, &sounds[sfx_num], sizeof(sfx_data));
 	return 0;
 }
 
-char dj_set_sfx_settings(unsigned char sfx_num, sfx_data * data)
+char dj_set_sfx_settings(unsigned char sfx_num, sfx_data *data)
 {
-	int i;
-
-	for (i = 0; i < 128; i++) {
-		if (soundsamples[i].id == sfx_num)
-			break;
-	}
-	if (i == 128)
-		return 1;
-	else if (!soundsamples[i].used)
-		return 1;
-	else if (!soundsamples[i].chunk)
-		return 1;
-
-	soundsamples[i].loop = (data->loop) ? (-1) : (0);
-
+	memcpy(&sounds[sfx_num], data, sizeof(sfx_data));
 	return 0;
 }
 
 void dj_set_sfx_channel_volume(char channel_num, char volume)
 {
-	Mix_Volume(channel_num, volume * 2);
+	SDL_LockAudio();
+	updateSoundParams(channel_num, volume*2);
+	SDL_UnlockAudio();
 }
 
 void dj_stop_sfx_channel(char channel_num)
 {
-	Mix_HaltChannel(channel_num);
+	SDL_LockAudio();
+	stopchan(channel_num);
+	SDL_UnlockAudio();
 }
 
 char dj_load_sfx(FILE * file_handle, char *filename, int file_length, char sfx_type, unsigned char sfx_num)
 {
-	int i;
-	typedef struct {
-		char RIFF_ID[4];
-		long riff_size;
-		char WAVE_ID[4];
-		char FMT_ID[4];
-		long fmt_size;
-		short FormatTag;
-		unsigned short Channels;
-		unsigned long SamplesPerSec;
-		unsigned long AvgBytesPerSec;
-		unsigned short BlockAlign;
-		unsigned short BitsPerSample;
-		char DATA_ID[4];
-		long data_size;
-		unsigned char data[0];
-	} wave_file_t;
-
-	wave_file_t *wave_buffer;
-	SDL_RWops *rwop;
-
-	for (i = 0; (i < 128) && soundsamples[i].used; i++);
-	if (i == 128)
-		return -1;
-
-	wave_buffer = (wave_file_t *) malloc(sizeof(wave_file_t) + file_length);
-	memset(wave_buffer, 0, sizeof(wave_file_t) + file_length);
-
-	strncpy(wave_buffer->RIFF_ID, "RIFF", 4);
-	wave_buffer->riff_size = sizeof(wave_file_t) + file_length - 8;
-	strncpy(wave_buffer->WAVE_ID, "WAVE", 4);
-	strncpy(wave_buffer->FMT_ID, "fmt ", 4);
-	wave_buffer->fmt_size = 16;
-	wave_buffer->FormatTag = 1;
-	wave_buffer->Channels = 1;
-	switch (sfx_num) {
-	case SFX_JUMP:
-		wave_buffer->SamplesPerSec = SFX_JUMP_FREQ;
-		break;
-	case SFX_LAND:
-		wave_buffer->SamplesPerSec = SFX_LAND_FREQ;
-		break;
-	case SFX_DEATH:
-		wave_buffer->SamplesPerSec = SFX_DEATH_FREQ;
-		break;
-	case SFX_SPRING:
-		wave_buffer->SamplesPerSec = SFX_SPRING_FREQ;
-		break;
-	case SFX_SPLASH:
-		wave_buffer->SamplesPerSec = SFX_SPLASH_FREQ;
-		break;
-	case SFX_FLY:
-		wave_buffer->SamplesPerSec = SFX_FLY_FREQ;
-		break;
-	default:
-		wave_buffer->SamplesPerSec = 22050;
-		break;
-	}
-	wave_buffer->BitsPerSample = 16;
-	wave_buffer->AvgBytesPerSec = wave_buffer->SamplesPerSec * wave_buffer->Channels * (wave_buffer->BitsPerSample / 8);
-	wave_buffer->BlockAlign = 1;
-	strncpy(wave_buffer->DATA_ID, "data", 4);
-	wave_buffer->data_size = file_length;
-	fread(wave_buffer->data, file_length, 1, file_handle);
-
-	rwop = SDL_RWFromMem(wave_buffer, sizeof(wave_file_t) + file_length);
-
-	soundsamples[i].chunk = Mix_LoadWAV_RW(rwop, 1);
-	soundsamples[i].chunk->allocated = 1;
-	soundsamples[i].used = 1;
-	soundsamples[i].id = sfx_num;
-	soundsamples[i].loop = 0;
-
+	sounds[sfx_num].buf = malloc(file_length);
+	fread(sounds[sfx_num].buf, file_length, 1, file_handle);
+	sounds[sfx_num].length = file_length / 2;
 	return 0;
 }
 
 void dj_free_sfx(unsigned char sfx_num)
 {
-	if (sfx_num >= 128 || !soundsamples[sfx_num].used)
-		return;
-
-	Mix_FreeChunk(soundsamples[sfx_num].chunk);
-	soundsamples[sfx_num].chunk = (Mix_Chunk *) NULL;
-	soundsamples[sfx_num].used = 0;
+	free(sounds[sfx_num].buf);
+	memset(&sounds[sfx_num], 0, sizeof(sfx_data));
 }
 
 /* mod handling */
@@ -328,9 +423,7 @@ char dj_ready_mod(char mod_num)
 
 char dj_start_mod(void)
 {
-	Mix_VolumeMusic(64);
-
-	Mix_FadeInMusic(current_music, -1, 2000);
+	Mix_PlayMusic(current_music, -1);
 
 	return 0;
 }
@@ -342,7 +435,7 @@ void dj_stop_mod(void)
 
 void dj_set_mod_volume(char volume)
 {
-	//Mix_VolumeMusic(volume*4);
+	Mix_VolumeMusic(volume);
 }
 
 char dj_load_mod(FILE * file_handle, char *filename, char mod_num)

@@ -92,6 +92,8 @@
 #define SFX_SPLASH 4
 #define SFX_FLY 5
 
+#define NUM_SFX 6
+
 #define SFX_JUMP_FREQ 15000
 #define SFX_LAND_FREQ 15000
 #define SFX_DEATH_FREQ 20000
