@@ -411,12 +411,26 @@ void dj_stop_sfx_channel(char channel_num)
 
 char dj_load_sfx(FILE * file_handle, char *filename, int file_length, char sfx_type, unsigned char sfx_num)
 {
+	int i;
+	unsigned char *src;
+	unsigned short *dest;
+	
 	if (main_info.no_sound)
 		return 0;
 
 	sounds[sfx_num].buf = malloc(file_length);
 	fread(sounds[sfx_num].buf, 1, file_length, file_handle);
 	sounds[sfx_num].length = file_length / 2;
+	src = sounds[sfx_num].buf;
+	dest = sounds[sfx_num].buf;
+	for (i=0; i<sounds[sfx_num].length; i++)
+	{
+		unsigned short temp;
+		temp = src[0] + (src[1] << 8);
+		dest = temp;
+		src += 2;
+		dest++;
+	}
 	return 0;
 }
 

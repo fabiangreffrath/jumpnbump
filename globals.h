@@ -149,7 +149,7 @@ extern int bytes_per_pixel;
 #define	DATA_PATH "data/jumpbump.dat"
 #elif _WIN32
 #define	DATA_PATH "data/jumpbump.dat"
-#elif
+#else
 #define	DATA_PATH "/usr/share/jumpnbump/jumpbump.dat"
 #endif
 #endif

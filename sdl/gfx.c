@@ -28,6 +28,14 @@
  */
 
 #include "globals.h"
+#include "SDL_endian.h"
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+#define SWAP16(X)    (X)
+#define SWAP32(X)    (X)
+#else
+#define SWAP16(X)    SDL_Swap16(X)
+#define SWAP32(X)    SDL_Swap32(X)
+#endif
 
 int screen_width=400;
 int screen_height=256;
@@ -278,21 +286,21 @@ int Init_2xSaI (unsigned int BitFormat)
 {
     if (BitFormat == 565)
     {
-	colorMask = 0xF7DEF7DE;
-	lowPixelMask = 0x08210821;
-	qcolorMask = 0xE79CE79C;
-	qlowpixelMask = 0x18631863;
-	redblueMask = 0xF81F;
-	greenMask = 0x7E0;
+	colorMask = SWAP32(0xF7DEF7DE);
+	lowPixelMask = SWAP32(0x08210821);
+	qcolorMask = SWAP32(0xE79CE79C);
+	qlowpixelMask = SWAP32(0x18631863);
+	redblueMask = SWAP16(0xF81F);
+	greenMask = SWAP16(0x7E0);
     }
     else if (BitFormat == 555)
     {
-	colorMask = 0x7BDE7BDE;
-	lowPixelMask = 0x04210421;
-	qcolorMask = 0x739C739C;
-	qlowpixelMask = 0x0C630C63;
-	redblueMask = 0x7C1F;
-	greenMask = 0x3E0;
+	colorMask = SWAP32(0x7BDE7BDE);
+	lowPixelMask = SWAP32(0x04210421);
+	qcolorMask = SWAP32(0x739C739C);
+	qlowpixelMask = SWAP32(0x0C630C63);
+	redblueMask = SWAP16(0x7C1F);
+	greenMask = SWAP16(0x3E0);
     }
     else
     {
