@@ -1,3 +1,7 @@
+Sep 2002 - 1.
+  - a while back network code using kaillera was send to me by Gil Megidish,
+    it's not enabled, because it doesn't seem to work good enough.
+
 17 Aug 2002 - 1.39
   - added -noflies option
   - added client/server networking. Thanks to Ryan C. Gordon who did the base
