@@ -1,3 +1,6 @@
+30 Mar 2004 - 1.42
+  - added support for gzip and bzip2 packed levels.
+
 21 Mar 2003 - 1.41
   - new scaling filter which works with 8bit graphics. Removed the old scaler
     completely, now fading and everything else works in scaled up mode.

@@ -1,8 +1,9 @@
 SDL_CFLAGS = `sdl-config --cflags`
 SDL_LIBS = `sdl-config --libs`
 CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp \
-	-Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -I. $(SDL_CFLAGS) -DUSE_NET
-LIBS = -lm $(SDL_LIBS) -lSDL_mixer -lSDL_net
+	-Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -I. $(SDL_CFLAGS) \
+	-DUSE_NET -DZLIB_SUPPORT -DBZLIB_SUPPORT
+LIBS = -lm $(SDL_LIBS) -lSDL_mixer -lSDL_net -lbz2 -lz
 SDL_TARGET = sdl.a
 MODIFY_TARGET = gobpack jnbpack jnbunpack
 OBJS = fireworks.o main.o menu.o filter.o

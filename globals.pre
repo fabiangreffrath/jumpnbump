@@ -1,7 +1,7 @@
 /*
  * globals.h
  * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
- * 
+ *
  * Copyright (C) 2001 Chuck Mason <cemason@users.sourceforge.net>
  *
  * Copyright (C) 2002 Florian Schulze <crow@icculus.org>
@@ -79,7 +79,7 @@ void tellServerPlayerMoved(int playerid, int movement_type, int newval);
 #define MOVEMENT_RIGHT 2
 #define MOVEMENT_UP    3
 
-#define JNB_VERSION "1.41"
+#define JNB_VERSION "1.42"
 
 #define JNB_WIDTH 400
 #define JNB_HEIGHT 256

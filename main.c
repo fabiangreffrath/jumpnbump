@@ -29,6 +29,14 @@
 #include <unistd.h>
 #endif
 
+#ifdef BZLIB_SUPPORT
+#include "bzlib.h"
+#endif
+
+#ifdef ZLIB_SUPPORT
+#include "zlib.h"
+#endif
+
 #ifdef USE_NET
 #include "SDL_net.h"
 #endif /* USE_NET */
@@ -2629,16 +2637,70 @@ static void preread_datafile(const char *fname)
     int len;
 
 #ifdef ZLIB_SUPPORT
-    char *gzfilename = alloca(strlen(fname) + 4);
-    int bufsize = 0;
-    int bufpos = 0;
+    char *gzfilename;
     gzFile gzf;
+#endif
 
+#ifdef BZLIB_SUPPORT
+    char *bzfilename;
+    BZFILE *bzf;
+#endif
+
+#ifdef BZLIB_SUPPORT
+    bzfilename = malloc(strlen(fname) + 5);
+    strcpy(bzfilename, fname);
+    strcat(bzfilename, ".bz2");
+    bzf = BZ2_bzopen(bzfilename, "rb");
+    free(bzfilename);
+    bzfilename = NULL;
+
+    if (bzf != NULL) {
+        int bufsize = 0;
+        int bufpos = 0;
+        int br;
+        unsigned char *ptr;
+        do {
+            if (bufpos >= bufsize) {
+                bufsize += 1024 * 1024;
+                datafile_buffer = (unsigned char *) realloc(datafile_buffer, bufsize);
+                if (datafile_buffer == NULL) {
+                    perror("realloc()");
+                    exit(42);
+                }
+            }
+
+            br = BZ2_bzread(bzf, datafile_buffer + bufpos, bufsize - bufpos);
+            if (br == -1) {
+                fprintf(stderr, "gzread failed.\n");
+                exit(42);
+            }
+
+            bufpos += br;
+        } while (br>0);
+
+        /* try to shrink buffer... */
+        ptr = (unsigned char *) realloc(datafile_buffer, bufpos);
+        if (ptr != NULL)
+            datafile_buffer = ptr;
+
+        BZ2_bzclose(bzf);
+        return;
+    }
+
+    /* drop through and try for an gzip compressed or uncompressed datafile... */
+#endif
+
+#ifdef ZLIB_SUPPORT
+    gzfilename = malloc(strlen(fname) + 4);
     strcpy(gzfilename, fname);
     strcat(gzfilename, ".gz");
-
     gzf = gzopen(gzfilename, "rb");
+    free(gzfilename);
+    gzfilename = NULL;
+
     if (gzf != NULL) {
+        int bufsize = 0;
+        int bufpos = 0;
         unsigned char *ptr;
         do {
             int br;
