@@ -1,9 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#ifndef _MSC_VER
+#include <unistd.h>
+#else
+#include <io.h>
+typedef unsigned int u_int32_t;
+#endif
 
 typedef struct {
     char filename[12];
