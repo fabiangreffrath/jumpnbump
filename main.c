@@ -533,7 +533,8 @@ void tellServerPlayerMoved(int playerid, int movement_type, int newval)
 	if (is_server) {
 		processMovePacket(&pkt);
 #ifdef USE_NET
-		sendPacketToAll(&pkt);
+		if (is_net)
+			sendPacketToAll(&pkt);
 	} else {
 		sendPacketToSock(sock, &pkt);
 #endif
@@ -713,7 +714,8 @@ void serverSendKillPacket(int killer, int victim)
 	pkt.arg4 = player[victim].y;
 	processKillPacket(&pkt);
 #ifdef USE_NET
-	sendPacketToAll(&pkt);
+	if (is_net)
+		sendPacketToAll(&pkt);
 #endif
 }
 
@@ -1144,10 +1146,12 @@ int main(int argc, char *argv[])
 
 				if (key_pressed(1) == 1) {
 #ifdef USE_NET
-					if (is_server) {
-						serverTellEveryoneGoodbye();
-					} else {
-						tellServerGoodbye();
+					if (is_net) {
+						if (is_server) {
+							serverTellEveryoneGoodbye();
+						} else {
+							tellServerGoodbye();
+						}
 					}
 #endif
 					end_loop_flag = 1;
@@ -1230,11 +1234,13 @@ int main(int argc, char *argv[])
 				}
 
 #ifdef USE_NET
-				if (is_server) {
-					update_players_from_clients();
-				} else {
-					if (!update_players_from_server()) {
-						break;  /* got a BYE packet */
+				if (is_net) {
+					if (is_server) {
+						update_players_from_clients();
+					} else {
+						if (!update_players_from_server()) {
+							break;  /* got a BYE packet */
+						}
 					}
 				}
 #endif
@@ -1524,41 +1530,46 @@ int main(int argc, char *argv[])
 			}
 
 #ifdef USE_NET
-			if ( (player[client_player_num].dead_flag == 0) &&
-				(
-				 (player[client_player_num].action_left) ||
-				 (player[client_player_num].action_right) ||
-				 (player[client_player_num].action_up) ||
-				 (player[client_player_num].jump_ready == 0)
-				)
-			   ) {
-				tellServerNewPosition();
+			if (is_net) {
+				if ( (player[client_player_num].dead_flag == 0) &&
+					(
+					 (player[client_player_num].action_left) ||
+					 (player[client_player_num].action_right) ||
+					 (player[client_player_num].action_up) ||
+					 (player[client_player_num].jump_ready == 0)
+					)
+				   ) {
+					tellServerNewPosition();
+				}
 			}
 #endif
 
 			update_count = intr_sysupdate();
 
 #ifdef USE_NET
-			if ((server_said_bye) || ((fade_flag == 0) && (end_loop_flag == 1)))
-				break;
-#else
+			if (is_net) {
+				if ((server_said_bye) || ((fade_flag == 0) && (end_loop_flag == 1)))
+					break;
+			} else
+#endif
 			if ((fade_flag == 0) && (end_loop_flag == 1))
 				break;
-#endif
 		}
 
 #ifdef USE_NET
-		if (is_server) {
-			serverTellEveryoneGoodbye();
-			close(sock);
-			sock = -1;
-		} else {
-			if (!server_said_bye) {
-				tellServerGoodbye();
-			}
+		if (is_net) {
+			if (is_server) {
+				serverTellEveryoneGoodbye();
+				close(sock);
+				sock = -1;
+			} else {
+				if (!server_said_bye) {
+					tellServerGoodbye();
+				}
 
-			close(sock);
-			sock = -1;
+				close(sock);
+				sock = -1;
+			}
 		}
 #endif
 		
@@ -2110,7 +2121,8 @@ void position_player(int player_num)
 
 			if (is_server) {
 #ifdef USE_NET
-				serverSendAlive(player_num);
+				if (is_net)
+					serverSendAlive(player_num);
 #endif
 				player[player_num].dead_flag = 0;
 			}
@@ -3128,10 +3140,12 @@ int init_program(int argc, char *argv[], char *pal)
 	}
 
 #ifdef USE_NET
-	if (is_server) {
-		init_server(netarg);
-	} else {
-		connect_to_server(netarg);
+	if (is_net) {
+		if (is_server) {
+			init_server(netarg);
+		} else {
+			connect_to_server(netarg);
+		}
 	}
 #endif
 
