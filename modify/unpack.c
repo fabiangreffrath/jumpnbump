@@ -2,9 +2,9 @@
  * unpack.c
  * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
  * 
- * Copyright (C) 2001 tarzeau@space.ch
+ * Copyright (C) 2001 "timecop" <timecop@japan.co.jp>
  *
- * Copyright (C) 2002 Florian Schulze - crow@icculus.org
+ * Copyright (C) 2002 Florian Schulze <crow@icculus.org>
  *
  * Portions of this code are from the MPEG software simulation group
  * idct implementation. This code will be replaced with a new
