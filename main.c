@@ -1,7 +1,9 @@
 #include "globals.h"
 
 
+#ifdef DOS
 __dpmi_regs regs;
+#endif
 
 char *object_gobs;
 char *number_gobs;
@@ -172,16 +174,16 @@ struct {
 char pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_than_water;
 
 
-char main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	FILE *handle;
-	int c1, c2, c3, c4;
-	int l1, l2;
+	int c1, c2 = 0, c3, c4;
+	int l1;
 	int s1, s2, s3, s4;
-	int closest_player, dist, cur_dist;
+	int closest_player = 0, dist, cur_dist;
 	char end_loop_flag, fade_flag;
 	char mod_vol, sfx_vol, mod_fade_direction;
-	char *ptr1;
+	char *ptr1 = (char *) NULL;
 	char str1[100];
 
 	if (init_program(argc, argv) != 0)
@@ -197,27 +199,20 @@ char main(int argc, char *argv[])
 		if (menu() != 0)
 			deinit_program();
 
-		if (key_pressed(1) == 1)
+		if (key_pressed(1) == 1) {
 			break;
-
+		}
 		if (init_level(0) != 0) {
 			deinit_level();
 			deinit_program();
 		}
 
-		outportb(0x3c8, 0);
-		for (c1 = 0; c1 < 768; c1++)
-			outportb(0x3c9, cur_pal[c1]);
+		setpalette(0, 256, cur_pal);
 
-		for (c1 = 0; c1 < 4; c1++) {
-			outportw(0x3c4, ((1 << c1) << 8) + 0x02);
-			l1 = c1;
-			for (l2 = 0; l2 < 25600; l2++) {
-				*(char *) (0xa0000 + l2 + __djgpp_conventional_base) = *(char *) (background_pic + l1);
-				*(char *) (0xa0000 + 32768 + l2 + __djgpp_conventional_base) = *(char *) (background_pic + l1);
-				l1 += 4;
-			}
-		}
+		flippage(1);
+		put_block(1, 0, 0, 400, 256, background_pic);
+		put_block(0, 0, 0, 400, 256, background_pic);
+		flippage(0);
 
 		s1 = rnd(250) + 50;
 		s2 = rnd(150) + 50;
@@ -588,6 +583,7 @@ char main(int argc, char *argv[])
 
 			dj_mix();
 
+#ifdef DOS
 			ptr1 = (char *) (0xa0000 + ((long) main_info.draw_page << 15) - __djgpp_base_address);
 			for (c1 = 0; c1 < 4; c1++) {
 				outportw(0x3ce, (c1 << 8) + 0x04);
@@ -601,6 +597,15 @@ char main(int argc, char *argv[])
 					}
 				}
 			}
+#else
+			ptr1 = (char *) get_vgaptr(main_info.draw_page, 0, 0);
+			for (c2 = 0; c2 < NUM_FLIES; c2++) {
+				flies[c2].back[main_info.draw_page] = *(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x));
+				flies[c2].back_defined[main_info.draw_page] = 1;
+				if (mask_pic[(flies[c2].y * 400) + flies[c2].x] == 0)
+					*(char *) (ptr1 + flies[c2].y * JNB_WIDTH + (flies[c2].x)) = 0;
+			}
+#endif
 
 			if (mod_fade_direction == 1) {
 				if (mod_vol < 30) {
@@ -642,20 +647,19 @@ char main(int argc, char *argv[])
 			main_info.draw_page ^= 1;
 			main_info.view_page ^= 1;
 
-			outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
-			outportw(0x3d4, ((main_info.view_page << 15) & 0xff00) + 0x0c);
+			flippage(main_info.view_page);
 
+#ifdef DOS
 			while ((inportb(0x3da) & 8) == 0)
 				dj_mix();
 			while ((inportb(0x3da) & 8) == 8)
 				dj_mix();
+#endif
 
-			if (fade_flag == 1) {
-				outportb(0x3c8, 0);
-				for (c1 = 0; c1 < 768; c1++)
-					outportb(0x3c9, cur_pal[c1]);
-			}
+			if (fade_flag == 1)
+				setpalette(0, 256, cur_pal);
 
+#ifdef DOS
 			ptr1 = (char *) (0xa0000 + ((long) main_info.draw_page << 15) - __djgpp_base_address);
 			for (c1 = 0; c1 < 4; c1++) {
 				outportw(0x3c4, ((1 << c1) << 8) + 0x02);
@@ -664,12 +668,26 @@ char main(int argc, char *argv[])
 						*(char *) (ptr1 + flies[c2].old_y * 100 + (flies[c2].old_x >> 2)) = flies[c2].back[main_info.draw_page];
 				}
 			}
+#else
+			ptr1 = (char *) get_vgaptr(main_info.draw_page, 0, 0);
+			for (c2 = NUM_FLIES - 1; c2 >= 0; c2--) {
+				if (flies[c2].back_defined[main_info.draw_page] == 1)
+					*(char *) (ptr1 + flies[c2].old_y * JNB_WIDTH + (flies[c2].old_x)) = flies[c2].back[main_info.draw_page];
+			}
+#endif
 
 			redraw_pob_backgrounds(main_info.draw_page);
 
 			draw_leftovers(main_info.draw_page);
 
+			intr_sysupdate();
+
 		}
+
+#ifndef DOS
+		main_info.view_page = 0;
+		main_info.draw_page = 1;
+#endif
 
 		dj_stop_sfx_channel(4);
 
@@ -677,8 +695,12 @@ char main(int argc, char *argv[])
 
 		memset(mask_pic, 0, 102400L);
 
+#ifdef DOS
 		outportw(0x3c4, 0x0f02);
 		memset((char *) (0xa0000 + (long) (main_info.view_page << 15) + __djgpp_conventional_base), 0, 32768);
+#else
+		memset((void *) get_vgaptr(main_info.view_page, 0, 0), 0, JNB_WIDTH * JNB_HEIGHT);
+#endif
 		put_text(main_info.view_page, 100, 50, "DOTT", 2);
 		put_text(main_info.view_page, 160, 50, "JIFFY", 2);
 		put_text(main_info.view_page, 220, 50, "FIZZ", 2);
@@ -687,18 +709,24 @@ char main(int argc, char *argv[])
 		put_text(main_info.view_page, 40, 110, "JIFFY", 2);
 		put_text(main_info.view_page, 40, 140, "FIZZ", 2);
 		put_text(main_info.view_page, 40, 170, "MIJJI", 2);
+
 		for (c1 = 0; c1 < 4; c1++) {
 			for (c2 = 0; c2 < 4; c2++) {
 				if (c2 != c1) {
-					itoa(player[c1].bumped[c2], str1, 10);
+					sprintf(str1, "%d", player[c1].bumped[c2]);
 					put_text(main_info.view_page, 100 + c2 * 60, 80 + c1 * 30, str1, 2);
 				} else
 					put_text(main_info.view_page, 100 + c2 * 60, 80 + c1 * 30, "-", 2);
 			}
-			itoa(player[c1].bumps, str1, 10);
+			sprintf(str1, "%d", player[c1].bumps);
 			put_text(main_info.view_page, 350, 80 + c1 * 30, str1, 2);
 		}
+
 		put_text(main_info.view_page, 200, 230, "Press ESC to continue", 2);
+
+#ifndef DOS
+		flippage(main_info.view_page);
+#endif
 
 		if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
 			strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
@@ -712,9 +740,7 @@ char main(int argc, char *argv[])
 
 		memset(cur_pal, 0, 768);
 
-		outportb(0x3c8, 0);
-		for (c1 = 0; c1 < 768; c1++)
-			outportb(0x3c9, cur_pal[c1]);
+		setpalette(0, 256, cur_pal);
 
 		mod_vol = 0;
 		dj_ready_mod(MOD_SCORES);
@@ -731,13 +757,14 @@ char main(int argc, char *argv[])
 					cur_pal[c1]++;
 			}
 			dj_mix();
+			intr_sysupdate();
 			wait_vrt();
-			outportb(0x3c8, 0);
-			for (c1 = 0; c1 < 768; c1++)
-				outportb(0x3c9, cur_pal[c1]);
+			setpalette(0, 256, cur_pal);
 		}
-		while (key_pressed(1) == 1)
+		while (key_pressed(1) == 1) {
 			dj_mix();
+			intr_sysupdate();
+		}
 
 		memset(pal, 0, 768);
 
@@ -750,14 +777,10 @@ char main(int argc, char *argv[])
 			}
 			dj_mix();
 			wait_vrt();
-			outportb(0x3c8, 0);
-			for (c1 = 0; c1 < 768; c1++)
-				outportb(0x3c9, cur_pal[c1]);
+			setpalette(0, 256, cur_pal);
 		}
 
-		outportb(0x3c8, 0);
-		for (c1 = 0; c1 < 768; c1++)
-			outportb(0x3c9, 0);
+		fillpalette(0, 0, 0);
 
 		dj_set_nosound(1);
 		dj_stop_mod();
@@ -766,13 +789,14 @@ char main(int argc, char *argv[])
 
 	deinit_program();
 
+	return 0;
 }
 
 
 void steer_players(void)
 {
 	int c1, c2;
-	int s1, s2;
+	int s1 = 0, s2 = 0;
 
 	if (main_info.mouse_enabled == 1)
 		read_mouse();
@@ -785,9 +809,9 @@ void steer_players(void)
 
 			if (player[c1].dead_flag == 0) {
 
-				if ((c1 == 0 && ((key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1))) || (c1 == 1 && ((key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1))) || (c1 == 2 && ((joy.x < -512 && joy.x > 512))) || (c1 == 3 && ((mouse.but1 == 1 && mouse.but2 == 1)))) {
+				if ((c1 == 0 && ((key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1))) || (c1 == 1 && ((key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1))) || (c1 == 2 && ((key_pressed(KEY_PL3_LEFT) == 1 && key_pressed(KEY_PL3_RIGHT) == 1))) || (c1 == 3 && ((key_pressed(KEY_PL4_LEFT) == 1 && key_pressed(KEY_PL4_RIGHT) == 1)))) {
 					if (player[c1].direction == 0) {
-						if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && joy.x > 512) || (c1 == 3 && mouse.but2 == 1)) {
+						if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT) == 1 mouse.but2 == 1)) {
 							s1 = (player[c1].x >> 16);
 							s2 = (player[c1].y >> 16);
 							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -819,7 +843,7 @@ void steer_players(void)
 							}
 						}
 					} else {
-						if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && joy.x < -512) || (c1 == 3 && mouse.but1 == 1)) {
+						if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1)) {
 							s1 = (player[c1].x >> 16);
 							s2 = (player[c1].y >> 16);
 							if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -851,7 +875,7 @@ void steer_players(void)
 							}
 						}
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && joy.x < -512) || (c1 == 3 && mouse.but1 == 1)) {
+				} else if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1)) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
 					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -881,7 +905,7 @@ void steer_players(void)
 						player[c1].frame_tick = 0;
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && joy.x > 512) || (c1 == 3 && mouse.but2 == 1)) {
+				} else if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT)) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT))) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
 					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 3) {
@@ -911,7 +935,7 @@ void steer_players(void)
 						player[c1].frame_tick = 0;
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
-				} else if ((c1 == 0 && ((key_pressed(KEY_PL1_LEFT) == 0 && key_pressed(KEY_PL1_RIGHT) == 0))) || (c1 == 1 && ((key_pressed(KEY_PL2_LEFT) == 0 && key_pressed(KEY_PL2_RIGHT) == 0))) || (c1 == 2 && ((joy.x >= -512 && joy.x <= 512))) || (c1 == 3 && ((mouse.but1 == 0 && mouse.but2 == 0)))) {
+				} else if ((c1 == 0 && ((key_pressed(KEY_PL1_LEFT) == 0 && key_pressed(KEY_PL1_RIGHT) == 0))) || (c1 == 1 && ((key_pressed(KEY_PL2_LEFT) == 0 && key_pressed(KEY_PL2_RIGHT) == 0))) || (c1 == 2 && ((key_pressed(KEY_PL3_LEFT) == 0 && key_pressed(KEY_PL3_RIGHT) == 0))) || (c1 == 3 && ((key_pressed(KEY_PL4_LEFT) == 0 && key_pressed(KEY_PL4_RIGHT) == 0)))) {
 					s1 = (player[c1].x >> 16);
 					s2 = (player[c1].y >> 16);
 					if (ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 8) >> 4] == 4 || (((ban_map[(s2 + 16) >> 4][s1 >> 4] == 1 || ban_map[(s2 + 16) >> 4][s1 >> 4] == 4) && ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] != 3) || (ban_map[(s2 + 16) >> 4][s1 >> 4] != 3 && (ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 1 || ban_map[(s2 + 16) >> 4][(s1 + 15) >> 4] == 4)))) {
@@ -935,7 +959,7 @@ void steer_players(void)
 					}
 				}
 				if (jetpack == 0) {
-					if (pogostick == 1 || (player[c1].jump_ready == 1 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && joy.but1 == 1) || (c1 == 3 && ((main_info.num_mouse_buttons == 2 && mouse.but1 == 1 && mouse.but2 == 1) || (main_info.num_mouse_buttons == 3 && mouse.but3 == 1)))))) {
+					if (pogostick == 1 || (player[c1].jump_ready == 1 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 1) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 1)))) {
 						s1 = (player[c1].x >> 16);
 						s2 = (player[c1].y >> 16);
 						if (s2 < -16)
@@ -968,7 +992,7 @@ void steer_players(void)
 								dj_play_sfx(SFX_SPRING, SFX_SPRING_FREQ + rnd(2000) - 1000, 64, 0, 0, -1);
 						}
 					}
-					if (pogostick == 0 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && joy.but1 == 0) || (c1 == 3 && ((main_info.num_mouse_buttons == 2 && (mouse.but1 == 0 && mouse.but2 == 0)) || (main_info.num_mouse_buttons == 3 && mouse.but3 == 0))))) {
+					if (pogostick == 0 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0))) {
 						player[c1].jump_ready = 1;
 						if (player[c1].in_water == 0 && player[c1].y_add < 0 && player[c1].jump_abort == 1) {
 							if (bunnies_in_space == 0)
@@ -984,7 +1008,7 @@ void steer_players(void)
 
 				} else {
 
-					if (((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && joy.but1 == 1) || (c1 == 3 && mouse.but3 == 1))) {
+					if (((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 1) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 1))) {
 						player[c1].y_add -= 16384;
 						if (player[c1].y_add < -400000L)
 							player[c1].y_add = -400000L;
@@ -1230,8 +1254,12 @@ void fireworks(void)
 		char col, back[2];
 	} stars[300];
 
+#ifdef DOS
 	outportw(0x3c4, 0x0f02);
 	memset((char *) (0xa0000 - __djgpp_base_address), 0, 65535);
+#else
+	memset((char *) get_vgaptr(0, 0, 0), 0, JNB_WIDTH * JNB_HEIGHT);
+#endif
 
 	if ((handle = dat_open("level.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'level.pcx', aborting...\n");
@@ -1244,10 +1272,9 @@ void fireworks(void)
 
 	memset(ban_map, 0, sizeof(ban_map));
 
-	outportb(0x3c8, 0);
-	for (c1 = 0; c1 < 768; c1++)
-		outportb(0x3c9, 0);
+	fillpalette(0, 0, 0);
 
+#ifdef DOS
 	for (c1 = 0; c1 < 4; c1++) {
 		outportw(0x3c4, ((1 << c1) << 8) + 0x02);
 		for (c2 = 193; c2 < 256; c2++) {
@@ -1255,10 +1282,13 @@ void fireworks(void)
 			memset((void *) (0xa0000 + 32768 + c2 * 100 - __djgpp_base_address), (c2 - 192) >> 2, 100);
 		}
 	}
+#else
+	for (c2 = 193; c2 < 256; c2++) {
+		memset((void *) get_vgaptr(0, 0, c2), (c2 - 192) >> 2, 400);
+	}
+#endif
 
-	outportb(0x3c8, 0);
-	for (c1 = 0; c1 < 768; c1++)
-		outportb(0x3c9, pal[c1]);
+	setpalette(0, 256, pal);
 
 	for (c1 = 0; c1 < 20; c1++)
 		rabbits[c1].used = 0;
@@ -1286,8 +1316,12 @@ void fireworks(void)
 		stars[c1].x = stars[c1].old_x = (s1 << 16);
 		stars[c1].y = stars[c1].old_y = (s2 << 16);
 		stars[c1].col = s3;
+#ifdef DOS
 		outportw(0x3ce, ((s1 & 3) << 8) + 0x04);
 		stars[c1].back[0] = stars[c1].back[1] = *(char *) (0xa0000 + s2 * 100 + (s1 >> 2) - __djgpp_base_address);
+#else
+		stars[c1].back[0] = stars[c1].back[1] = *(char *) get_vgaptr(0, s1, s2);
+#endif
 	}
 
 	dj_set_nosound(0);
@@ -1300,6 +1334,7 @@ void fireworks(void)
 	while (key_pressed(1) == 0) {
 
 		dj_mix();
+		intr_sysupdate();
 
 		for (c1 = 0; c1 < 300; c1++) {
 			stars[c1].old_x = stars[c1].x;
@@ -1391,10 +1426,15 @@ void fireworks(void)
 		update_objects();
 
 		for (c1 = 0; c1 < 300; c1++) {
+#ifdef DOS
 			outportw(0x3ce, (((stars[c1].x >> 16) & 3) << 8) + 0x04);
 			outportw(0x3c4, ((1 << ((stars[c1].x >> 16) & 3)) << 8) + 0x02);
 			stars[c1].back[main_info.draw_page] = *(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address);
 			*(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].y >> 16) * 100 + (stars[c1].x >> 18) - __djgpp_base_address) = stars[c1].col;
+#else
+			stars[c1].back[main_info.draw_page] = *(char *) get_vgaptr(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16);
+			*(char *) get_vgaptr(main_info.draw_page, stars[c1].x >> 16, stars[c1].y >> 16) = stars[c1].col;
+#endif
 		}
 
 		dj_mix();
@@ -1403,22 +1443,34 @@ void fireworks(void)
 
 		main_info.draw_page ^= 1;
 		main_info.view_page ^= 1;
+#ifdef DOS
 		outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
 		outportw(0x3d4, ((main_info.view_page << 15) & 0xff00) + 0x0c);
+#else
+		flippage(main_info.view_page);
+#endif
 
+#ifdef DOS
 		while ((inportb(0x3da) & 8) == 0)
 			dj_mix();
 		while ((inportb(0x3da) & 8) == 8)
 			dj_mix();
+#endif
 
 		redraw_pob_backgrounds(main_info.draw_page);
 
 		dj_mix();
+		intr_sysupdate();
 
 		for (c1 = 299; c1 >= 0; c1--) {
+#ifdef DOS
 			outportw(0x3c4, ((1 << ((stars[c1].old_x >> 16) & 3)) << 8) + 0x02);
 			*(char *) (0xa0000 + ((int) main_info.draw_page << 15) + (stars[c1].old_y >> 16) * 100 + (stars[c1].old_x >> 18) - __djgpp_base_address) = stars[c1].back[main_info.draw_page];
+#else
+			*(char *) get_vgaptr(main_info.draw_page, stars[c1].old_x >> 16, stars[c1].old_y >> 16) = stars[c1].back[main_info.draw_page];
+#endif
 		}
+
 	}
 
 	dj_set_nosound(1);
@@ -1454,7 +1506,7 @@ void add_object(char type, short x, short y, long x_add, long y_add, short anim,
 void update_objects(void)
 {
 	int c1;
-	int s1;
+	int s1 = 0;
 
 	for (c1 = 0; c1 < NUM_OBJECTS; c1++) {
 		if (objects[c1].used == 1) {
@@ -1785,7 +1837,7 @@ void update_objects(void)
 }
 
 
-char add_pob(char page, short x, short y, short image, char *pob_data)
+char add_pob(int page, short x, short y, short image, char *pob_data)
 {
 
 	if (main_info.page_info[page].num_pobs >= NUM_POBS)
@@ -1802,7 +1854,7 @@ char add_pob(char page, short x, short y, short image, char *pob_data)
 }
 
 
-void draw_pobs(char page)
+void draw_pobs(int page)
 {
 	int c1;
 	int back_buf_ofs;
@@ -1819,7 +1871,7 @@ void draw_pobs(char page)
 }
 
 
-void redraw_pob_backgrounds(char page)
+void redraw_pob_backgrounds(int page)
 {
 	int c1;
 
@@ -1829,7 +1881,7 @@ void redraw_pob_backgrounds(char page)
 }
 
 
-char add_leftovers(char page, short x, short y, short image, char *pob_data)
+char add_leftovers(int page, short x, short y, short image, char *pob_data)
 {
 
 	if (leftovers.page[page].num_pobs >= NUM_LEFTOVERS)
@@ -1846,7 +1898,7 @@ char add_leftovers(char page, short x, short y, short image, char *pob_data)
 }
 
 
-void draw_leftovers(char page)
+void draw_leftovers(int page)
 {
 	int c1;
 
@@ -1952,9 +2004,9 @@ void deinit_level(void)
 
 char init_program(int argc, char *argv[])
 {
-	FILE *handle;
-	int c1, c2;
-	char load_flag;
+	FILE *handle = (FILE *) NULL;
+	int c1 = 0, c2 = 0;
+	char load_flag = 0;
 	char force2, force3;
 	int player_anim_data[] = {
 		1, 0, 0, 0x7fff, 0, 0, 0, 0, 0, 0,
@@ -1966,18 +2018,20 @@ char init_program(int argc, char *argv[])
 		1, 0, 8, 5, 0, 0, 0, 0, 0, 0
 	};
 
+#ifdef DOS
 	if (__djgpp_nearptr_enable() == 0)
 		return 1;
+#endif
 
-	srandom(time(0));
+	srand(time(NULL));
 
 	if (hook_keyb_handler() != 0)
 		return 1;
 
 	memset(&main_info, 0, sizeof(main_info));
-	main_info.joy_enabled = 1;
+	main_info.joy_enabled = 0;	/* CHANGE THIS FOR JOY */
 
-	strcpy(datfile_name, "jumpbump.dat");
+	strcpy(datfile_name, "data/jumpbump.dat");
 
 	force2 = force3 = 0;
 
@@ -1991,6 +2045,10 @@ char init_program(int argc, char *argv[])
 				main_info.joy_enabled = 0;
 			else if (stricmp(argv[c1], "-fireworks") == 0)
 				main_info.fireworks = 1;
+#ifdef USE_SDL
+			else if (stricmp(argv[c1], "-fullscreen") == 0)
+				fs_toggle();
+#endif
 			else if (stricmp(argv[c1], "-dat") == 0) {
 				if (c1 < (argc - 1)) {
 					if ((handle = fopen(argv[c1 + 1], "rb")) != NULL) {
@@ -2018,9 +2076,9 @@ char init_program(int argc, char *argv[])
 		}
 	}
 
-	if ((background_pic = malloc(102400L)) == 0)
+	if ((background_pic = malloc(102400)) == NULL)
 		return 1;
-	if ((mask_pic = malloc(102400L)) == 0)
+	if ((mask_pic = malloc(102400)) == NULL)
 		return 1;
 	memset(mask_pic, 0, 102400);
 
@@ -2196,18 +2254,18 @@ char init_program(int argc, char *argv[])
 	}
 	fclose(handle);
 
-	outportb(0x3c8, 0);
-	for (c1 = 0; c1 < 768; c1++)
-		outportb(0x3c9, pal[c1]);
+	setpalette(0, 256, pal);
 
 	if (main_info.joy_enabled == 1 && main_info.fireworks == 0) {
 		c1 = 0;
+#ifdef DOS
 		outportb(0x201, 0);
 		while (c1 < 0x7fff) {
 			if ((inportb(0x201) & 1) == 0)
 				break;
 			c1++;
 		}
+#endif
 		if (c1 != 0x7fff) {
 			main_info.joy_enabled = 1;
 			load_flag = 0;
@@ -2220,11 +2278,20 @@ char init_program(int argc, char *argv[])
 			if (calib_joy(0) != 0)
 				load_flag = 1;
 			else {
+#ifdef DOS
 				outportw(0x3c4, 0x0f02);
 				memset((char *) (0xa0000 + 32768 + __djgpp_conventional_base), 0, 32768);
+#else
+				memset((char *) get_vgaptr(1, 0, 0), 0, JNB_WIDTH * JNB_HEIGHT);
+#endif
+
 				main_info.view_page = 1;
+#ifdef DOS
 				outportw(0x3d4, (1 << 23) + 0x0d);
 				outportw(0x3d4, ((1 << 15) & 0xff00) + 0x0c);
+#else
+				flippage(main_info.view_page);
+#endif
 				wait_vrt();
 
 				put_text(1, 200, 40, "JOYSTICK CALIBRATION", 2);
@@ -2236,10 +2303,12 @@ char init_program(int argc, char *argv[])
 				if (calib_joy(1) != 0)
 					load_flag = 1;
 				else {
+#ifdef DOS
 					outportw(0x3c4, 0x0f02);
 					memset((char *) (0xa0000 + __djgpp_conventional_base), 0, 32768);
 					outportw(0x3d4, (0 << 23) + 0x0d);
 					outportw(0x3d4, ((0 << 15) & 0xff00) + 0x0c);
+#endif
 					wait_vrt();
 
 					put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
@@ -2280,7 +2349,7 @@ char init_program(int argc, char *argv[])
 			main_info.joy_enabled = 0;
 
 	}
-
+#ifdef DOS
 	regs.x.ax = 0;
 	__dpmi_int(0x33, &regs);
 	if (regs.x.ax == 0xffff) {
@@ -2291,6 +2360,7 @@ char init_program(int argc, char *argv[])
 		if (force3 == 1)
 			main_info.num_mouse_buttons = 3;
 	} else
+#endif
 		main_info.mouse_enabled = 0;
 
 	return 0;
@@ -2300,7 +2370,9 @@ char init_program(int argc, char *argv[])
 
 void deinit_program(void)
 {
+#ifdef DOS
 	__dpmi_regs regs;
+#endif
 
 	dj_stop();
 	dj_free_mod(MOD_MENU);
@@ -2329,8 +2401,13 @@ void deinit_program(void)
 
 	remove_keyb_handler();
 
+#ifdef DOS
 	regs.x.ax = 0x3;
 	__dpmi_int(0x10, &regs);
+#else
+	songquit();
+	SDL_Quit();
+#endif
 
 	if (main_info.error_str[0] != 0) {
 		printf(main_info.error_str);
@@ -2345,15 +2422,19 @@ void read_joy(void)
 {
 	int c1;
 	int x, y;
-	int s1;
+	int s1 = 0;
 	char flag;
 
 	c1 = x = y = flag = 0;
+#ifdef DOS
 	outportb(0x201, 0);
+#endif
 
 	while (1) {
 
+#ifdef DOS
 		s1 = inportb(0x201);
+#endif
 
 		if (x == 0) {
 			if ((s1 & 1) == 0)
@@ -2396,7 +2477,9 @@ void read_joy(void)
 		if (joy.y > 1024)
 			joy.y = 1024;
 
+#ifdef DOS
 		s1 = inportb(0x201);
+#endif
 		joy.but1 = (((s1 >> 4) & 1) ^ 1);
 		joy.but2 = (((s1 >> 5) & 1) ^ 1);
 	} else {
@@ -2415,12 +2498,14 @@ char calib_joy(char type)
 {
 	int c1;
 	int x, y;
-	int s1;
+	int s1 = 0;
 	int num_times;
-	char flag;
+	char flag = 0;
 
 	while (joy.but1 == 1) {
+#ifdef DOS
 		s1 = inportb(0x201);
+#endif
 		joy.but1 = (((s1 >> 4) & 1) ^ 1);
 		if (key_pressed(1) == 1) {
 			while (key_pressed(1) == 1);
@@ -2433,11 +2518,15 @@ char calib_joy(char type)
 	while (joy.but1 == 0) {
 
 		c1 = x = y = flag = 0;
+#ifdef DOS
 		outportb(0x201, 0);
+#endif
 
 		while (1) {
 
+#ifdef DOS
 			s1 = inportb(0x201);
+#endif
 
 			if (x == 0) {
 				if ((s1 & 1) == 0)
@@ -2461,7 +2550,9 @@ char calib_joy(char type)
 		joy.raw_x = x;
 		joy.raw_y = y;
 
+#ifdef DOS
 		s1 = inportb(0x201);
+#endif
 		joy.but1 = (((s1 >> 4) & 1) ^ 1);
 
 		if (num_times < 0x7fffffff)
@@ -2498,7 +2589,9 @@ char calib_joy(char type)
 		}
 
 		while (joy.but1 == 1) {
+#ifdef DOS
 			s1 = inportb(0x201);
+#endif
 			joy.but1 = (((s1 >> 4) & 1) ^ 1);
 		}
 
@@ -2512,11 +2605,13 @@ char calib_joy(char type)
 void read_mouse(void)
 {
 
+#ifdef DOS
 	regs.x.ax = 3;
 	__dpmi_int(0x33, &regs);
 	mouse.but1 = regs.x.bx & 1;
 	mouse.but2 = (regs.x.bx & 2) >> 1;
 	mouse.but3 = (regs.x.bx & 4) >> 2;
+#endif
 
 }
 
@@ -2606,11 +2701,14 @@ int dat_filelen(char *file_name, char *dat_name)
 		if (strnicmp(name, file_name, strlen(file_name)) == 0) {
 			fseek(handle, 4, SEEK_CUR);
 			len = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+
+			fclose(handle);
 			return len;
 		}
 		fseek(handle, 8, SEEK_CUR);
 	}
 
+	fclose(handle);
 	return 0;
 }
 

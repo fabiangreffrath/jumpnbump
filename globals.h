@@ -1,20 +1,50 @@
+#ifndef __GLOBALS_H
+#define __GLOBALS_H
+
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
-#include <dpmi.h>
-#include <sys/nearptr.h>
-#include <pc.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <math.h>
 #include <dj.h>
 
+#ifdef DOS
+# include <conio.h>
+# include <dpmi.h>
+# include <sys/nearptr.h>
+# include <pc.h>
+#endif
+
+#ifdef USE_SDL
+# include <sys/stat.h>
+# include <SDL/SDL.h>
+# include <SDL/SDL_mixer.h>
+#endif
+
+#ifndef USE_SDL
 #define KEY_PL1_LEFT 0xcb
 #define KEY_PL1_RIGHT	0xcd
 #define KEY_PL1_JUMP 0xc8
 #define KEY_PL2_LEFT 0x1e
 #define KEY_PL2_RIGHT	0x20
 #define KEY_PL2_JUMP 0x11
+#else
+#define KEY_PL1_LEFT SDLK_LEFT
+#define KEY_PL1_RIGHT	SDLK_RIGHT
+#define KEY_PL1_JUMP SDLK_UP
+#define KEY_PL2_LEFT SDLK_a
+#define KEY_PL2_RIGHT	SDLK_d
+#define KEY_PL2_JUMP SDLK_w
+#define KEY_PL3_LEFT SDLK_j
+#define KEY_PL3_RIGHT	SDLK_l
+#define KEY_PL3_JUMP SDLK_i
+#define KEY_PL4_LEFT SDLK_KP4
+#define KEY_PL4_RIGHT	SDLK_KP6
+#define KEY_PL4_JUMP SDLK_KP8
+#endif
 
 #define NUM_POBS 200
 #define NUM_OBJECTS 200
@@ -127,18 +157,18 @@ char *rabbit_gobs;
 char *font_gobs;
 
 
-// main.c
+/* main.c */
 
 void steer_players(void);
 void position_player(short player_num);
 void fireworks(void);
 void add_object(char type, short x, short y, long x_add, long y_add, short anim, short frame);
 void update_objects(void);
-char add_pob(int page, short x, short y, short image, char *pob_data);
-void draw_pobs(char page);
-void redraw_pob_backgrounds(char page);
-char add_leftovers(char page, short x, short y, short image, char *pob_data);
-void draw_leftovers(char page);
+char add_pob(char page, short x, short y, short image, char *pob_data);
+void draw_pobs(int page);
+void redraw_pob_backgrounds(int page);
+char add_leftovers(int page, short x, short y, short image, char *pob_data);
+void draw_leftovers(int page);
 char init_level(short level);
 void deinit_level(void);
 char init_program(int argc, char *argv[]);
@@ -153,14 +183,14 @@ int dat_filelen(char *file_name, char *dat_name);
 void write_calib_data(void);
 
 
-// menu.c
+/* menu.c */
 
 char menu(void);
 char menu_init(void);
 void menu_deinit(void);
 
 
-// gfx.c
+/* gfx.c */
 
 void open_screen(void);
 void wait_vrt(void);
@@ -177,16 +207,41 @@ short pob_hs_x(short image, char *pob_data);
 short pob_hs_y(short image, char *pob_data);
 char read_pcx(FILE * handle, char *buffer, long buf_len, char *pal);
 
-// gfx.s
+/* gfx.c */
 
 void get_block(char page, long x, long y, long width, long height, char *buffer);
 void put_block(char page, long x, long y, long width, long height, char *buffer);
 
+#ifdef LINUX
+long filelength(int handle);
+void setpalette(int index, int count, char *palette);
+void fillpalette(int red, int green, int blue);
+void flippage(long page);
+void fs_toggle();
+char *get_vgaptr(long, long, long);
+#endif
 
-// interrpt.c
+/* interrpt.c */
 
-volatile char last_keys[50];
+extern char last_keys[50];
 
 char hook_keyb_handler(void);
 void remove_keyb_handler(void);
 char key_pressed(unsigned char key);
+
+#ifdef LINUX
+char intr_sysupdate();
+#endif
+
+/* sound-linux.c */
+#ifdef LINUX
+
+void load_song(FILE *, signed int);
+void play_song();
+void update_song();
+void initsound();
+void songquit();
+
+#endif
+
+#endif

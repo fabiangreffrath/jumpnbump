@@ -1,0 +1,28 @@
+
+25 Feb 2001 - 0.69
+   initial linux port, worked fine with freebsd too (chuck mason)
+
+26 Feb 2001 - 0.69
+   made sound be played (chuck mason)
+
+03 Mar 2001 - 0.70
+   fixing fps (longislandman)
+   changing player input: 4 player at one keyboard (tarzeau)
+   pack/unpack which packs/unpacks the leveldata (timecop)
+
+?? Mar 2001 - 0.70
+   network code has been written (longislandman, jonatkins.org)
+   it werks but we won't release it until it's good for the masses,
+   for test and fun play come join #keen on irc.linux.com
+   (be sure to have one udp port open if you have a firewall,
+   and also have sdl-mixer, sdl and sdl-net)
+	       
+16 Mar 2001 - 0.70
+   did a new screenshot http://jumpbump.mine.nu/port/jumpbumprocks.jpg
+   wrote a little faq http://jumpbump.mine.nu/port/jumpbumpfaq.txt
+   put online level-selector-menu http://jumpbump.mine.nu/port/jbmenu.tcl
+   (received from philippe brochard, thank you!)
+
+20 Mar 2001 - 0.72
+   repackaged tarballs with network code jnb-net.tar.gz,
+   menusystem and unpack/pack

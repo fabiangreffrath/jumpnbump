@@ -1,6 +1,6 @@
 #include "globals.h"
 
-#define NUM_MESSAGES 24
+#define NUM_MESSAGES 25
 
 char *menu_background;
 
@@ -14,6 +14,7 @@ char message[NUM_MESSAGES][70] = {
 	"Graphics by Martin Magnusson",
 	"and Andreas Brynervall.",
 	"Music by Anders Nilsson.",
+	"Linux port by Chuck Mason.",
 	"Visit our homepage at:",
 	"http://www.algonet.se/~mattiasb",
 	"Jump 'n Bump is e-mailware.",
@@ -40,7 +41,7 @@ char menu(void)
 	int c1;
 	char esc_pressed;
 	char end_loop_flag, new_game_flag, fade_flag;
-	char mod_vol, mod_fade_direction;
+	char mod_vol = 0, mod_fade_direction = 0;
 	int cur_message;
 	int fade_dir, fade_count, fade_tick;
 	char fade_pal[48];
@@ -57,9 +58,8 @@ char menu(void)
 	dj_set_nosound(0);
 
 	memset(fade_pal, 0, 48);
-	outportb(0x3c8, 240);
-	for (c1 = 0; c1 < 48; c1++)
-		outportb(0x3c9, fade_pal[c1]);
+	setpalette(240, 16, fade_pal);
+
 	fade_dir = 0;
 	fade_count = 0;
 	fade_tick = 0;
@@ -76,6 +76,7 @@ char menu(void)
 	while (1) {
 
 		dj_mix();
+		intr_sysupdate();
 
 		if (key_pressed(1) == 1 && esc_pressed == 0) {
 			end_loop_flag = 1;
@@ -107,7 +108,7 @@ char menu(void)
 					}
 					player[c1].enabled = 1;
 				}
-				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && joy.but1 == 0) || (c1 == 3 && ((main_info.num_mouse_buttons == 3 && mouse.but3 == 0) || (main_info.num_mouse_buttons == 2 && mouse.but1 == 0 && mouse.but2 == 0)))) {
+				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0)) {
 					if (player[c1].y_add < 0) {
 						player[c1].y_add += 32768;
 						if (player[c1].y_add > 0)
@@ -143,7 +144,7 @@ char menu(void)
 							player[c1].frame_tick = 0;
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 						}
-						if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && joy.but1 == 0) || (c1 == 3 && ((main_info.num_mouse_buttons == 3 && mouse.but3 == 0) || (main_info.num_mouse_buttons == 2 && mouse.but1 == 0 && mouse.but2 == 0))))
+						if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0))
 							player[c1].jump_ready = 1;
 					}
 				}
@@ -159,7 +160,7 @@ char menu(void)
 					}
 				}
 			} else {
-				if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && joy.x < -512 && joy.x > 512) || (c1 == 3 && mouse.but1 == 1 && mouse.but2 == 1)) {
+				if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1 && key_pressed(KEY_PL4_RIGHT) == 1)) {
 					if (player[c1].direction == 1) {
 						if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 							if (player[c1].x_add > 0) {
@@ -213,7 +214,7 @@ char menu(void)
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 						}
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && joy.x < -512) || (c1 == 3 && mouse.but1 == 1)) {
+				} else if ((c1 == 0 && key_pressed(KEY_PL1_LEFT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_LEFT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_LEFT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_LEFT) == 1)) {
 					if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 						if (player[c1].x_add > 0) {
 							player[c1].x_add -= 16384;
@@ -239,7 +240,7 @@ char menu(void)
 						player[c1].frame_tick = 0;
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
-				} else if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && joy.x > 512) || (c1 == 3 && mouse.but2 == 1)) {
+				} else if ((c1 == 0 && key_pressed(KEY_PL1_RIGHT) == 1) || (c1 == 1 && key_pressed(KEY_PL2_RIGHT) == 1) || (c1 == 2 && key_pressed(KEY_PL3_RIGHT) == 1) || (c1 == 3 && key_pressed(KEY_PL4_RIGHT) == 1)) {
 					if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 						if (player[c1].x_add < 0) {
 							player[c1].x_add += 16384;
@@ -299,7 +300,7 @@ char menu(void)
 						player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
 					}
 				}
-				if (player[c1].jump_ready == 1 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && joy.but1 == 1) || (c1 == 3 && ((main_info.num_mouse_buttons == 3 && mouse.but3 == 1) || (main_info.num_mouse_buttons == 2 && mouse.but1 == 1 && mouse.but2 == 1))))) {
+				if (player[c1].jump_ready == 1 && ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 1) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 1) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 1) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 1))) {
 					if ((player[c1].x >> 16) <= (165 + c1 * 2) || (player[c1].x >> 16) >= (208 + c1 * 2)) {
 						if ((player[c1].y >> 16) >= (160 + c1 * 2)) {
 							player[c1].y_add = -280000L;
@@ -322,14 +323,14 @@ char menu(void)
 						}
 					}
 				}
-				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && joy.but1 == 0) || (c1 == 3 && ((main_info.num_mouse_buttons == 3 && mouse.but3 == 0) || (main_info.num_mouse_buttons == 2 && mouse.but1 == 0 && mouse.but2 == 0)))) {
+				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0)) {
 					if (player[c1].y_add < 0) {
 						player[c1].y_add += 32768;
 						if (player[c1].y_add > 0)
 							player[c1].y_add = 0;
 					}
 				}
-				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && joy.but1 == 0) || (c1 == 3 && ((main_info.num_mouse_buttons == 3 && mouse.but3 == 0) || (main_info.num_mouse_buttons == 2 && (mouse.but1 == 0 || mouse.but2 == 0)))))
+				if ((c1 == 0 && key_pressed(KEY_PL1_JUMP) == 0) || (c1 == 1 && key_pressed(KEY_PL2_JUMP) == 0) || (c1 == 2 && key_pressed(KEY_PL3_JUMP) == 0) || (c1 == 3 && key_pressed(KEY_PL4_JUMP) == 0))
 					player[c1].jump_ready = 1;
 				player[c1].y_add += 12288;
 				if (player[c1].y_add > 36864 && player[c1].anim != 3) {
@@ -445,9 +446,13 @@ char menu(void)
 				}
 				fade_count++;
 			} else {
+/*
 				outportw(0x3c4, 0x0f02);
 				memset((char *) (0xa0000 + 220 * 100 + __djgpp_conventional_base), 0, 2000);
 				memset((char *) (0xa0000 + 32768 + 220 * 100 + __djgpp_conventional_base), 0, 2000);
+				/* clear 5 lines at x=0,y=220 in front and backbuffer */
+				*/memset((void *) get_vgaptr(0, 0, 220), 0, 8000);
+
 				cur_message++;
 				if (cur_message >= NUM_MESSAGES)
 					cur_message -= NUM_MESSAGES;
@@ -481,23 +486,25 @@ char menu(void)
 		main_info.draw_page ^= 1;
 		main_info.view_page ^= 1;
 
+#ifndef LINUX
 		outportw(0x3d4, (main_info.view_page << 23) + 0x0d);
 		outportw(0x3d4, ((main_info.view_page << 15) & 0xff00) + 0x0c);
+#else
+		flippage(main_info.view_page);
+#endif
 
+/*
 		while ((inportb(0x3da) & 8) == 0)
 			dj_mix();
 		while ((inportb(0x3da) & 8) == 8)
 			dj_mix();
+*/
 
 		if (fade_flag != 0) {
-			outportb(0x3c8, 0);
-			for (c1 = 0; c1 < 720; c1++)
-				outportb(0x3c9, menu_cur_pal[c1]);
+			setpalette(0, 240, menu_cur_pal);
 		}
 
-		outportb(0x3c8, 240);
-		for (c1 = 0; c1 < 48; c1++)
-			outportb(0x3c9, fade_pal[c1]);
+		setpalette(240, 16, fade_pal);
 
 		dj_mix();
 
@@ -516,9 +523,7 @@ char menu_init(void)
 	FILE *handle;
 	int c1;
 
-	outportb(0x3c8, 0);
-	for (c1 = 0; c1 < 768; c1++)
-		outportb(0x3c9, 0);
+	fillpalette(0, 0, 0);
 
 	if ((handle = dat_open("menu.pcx", datfile_name, "rb")) == 0) {
 		strcpy(main_info.error_str, "Error loading 'menu.pcx', aborting...\n");
@@ -570,7 +575,5 @@ char menu_init(void)
 
 void menu_deinit(void)
 {
-
 	dj_set_nosound(1);
-
 }
