@@ -30,8 +30,6 @@
 #include "globals.h"
 #include <fcntl.h>
 
-#define USE_NET
-
 #ifdef USE_NET
 #include <SDL_net.h>
 #endif // USE_NET
