@@ -140,7 +140,25 @@ int main(int argc, char **argv)
 
 	/* write the directory structure */
 	for (i = 0; i < num_entries; i++) {
-		write(fd, &datafile[i], 20);
+		char temp;
+
+		write(fd, &datafile[i].filename, 12);
+		temp = (datafile[i].offset >>  0) & 0xff;
+		write(fd, &temp, 1);
+		temp = (datafile[i].offset >>  8) & 0xff;
+		write(fd, &temp, 1);
+		temp = (datafile[i].offset >> 16) & 0xff;
+		write(fd, &temp, 1);
+		temp = (datafile[i].offset >> 24) & 0xff;
+		write(fd, &temp, 1);
+		temp = (datafile[i].size >>  0) & 0xff;
+		write(fd, &temp, 1);
+		temp = (datafile[i].size >>  8) & 0xff;
+		write(fd, &temp, 1);
+		temp = (datafile[i].size >> 16) & 0xff;
+		write(fd, &temp, 1);
+		temp = (datafile[i].size >> 24) & 0xff;
+		write(fd, &temp, 1);
 	}
 
 	/* write in the actual files */
