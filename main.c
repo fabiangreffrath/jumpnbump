@@ -1874,6 +1874,8 @@ int init_program(int argc, char *argv[], char *pal)
 		for (c1 = 1; c1 < argc; c1++) {
 			if (stricmp(argv[c1], "-nosound") == 0)
 				main_info.no_sound = 1;
+			else if (stricmp(argv[c1], "-musicnosound") == 0)
+				main_info.music_no_sound = 1;
 			else if (stricmp(argv[c1], "-nogore") == 0)
 				main_info.no_gore = 1;
 			else if (stricmp(argv[c1], "-nojoy") == 0)

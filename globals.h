@@ -168,7 +168,7 @@ typedef struct {
 
 typedef struct {
 	int joy_enabled, mouse_enabled;
-	int no_sound, no_gore, fireworks;
+	int no_sound, music_no_sound, no_gore, fireworks;
 	char error_str[256];
 	int draw_page, view_page;
 	struct {

@@ -353,7 +353,7 @@ void dj_play_sfx(unsigned char sfx_num, unsigned short freq, char volume, char p
 {
 	int slot;
 
-	if (main_info.no_sound)
+	if (main_info.music_no_sound || main_info.no_sound)
 		return;
 
 	if (channel<0) {
