@@ -69,7 +69,7 @@ typedef struct sfx_data {
   unsigned long length;
   char loop;
   unsigned long loop_start, loop_length;
-  char *buf;
+  unsigned char *buf;
 } sfx_data;
 
 typedef struct dj_mod_info {

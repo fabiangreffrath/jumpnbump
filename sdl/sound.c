@@ -29,6 +29,9 @@
 
 #include "globals.h"
 #include <limits.h>
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 #include "SDL.h"
 
 #ifndef NO_SDL_MIXER
@@ -208,12 +211,13 @@ void mix_sound(void *unused, Uint8 *stream, int len)
 				channelinfo[chan].stepremainder &= 0xffff;
 
 				/* Check whether we are done. */
-				if (channelinfo[chan].data >= channelinfo[chan].enddata)
+				if (channelinfo[chan].data >= channelinfo[chan].enddata) {
 					if (channelinfo[chan].loop) {
 						channelinfo[chan].data = channelinfo[chan].startdata;
 					} else {
 						stopchan(chan);
 					}
+				}
 			}
 		}
   
@@ -468,7 +472,7 @@ char dj_ready_mod(char mod_num)
 # else
 	char filename[] = "/tmp/jnb.tmpmusic.mod";
 # endif
-	char *fp;
+	unsigned char *fp;
 	int len;
 
 	if (main_info.no_sound)
