@@ -35,7 +35,7 @@ char menu_pal[768];
 char menu_cur_pal[768];
 
 char *message[] = {
-	"Jump 'n Bump 1.1",
+	"Jump 'n Bump 1.2",
 	"by Brainchild Design in 1998.",
 	"Code by Mattias Brynervall.",
 	"Graphics by Martin Magnusson",

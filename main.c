@@ -2236,7 +2236,10 @@ FILE *dat_open(char *file_name, char *dat_name, char *mode)
 
 	memset(name, 0, sizeof(name));
 
-	num = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+	num = fgetc(handle);
+	num+= (fgetc(handle) << 8);
+	num+= (fgetc(handle) << 16);
+	num+= (fgetc(handle) << 24);
 	
 	for (c1 = 0; c1 < num; c1++) {
 		if (!fread(name, 1, 12, handle)) {
@@ -2274,7 +2277,10 @@ int dat_filelen(char *file_name, char *dat_name)
 
 	memset(name, 0, sizeof(name));
 	
-	num = fgetc(handle) + (fgetc(handle) << 8) + (fgetc(handle) << 16) + (fgetc(handle) << 24);
+	num = fgetc(handle);
+	num+= (fgetc(handle) << 8);
+	num+= (fgetc(handle) << 16);
+	num+= (fgetc(handle) << 24);
 
 	for (c1 = 0; c1 < num; c1++) {
 		if (!fread(name, 1, 12, handle)) {

@@ -80,7 +80,11 @@ void open_screen(void)
 	int bpp;
 	int flags;
 
+#ifdef __APPLE__
+	lval = SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO);
+#else
 	lval = SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_AUDIO);
+#endif
 	if (lval < 0) {
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
@@ -1135,7 +1139,7 @@ int register_gob(FILE *handle, gob_t *gob, int len)
 	gob_data = malloc(len);
 	fread(gob_data, 1, len, handle);
 
-	gob->num_images = *(short *)(&gob_data[0]);
+	gob->num_images = (short)((gob_data[0]) + (gob_data[1] << 8));
 
 	gob->width = malloc(gob->num_images*sizeof(int));
 	gob->height = malloc(gob->num_images*sizeof(int));
@@ -1147,12 +1151,12 @@ int register_gob(FILE *handle, gob_t *gob, int len)
 		int image_size;
 		int offset;
 
-		offset = *(int *)(&gob_data[i*4+2]);
+		offset = (gob_data[i*4+2]) + (gob_data[i*4+3] << 8) + (gob_data[i*4+4] << 16) + (gob_data[i*4+5] << 24);
 
-		gob->width[i]  = *(short *)(&gob_data[offset]); offset += 2;
-		gob->height[i] = *(short *)(&gob_data[offset]); offset += 2;
-		gob->hs_x[i]   = *(short *)(&gob_data[offset]); offset += 2;
-		gob->hs_y[i]   = *(short *)(&gob_data[offset]); offset += 2;
+		gob->width[i]  = (short)((gob_data[offset]) + (gob_data[offset+1] << 8)); offset += 2;
+		gob->height[i] = (short)((gob_data[offset]) + (gob_data[offset+1] << 8)); offset += 2;
+		gob->hs_x[i]   = (short)((gob_data[offset]) + (gob_data[offset+1] << 8)); offset += 2;
+		gob->hs_y[i]   = (short)((gob_data[offset]) + (gob_data[offset+1] << 8)); offset += 2;
 
 		image_size = gob->width[i] * gob->height[i];
 		gob->orig_data[i] = malloc(image_size);
