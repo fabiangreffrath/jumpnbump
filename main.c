@@ -363,17 +363,19 @@ void sendPacketToAll(NetPacket *pkt)
 
 int grabPacket(TCPsocket s, SDLNet_SocketSet ss, NetPacket *pkt)
 {
-	char buf[NETPKTBUFSIZE];
+	static char buf[NETPKTBUFSIZE];
+	static int buf_count = 0;
 	int rc;
 	int retval = 0;
 
 	if (SDLNet_CheckSockets(ss, 0) > 0) {
-		rc = SDLNet_TCP_Recv(s, buf, NETPKTBUFSIZE);
+		rc = SDLNet_TCP_Recv(s, &buf[buf_count], NETPKTBUFSIZE - buf_count);
 		if (rc <= 0) {  /* closed connection? */
 			retval = -1;
 		} else if (rc != NETPKTBUFSIZE) { // !!! FIXME: buffer these?
-			printf("NETWORK: -BUG- ... dropped a packet! (had %d of %d bytes).\b", rc, NETPKTBUFSIZE);
+			buf_count = rc;
 		} else {
+			buf_count = 0;
 			bufToPacket(buf, pkt);
 			retval = 1;
 		}
