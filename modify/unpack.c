@@ -44,6 +44,10 @@ typedef struct {
     unsigned int size;
 } DirEntry;
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 int main(int argc, char **argv)
 {
     int fd;
