@@ -145,7 +145,7 @@ int intr_sysupdate()
 		}
 		i++;
 	}
-	SDL_Delay(0);
+	SDL_Delay(1);
 	now = SDL_GetTicks();
 	time_diff = now - last_time;
 	if (time_diff>0) {
