@@ -1,13 +1,11 @@
 #include "globals.h"
 
-#define NUM_MESSAGES 25
-
 char *menu_background;
 
 char menu_pal[768];
 char menu_cur_pal[768];
 
-char message[NUM_MESSAGES][70] = {
+char *message[] = {
 	"Jump 'n Bump",
 	"by Brainchild Design in 1998.",
 	"Code by Mattias Brynervall.",
@@ -32,9 +30,10 @@ char message[NUM_MESSAGES][70] = {
 	"Mattias Brynervall: matbr656@student.liu.se",
 	"Martin Magnusson: marma102@student.liu.se",
 	"Anders Nilsson: equel@swipnet.se",
-	" "
+	""
 };
 
+#define NUM_MESSAGES (sizeof(message)/sizeof(char *))
 
 int menu(void)
 {
