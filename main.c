@@ -276,17 +276,11 @@ char main(int argc, char *argv[])
 										add_leftovers(1, 376, 34 + c1 * 64, s1 - (s1 / 10) * 10, number_gobs);
 									}
 								} else {
-#if 0
-									player[c1].y = player[c2].y - (16L << 16);
-#endif
 									if (player[c2].y_add < 0)
 										player[c2].y_add = 0;
 								}
 							} else {
 								if (player[c2].y_add >= 0) {
-#if 0
-									player[c2].y = player[c1].y - (16L << 16);
-#endif
 									player[c2].y_add = -player[c2].y_add;
 									if (player[c2].y_add > -262144L)
 										player[c2].y_add = -262144L;
@@ -319,9 +313,6 @@ char main(int argc, char *argv[])
 										add_leftovers(1, 376, 34 + c2 * 64, s1 - (s1 / 10) * 10, number_gobs);
 									}
 								} else {
-#if 0
-									player[c2].y = player[c1].y - (16L << 16);
-#endif
 									if (player[c1].y_add < 0)
 										player[c1].y_add = 0;
 								}

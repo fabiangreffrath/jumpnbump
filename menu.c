@@ -348,9 +348,6 @@ char menu(void)
 							player[c1].frame = 0;
 							player[c1].frame_tick = 0;
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
-#if 0
-							dj_play_sfx(SFX_LAND, SFX_LAND_FREQ, 64, 0, 0, -1);
-#endif
 						}
 					}
 				} else {
@@ -362,9 +359,6 @@ char menu(void)
 							player[c1].frame = 0;
 							player[c1].frame_tick = 0;
 							player[c1].image = player_anims[player[c1].anim].frame[player[c1].frame].image + player[c1].direction * 9;
-#if 0
-							dj_play_sfx(SFX_LAND, SFX_LAND_FREQ, 64, 0, 0, -1);
-#endif
 						}
 					}
 				}
@@ -442,12 +436,6 @@ char menu(void)
 			else
 				return 1;
 		}
-#if 0
-		if (fade_flag == 2) {
-			fade_dir = 0;
-			fade_count = 0;
-		}
-#endif
 		switch (fade_dir) {
 		case 0:
 			if (fade_count < 30) {
