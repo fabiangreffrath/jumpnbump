@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-#ifndef _WIN32
+#ifdef LINUX
 #include <getopt.h>
 #endif
 #ifndef _MSC_VER
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	char *outfile = NULL;
 	int offset = 0;
 
-#ifndef _WIN32
+#ifdef LINUX
 	while ((c = getopt(argc, argv, "o:")) != EOF) {
 		switch (c) {
 		case 'o':

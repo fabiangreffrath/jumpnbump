@@ -38,6 +38,18 @@ gob_t font_gobs = { 0 };
 gob_t object_gobs = { 0 };
 gob_t number_gobs = { 0 };
 
+main_info_t main_info;
+player_t player[4];
+player_anim_t player_anims[7];
+object_t objects[NUM_OBJECTS];
+joy_t joy;
+mouse_t mouse;
+
+char datfile_name[2048];
+
+char *background_pic;
+char *mask_pic;
+
 unsigned int ban_map[17][22] = {
 	{1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0},
@@ -1834,11 +1846,7 @@ int init_program(int argc, char *argv[], char *pal)
 
 	memset(&main_info, 0, sizeof(main_info));
 
-#ifdef _WIN32
-	strcpy(datfile_name, "data/jumpbump.dat");
-#else
-	strcpy(datfile_name, "/usr/share/jumpnbump/jumpbump.dat");
-#endif
+	strcpy(datfile_name, DATA_PATH);
 
 	force2 = force3 = 0;
 

@@ -144,6 +144,16 @@ extern int bytes_per_pixel;
 #define BAN_ICE		3
 #define BAN_SPRING	4
 
+#ifndef DATA_PATH
+#ifdef __APPLE__
+#define	DATA_PATH "data/jumpbump.dat"
+#elif _WIN32
+#define	DATA_PATH "data/jumpbump.dat"
+#elif
+#define	DATA_PATH "/usr/share/jumpnbump/jumpbump.dat"
+#endif
+#endif
+
 typedef struct {
 	int num_images;
 	int *width;
@@ -154,7 +164,7 @@ typedef struct {
 	void **orig_data;
 } gob_t;
 
-struct {
+typedef struct {
 	int joy_enabled, mouse_enabled;
 	int no_sound, no_gore, fireworks;
 	char error_str[256];
@@ -169,9 +179,9 @@ struct {
 		} pobs[NUM_POBS];
 	} page_info[2];
 	void *pob_backbuf[2];
-} main_info;
+} main_info_t;
 
-struct {
+typedef struct {
 	int action_left,action_up,action_right;
 	int enabled, dead_flag;
 	int bumps;
@@ -180,18 +190,18 @@ struct {
 	int x_add, y_add;
 	int direction, jump_ready, jump_abort, in_water;
 	int anim, frame, frame_tick, image;
-} player[4];
+} player_t;
 
-struct {
+typedef struct {
 	int num_frames;
 	int restart_frame;
 	struct {
 		int image;
 		int ticks;
 	} frame[4];
-} player_anims[7];
+} player_anim_t;
 
-struct {
+typedef struct {
 	int used, type;
 	int x, y;
 	int x_add, y_add;
@@ -199,9 +209,9 @@ struct {
 	int anim;
 	int frame, ticks;
 	int image;
-} objects[NUM_OBJECTS];
+} object_t;
 
-struct {
+typedef struct {
 	int x, y;
 	int raw_x, raw_y;
 	int but1, but2;
@@ -209,16 +219,23 @@ struct {
 		int x1, x2, x3;
 		int y1, y2, y3;
 	} calib_data;
-} joy;
+} joy_t;
 
-struct {
+typedef struct {
 	int but1, but2, but3;
-} mouse;
+} mouse_t;
 
-char datfile_name[2048];
+extern main_info_t main_info;
+extern player_t player[4];
+extern player_anim_t player_anims[7];
+extern object_t objects[NUM_OBJECTS];
+extern joy_t joy;
+extern mouse_t mouse;
 
-char *background_pic;
-char *mask_pic;
+extern char datfile_name[2048];
+
+extern char *background_pic;
+extern char *mask_pic;
 
 extern gob_t rabbit_gobs;
 extern gob_t font_gobs;

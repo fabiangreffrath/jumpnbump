@@ -1,3 +1,7 @@
+- 1.2
+   - MacOS X fixes
+   - some endian fixes
+
 24 Feb 2002 - 1.1
    - fixed timing problems
    - fixed crash when temporary music can't be written

@@ -34,3 +34,6 @@ Gürkan Sengün <tarzeau@space.ch>
 
 Florian Schulze <crow@icculus.org>
   Cleaned up code. Added scaling graphics mode (800x512). Fixed sound.
+
+Ben Hines <bhines@alumni.ucsd.edu>
+  MacOS X fixes.
