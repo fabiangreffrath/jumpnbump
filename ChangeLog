@@ -1,3 +1,8 @@
+21 Mar 2003 - 1.41
+  - new scaling filter which works with 8bit graphics. Removed the old scaler
+    completely, now fading and everything else works in scaled up mode.
+  - another attempt to fix sound on big endian systems.
+
 Sep 2002 - 1.40
   - manpage update
   - joystick support added
@@ -21,7 +26,7 @@ Sep 2002 - 1.40
 
 5 Jul 2002 - 1.33
    - added -musicnosound option
-   
+
 15 Jun 2002 - 1.32
    - fix for off by one in -mirror
      add icon for application (macosx,windows,x)
@@ -71,7 +76,7 @@ This is the changelog of the linux version from which this port is derived.
    for test and fun play come join #keen on irc.linux.com
    (be sure to have one udp port open if you have a firewall,
    and also have sdl-mixer, sdl and sdl-net)
-	       
+
 16 Mar 2001 - 0.70
    did a new screenshot http://jumpbump.mine.nu/port/jumpbumprocks.jpg
    wrote a little faq http://jumpbump.mine.nu/port/jumpbumpfaq.txt
