@@ -33,18 +33,19 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <getopt.h>
+#endif
+#ifndef _MSC_VER
 #include <unistd.h>
 #else
 #include <io.h>
-typedef unsigned int u_int32_t;
 #endif
 
 typedef struct {
 	char filename[12];
-	u_int32_t offset;
-	u_int32_t size;
+	unsigned int offset;
+	unsigned int size;
 } DirEntry;
 
 int main(int argc, char **argv)
@@ -56,7 +57,7 @@ int main(int argc, char **argv)
 	char *outfile = NULL;
 	int offset = 0;
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 	while ((c = getopt(argc, argv, "o:")) != EOF) {
 		switch (c) {
 		case 'o':

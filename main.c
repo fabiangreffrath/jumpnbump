@@ -1834,7 +1834,11 @@ int init_program(int argc, char *argv[], char *pal)
 
 	memset(&main_info, 0, sizeof(main_info));
 
+#ifdef _WIN32
 	strcpy(datfile_name, "data/jumpbump.dat");
+#else
+	strcpy(datfile_name, "/usr/share/jumpnbump/jumpbump.dat");
+#endif
 
 	force2 = force3 = 0;
 

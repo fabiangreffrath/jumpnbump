@@ -36,13 +36,12 @@
 #include <unistd.h>
 #else
 #include <io.h>
-typedef unsigned int u_int32_t;
 #endif
 
 typedef struct {
     char filename[12];
-    u_int32_t offset;
-    u_int32_t size;
+    unsigned int offset;
+    unsigned int size;
 } DirEntry;
 
 int main(int argc, char **argv)
