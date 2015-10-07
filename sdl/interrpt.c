@@ -369,6 +369,7 @@ int intr_sysupdate()
 				}
 				break;
 			case SDLK_1:
+			case SDLK_AMPERSAND:
 				if (e.type == SDL_KEYUP)
 					ai[0] = !ai[0];
 
@@ -378,6 +379,7 @@ int intr_sysupdate()
 				addkey((KEY_PL1_JUMP & 0x7f) | 0x8000);
 				break;
 			case SDLK_2:
+			case SDLK_WORLD_73:
 				if (e.type == SDL_KEYUP)
 					ai[1] = !ai[1];
 
@@ -387,6 +389,7 @@ int intr_sysupdate()
 				addkey((KEY_PL2_JUMP & 0x7f) | 0x8000);
 				break;
 			case SDLK_3:
+			case SDLK_QUOTEDBL:
 				if (e.type == SDL_KEYUP)
 					ai[2] = !ai[2];
 
@@ -396,6 +399,7 @@ int intr_sysupdate()
 				addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
 				break;
 			case SDLK_4:
+			case SDLK_QUOTE:
 				if (e.type == SDL_KEYUP)
 					ai[3] = !ai[3];
 
