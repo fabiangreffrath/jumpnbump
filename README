@@ -41,8 +41,6 @@ sdl libraries are needed, you might find it at www.libsdl.org
 
 You can find more levels at http://www.jumpbump.mine.nu/cgi-bin/jb.sh
 which you can start with: jumpnbump -dat levelname.dat
-there's a screensaver mode as well:
-jumpnbump -fireworks -fullscreen
 
 Network play works like this, oh well here's an example
 Player 1: jumpnbump -port 7777 -net 0 ip_or_hostname_of_player2 port_of_player2

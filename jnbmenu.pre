@@ -7,7 +7,6 @@
 #################################
 # GLOBAL VARIABLES
 #
-global fireworks;
 global fullscreen;
 global nogore;
 global nosound;
@@ -32,7 +31,6 @@ global fullscreen
 	global mirror
 	global scaleup
 	global nogore
-	global fireworks
 	
 	set str_fullscreen ""
 	if { $fullscreen == 1 } { set str_fullscreen "-fullscreen" }
@@ -44,15 +42,13 @@ global fullscreen
 	if { $mirror == 1 } { set str_mirror "-mirror" }
 	set str_nogore ""
 	if { $nogore == 1 } { set str_nogore "-nogore" }
-	set str_fireworks ""
-	if { $fireworks == 1 } { set str_fireworks "-fireworks" }
 
 	set file ""
 	if { [ .top17.lis26 curselection ] != "" } then {
 		set file "%%PREFIX%%/games/jumpnbump/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
 	}
 	
-	exec jumpnbump $str_fullscreen $str_nosound $str_scaleup $str_mirror $str_nogore $str_fireworks -dat $file &
+	exec jumpnbump $str_fullscreen $str_nosound $str_scaleup $str_mirror $str_nogore -dat $file &
 }
 
 proc {fill_list_box} {} {
@@ -176,8 +172,6 @@ proc vTclWindow.top17 {base} {
         -text {no sound} -variable nosound 
     checkbutton $base.che24 \
         -text {no gore} -variable nogore 
-    checkbutton $base.che25 \
-        -text fireworks -variable fireworks 
     checkbutton $base.che28 \
         -text scaleup -variable scaleup
     checkbutton $base.che29 \

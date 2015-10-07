@@ -1631,11 +1631,6 @@ int main(int argc, char *argv[])
 	if (init_program(argc, argv, pal) != 0)
 		deinit_program();
 
-	if (main_info.fireworks == 1) {
-		fireworks();
-		deinit_program();
-	}
-
 	result = menu_loop();
 
 	deinit_program();
@@ -3020,8 +3015,6 @@ int init_program(int argc, char *argv[], char *pal)
 				flies_enabled = 0;
 			else if (stricmp(argv[c1], "-nojoy") == 0)
 				main_info.joy_enabled = 0;
-			else if (stricmp(argv[c1], "-fireworks") == 0)
-				main_info.fireworks = 1;
 #ifdef USE_SDL
 			else if (stricmp(argv[c1], "-fullscreen") == 0)
 				fs_toggle();
@@ -3085,7 +3078,6 @@ int init_program(int argc, char *argv[], char *pal)
 				printf("  -connect host            connect to server\n");
 #endif
 				printf("  -player num              set main player to num (0-3). Needed for networking\n");
-				printf("  -fireworks               screensaver mode\n");
 				printf("  -fullscreen              run in fullscreen mode\n");
 				printf("  -nosound                 play without sound\n");
 				printf("  -nogore                  play without blood\n");
@@ -3288,7 +3280,7 @@ all provided the user didn't choose one on the commandline. */
 
 	recalculate_gob(&font_gobs, pal);
 
-	if (main_info.joy_enabled == 1 && main_info.fireworks == 0) {
+	if (main_info.joy_enabled == 1) {
 		load_flag = 0;
 		put_text(0, 200, 40, "JOYSTICK CALIBRATION", 2);
 		put_text(0, 200, 100, "Move the joystick to the", 2);

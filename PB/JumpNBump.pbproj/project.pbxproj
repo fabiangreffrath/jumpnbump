@@ -461,12 +461,6 @@
 			path = /Users/ben/Desktop/jumpnbumpc/jumpnbump/dj.h;
 			refType = 0;
 		};
-		F5C435B0026C8997012A168D = {
-			isa = PBXFileReference;
-			name = fireworks.c;
-			path = /Users/ben/Desktop/jumpnbumpc/jumpnbump/fireworks.c;
-			refType = 0;
-		};
 		F5C435B1026C8997012A168D = {
 			isa = PBXFileReference;
 			name = globals.h;
