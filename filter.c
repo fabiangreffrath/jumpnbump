@@ -36,7 +36,7 @@ void init_scale2x(void)
 	if (scale2x_inited)
 		return;
 
-	//-------------------------------------------------------------------------  
+	//-------------------------------------------------------------------------
 	// scale2x takes the following source:
 	// A B C
 	// D E F
@@ -55,7 +55,7 @@ void init_scale2x(void)
 	// equivalency into a single byte with the getCode() macro
 	//
 	// #define getCode(b,f,h,d) ( (b == f)<<0 | (f == h)<<1 | (h == d)<<2 | (d == b)<<3 )
-  
+
 	// encode the scale2x conditionals into a lookup code
 	for (i=0; i<16; i++) {
 		//  E0 = D == B && B != F && D != H ? D : E; // 10-0 => 1000 or 1010 => 8 or A
@@ -77,7 +77,6 @@ void do_scale2x(unsigned char *src,
 	int x;
 	int y;
 	int dst_width = src_width * 2;
-	int dst_height = src_height * 2;
 	int code;
 	byte rowColors[3];
 	byte *e0;

@@ -27,7 +27,7 @@
 
 #include "network.h"
 
-static buggered_off = 0;
+static int buggered_off = 0;
 int is_server = 1;
 int is_net = 0;
 int server_said_bye = 0;
@@ -136,8 +136,6 @@ void processKillPacket(NetPacket *pkt)
 
 TCPsocket sock = NULL;
 SDLNet_SocketSet socketset = NULL;
-
-//~ NetInfo net_info[JNB_MAX_PLAYERS];
 
 void bufToPacket(const char *buf, NetPacket *pkt)
 {
@@ -476,7 +474,7 @@ void init_server(const char *netarg)
 	IPaddress addr;
 	int i;
 	int wait_for_clients = ((netarg == NULL) ? 0 : atoi(netarg));
-	char *ipstr;
+	const char *ipstr;
 
 	/** assign player number zero as default for the server */
 	if(-1 == client_player_num)
@@ -617,7 +615,7 @@ void connect_to_server(char *netarg)
 {
 	NetPacket pkt;
 	char buf[NETPKTBUFSIZE];
-	char *ipstr;
+	const char *ipstr;
 	IPaddress hent;
 	IPaddress addr;
 	int br;

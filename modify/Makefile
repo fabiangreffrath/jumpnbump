@@ -1,6 +1,6 @@
 CFLAGS = -Wall -ansi -pedantic -O2 -ffast-math -funroll-loops \
 	-Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DNDEBUG \
-	-I. -I.. -DUSE_NET -D_BSD_SOURCE
+	-I. -I.. -DUSE_NET -D_DEFAULT_SOURCE
 LIBS = -lm
 SRCS = gobpack.c jnbpack.c jnbunpack.c
 OBJS = gobpack.o jnbpack.o jnbunpack.o

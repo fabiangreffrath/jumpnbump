@@ -254,8 +254,8 @@ extern mouse_t mouse;
 
 extern char datfile_name[2048];
 
-extern char *background_pic;
-extern char *mask_pic;
+extern unsigned char *background_pic;
+extern unsigned char *mask_pic;
 
 extern gob_t rabbit_gobs;
 extern gob_t font_gobs;
@@ -330,7 +330,7 @@ int pob_height(int image, gob_t *gob);
 int pob_hs_x(int image, gob_t *gob);
 int pob_hs_y(int image, gob_t *gob);
 int read_pcx(unsigned char * handle, void *buffer, int buf_len, char *pal);
-void register_background(char *pixels, char pal[768]);
+void register_background(unsigned char *pixels, char pal[768]);
 int register_gob(unsigned char *handle, gob_t *gob, int len);
 void recalculate_gob(gob_t *gob, char pal[768]);
 void register_mask(void *pixels);

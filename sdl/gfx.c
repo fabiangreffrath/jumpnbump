@@ -341,6 +341,7 @@ void flippage(int page)
 	int x,y;
 	unsigned char *src;
 	unsigned char *dest;
+	SDL_Surface* surface;
 
 	assert(drawing_enable==0);
 
@@ -379,7 +380,7 @@ void flippage(int page)
 	memset(&dirty_blocks[page], 0, sizeof(int)*25*16);
         SDL_UnlockSurface(jnb_surface);
 
-	SDL_Surface* surface = SDL_ConvertSurfaceFormat(jnb_surface, SDL_PIXELFORMAT_RGB888, 0);
+	surface = SDL_ConvertSurfaceFormat(jnb_surface, SDL_PIXELFORMAT_RGB888, 0);
 	SDL_UpdateTexture(jnb_texture, NULL, surface->pixels, screen_width*sizeof(Uint32));
 	SDL_FreeSurface(surface);
 	SDL_RenderClear(sdlRenderer);
@@ -809,7 +810,7 @@ int read_pcx(unsigned char * handle, void *buf, int buf_len, char *pal)
 }
 
 
-void register_background(char *pixels, char pal[768])
+void register_background(unsigned char *pixels, char pal[768])
 {
 	if (background) {
 		free(background);
@@ -822,7 +823,7 @@ void register_background(char *pixels, char pal[768])
 	if (scale_up) {
 		background = malloc(screen_pitch*screen_height);
 		assert(background);
-		do_scale2x((unsigned char *)pixels, JNB_WIDTH, JNB_HEIGHT, (unsigned char *)background);
+		do_scale2x(pixels, JNB_WIDTH, JNB_HEIGHT, (unsigned char *)background);
 	} else {
 		background = malloc(JNB_WIDTH*JNB_HEIGHT);
 		assert(background);

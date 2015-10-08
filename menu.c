@@ -73,7 +73,7 @@ int menu(void)
 	int end_loop_flag, new_game_flag, fade_flag;
 	int mod_vol = 0, mod_fade_direction = 0;
 	int cur_message;
-	int fade_dir, fade_count, fade_tick;
+	int fade_dir, fade_count;
 	char fade_pal[48];
 	int update_count;
 
@@ -110,7 +110,6 @@ int menu(void)
 
 	fade_dir = 0;
 	fade_count = 0;
-	fade_tick = 0;
 	cur_message = NUM_MESSAGES - 1;
 
 	main_info.page_info[0].num_pobs = 0;
@@ -511,7 +510,6 @@ int menu(void)
 					put_text(1, 200, 220, message[cur_message], 2);
 					fade_dir = 1;
 					fade_count = 0;
-					fade_tick = 0;
 					draw_end();
 				}
 				break;
@@ -525,7 +523,6 @@ int menu(void)
 				} else {
 					fade_dir = 0;
 					fade_count = 0;
-					fade_tick = 0;
 				}
 				break;
 			}
@@ -573,7 +570,7 @@ int menu(void)
 
 int menu_init(void)
 {
-	char *handle;
+	unsigned char *handle;
 	int c1;
 
 	fillpalette(0, 0, 0);
