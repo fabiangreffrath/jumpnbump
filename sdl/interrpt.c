@@ -1,10 +1,12 @@
 /*
  * interrpt.c
  * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
- * 
+ *
  * Copyright (C) 2001 Chuck Mason <cemason@users.sourceforge.net>
  *
  * Copyright (C) 2002 Florian Schulze <crow@icculus.org>
+ *
+ * Copyright (C) 2015 Côme Chilliet <come@chilliet.eu>
  *
  * This file is part of Jump'n'Bump.
  *
@@ -65,7 +67,7 @@ static int player_keys[4][3] = {
 		KEY_PL1_LEFT,
 		KEY_PL1_RIGHT,
 		KEY_PL1_JUMP
-	},                        
+	},
 	{
 		KEY_PL2_LEFT,
 		KEY_PL2_RIGHT,
@@ -143,7 +145,7 @@ static void print_version()
 static int kaillera_thread(void *arg)
 {
 	kailleraInit();
-	
+
 	/* print_version(); */
 
 	kailleraSetInfos(&kaillera_data);
@@ -151,7 +153,7 @@ static int kaillera_thread(void *arg)
 	kailleraSelectServerDialog(0);
 	if (SDL_SemValue(game_start_sem) == 0) {
 		/* server dialog returned and game didnt start */
-		
+
 		/* release blocking thread */
 		my_player = -1;
 		SDL_SemPost(game_start_sem);
@@ -171,14 +173,14 @@ static int start_kaillera_thread(void)
 		printf("SDL_CreateThread failed\n");
 		return -1;
 	}
-	
+
 	return 0;
-}	
+}
 
 int addkey(unsigned int key)
 {
 	/* it doesnt matter if a player presses keys
-	 * that control other bunnies. whatever is sent 
+	 * that control other bunnies. whatever is sent
 	 * is packed by pack_keys()
 	 */
 	if (!(key & 0x8000)) {
@@ -240,7 +242,6 @@ int update_kaillera_keys(void)
 
 int hook_keyb_handler(void)
 {
-	SDL_EnableUNICODE(1);
 	memset((void *) last_keys, 0, sizeof(last_keys));
 
 	start_kaillera_thread();
@@ -286,7 +287,6 @@ void remove_keyb_handler(void)
 
 int hook_keyb_handler(void)
 {
-	SDL_EnableUNICODE(1);
 	memset((void *) last_keys, 0, sizeof(last_keys));
 
 	return 0;
@@ -329,47 +329,46 @@ int intr_sysupdate()
 
 			if(e.button.button == SDL_BUTTON_LEFT)
 				{
-				SDLKey sym = KEY_PL3_LEFT;
-				sym &= 0x7f;
+				SDL_Scancode scancode = KEY_PL3_LEFT;
+				scancode &= 0x7f;
 				if(e.button.state == SDL_RELEASED)
 					{
 					if(key_pressed(KEY_PL3_JUMP) && (SDL_GetMouseState(NULL, NULL)&SDL_BUTTON(SDL_BUTTON_RIGHT)))
 						addkey(KEY_PL3_RIGHT & 0x7f);
 					else
-						sym |= 0x8000;
+						scancode |= 0x8000;
 					}
-				addkey(sym);
+				addkey(scancode);
 				}
 			else if(e.button.button == SDL_BUTTON_RIGHT)
 				{
-				SDLKey sym = KEY_PL3_RIGHT;
-				sym &= 0x7f;
+				SDL_Scancode scancode = KEY_PL3_RIGHT;
+				scancode &= 0x7f;
 				if (e.button.state == SDL_RELEASED)
 					{
 					if(key_pressed(KEY_PL3_JUMP) && (SDL_GetMouseState(NULL, NULL)&SDL_BUTTON(SDL_BUTTON_LEFT)))
 						addkey(KEY_PL3_LEFT & 0x7f);
 					else
-						sym |= 0x8000;
+						scancode |= 0x8000;
 					}
-				addkey(sym);
+				addkey(scancode);
 				}
 			break;
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
-			switch (e.key.keysym.sym) {
-			case SDLK_F12:
+			switch (e.key.keysym.scancode) {
+			case SDL_SCANCODE_F12:
 				if (e.type == SDL_KEYDOWN) {
 					SDL_Quit();
 					exit(1);
 				}
 				break;
-			case SDLK_F10:
+			case SDL_SCANCODE_F10:
 				if (e.type == SDL_KEYDOWN) {
 					fs_toggle();
 				}
 				break;
-			case SDLK_1:
-			case SDLK_AMPERSAND:
+			case SDL_SCANCODE_1:
 				if (e.type == SDL_KEYUP)
 					ai[0] = !ai[0];
 
@@ -378,8 +377,7 @@ int intr_sysupdate()
 				addkey((KEY_PL1_RIGHT & 0x7f) | 0x8000);
 				addkey((KEY_PL1_JUMP & 0x7f) | 0x8000);
 				break;
-			case SDLK_2:
-			case SDLK_WORLD_73:
+			case SDL_SCANCODE_2:
 				if (e.type == SDL_KEYUP)
 					ai[1] = !ai[1];
 
@@ -388,8 +386,7 @@ int intr_sysupdate()
 				addkey((KEY_PL2_RIGHT & 0x7f) | 0x8000);
 				addkey((KEY_PL2_JUMP & 0x7f) | 0x8000);
 				break;
-			case SDLK_3:
-			case SDLK_QUOTEDBL:
+			case SDL_SCANCODE_3:
 				if (e.type == SDL_KEYUP)
 					ai[2] = !ai[2];
 
@@ -398,8 +395,7 @@ int intr_sysupdate()
 				addkey((KEY_PL3_RIGHT & 0x7f) | 0x8000);
 				addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
 				break;
-			case SDLK_4:
-			case SDLK_QUOTE:
+			case SDL_SCANCODE_4:
 				if (e.type == SDL_KEYUP)
 					ai[3] = !ai[3];
 
@@ -408,17 +404,17 @@ int intr_sysupdate()
 				addkey((KEY_PL4_RIGHT & 0x7f) | 0x8000);
 				addkey((KEY_PL4_JUMP & 0x7f) | 0x8000);
 				break;
-			case SDLK_ESCAPE:
+			case SDL_SCANCODE_ESCAPE:
 				if (e.type == SDL_KEYUP)
 					addkey(1 | 0x8000);
 				else
 					addkey(1 & 0x7f);
 				break;
 			default:
-				e.key.keysym.sym &= 0x7f;
+				e.key.keysym.scancode &= 0x7f;
 				if (e.type == SDL_KEYUP)
-					e.key.keysym.sym |= 0x8000;
-				addkey(e.key.keysym.sym);
+					e.key.keysym.scancode |= 0x8000;
+				addkey(e.key.keysym.scancode);
 
 				break;
 			}

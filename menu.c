@@ -1,10 +1,12 @@
 /*
  * menu.c
  * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
- * 
+ *
  * Copyright (C) 2001 Chuck Mason <cemason@users.sourceforge.net>
  *
  * Copyright (C) 2002 Florian Schulze <crow@icculus.org>
+ *
+ * Copyright (C) 2015 Côme Chilliet <come@chilliet.eu>
  *
  * This file is part of Jump'n'Bump.
  *
@@ -39,6 +41,7 @@ char *message[] = {
 	"Music by Anders Nilsson.",
 	"Linux port by Chuck Mason.",
 	"New SDL port by Florian Schulze.",
+	"Port to SDL2 by Come Chilliet.",
 	"http://www.icculus.org/jumpnbump/",
 	"Ryan C. Gordon made networking possible again!",
 	"Visit our homepage at:",
@@ -77,8 +80,8 @@ int menu(void)
 	if (menu_init() != 0)
 		return 1;
 
-  /* After a game, we have to release the keys, cause AI player
-     can still be using them */
+	/* After a game, we have to release the keys, cause AI player
+	 * can still be using them */
 	addkey((KEY_PL1_LEFT & 0x7f) | 0x8000);
 	addkey((KEY_PL2_LEFT & 0x7f) | 0x8000);
 	addkey((KEY_PL3_LEFT & 0x7f) | 0x8000);
@@ -123,8 +126,8 @@ int menu(void)
 
 		dj_mix();
 
-	for(c1 = 0; c1 < JNB_MAX_PLAYERS; c1++)		// set AI to false
-		ai[c1] = 0;
+		for(c1 = 0; c1 < JNB_MAX_PLAYERS; c1++)		// set AI to false
+			ai[c1] = 0;
 
 		while (update_count) {
 
@@ -535,9 +538,9 @@ int menu(void)
 			if (update_count == 1) {
 				main_info.draw_page ^= 1;
 				main_info.view_page ^= 1;
-	
+
 				flippage(main_info.view_page);
-	
+
 				wait_vrt(1);
 			}
 

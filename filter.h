@@ -31,4 +31,4 @@ void do_scale2x(unsigned char *src,
 		int src_height,
 		unsigned char *dst);
 
-#endif // __FILTER_H__
+#endif /* __FILTER_H__ */

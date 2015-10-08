@@ -1,10 +1,12 @@
 /*
  * gfx.c
  * Copyright (C) 1998 Brainchild Design - http://brainchilddesign.com/
- * 
+ *
  * Copyright (C) 2001 Chuck Mason <cemason@users.sourceforge.net>
  *
  * Copyright (C) 2002 Florian Schulze <crow@icculus.org>
+ *
+ * Copyright (C) 2015 Côme Chilliet <come@chilliet.eu>
  *
  * This file is part of Jump'n'Bump.
  *
@@ -42,6 +44,9 @@ int screen_pitch=400;
 int scale_up=0;
 int dirty_block_shift=4;
 
+static SDL_Window *sdlWindow;
+static SDL_Renderer *sdlRenderer;
+static SDL_Texture *jnb_texture;
 static SDL_Surface *jnb_surface;
 static int fullscreen = 0;
 static int vinited = 0;
@@ -93,7 +98,7 @@ static SDL_Surface *load_xpm_from_array(char **xpm)
 	if (!surface)
 		return NULL;
 
-	SDL_SetColorKey(surface, SDL_SRCCOLORKEY, SDL_MapRGBA(surface->format, 0, 0, 0, 0));
+	SDL_SetColorKey(surface, SDL_TRUE, SDL_MapRGBA(surface->format, 0, 0, 0, 0));
 	while (colors--) {
 		p = *xpm++;
 
@@ -176,11 +181,23 @@ void open_screen(void)
 		exit(EXIT_FAILURE);
 	}
 
-	flags = SDL_SWSURFACE;
+	flags = 0;
 	if (fullscreen)
-		flags |= SDL_FULLSCREEN;
-	jnb_surface = SDL_SetVideoMode(screen_width, screen_height, 8, flags);
+		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	SDL_CreateWindowAndRenderer(screen_width, screen_height, flags, &sdlWindow, &sdlRenderer);
 
+	if (!sdlWindow || !sdlRenderer) {
+		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
+		exit(EXIT_FAILURE);
+	}
+
+	jnb_texture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
+	if (!jnb_texture) {
+		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
+		exit(EXIT_FAILURE);
+	}
+
+	jnb_surface = SDL_CreateRGBSurface(0, screen_width, screen_height, 8, 0, 0, 0, 0);
 	if (!jnb_surface) {
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
@@ -191,13 +208,13 @@ void open_screen(void)
 	else
 		SDL_ShowCursor(1);
 
-	SDL_WM_SetCaption("Jump'n'Bump","");
+	SDL_SetWindowTitle(sdlWindow, "Jump'n'Bump");
 
 	icon=load_xpm_from_array(jumpnbump_xpm);
 	if (icon==NULL) {
 	    printf("Couldn't load icon\n");
 	} else {
-	    SDL_WM_SetIcon(icon,NULL);
+	    SDL_SetWindowIcon(sdlWindow, icon);
 	}
 
 	vinited = 1;
@@ -222,8 +239,10 @@ void fs_toggle()
 		fullscreen ^= 1;
 		return;
 	}
-	if (SDL_WM_ToggleFullScreen(jnb_surface))
+	if (SDL_SetWindowFullscreen(sdlWindow, (fullscreen?0:SDL_WINDOW_FULLSCREEN_DESKTOP)) == 0)
 		fullscreen ^= 1;
+	else
+		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
 }
 
 
@@ -327,7 +346,7 @@ void flippage(int page)
 
 	SDL_LockSurface(jnb_surface);
 	if (!jnb_surface->pixels) {
-		
+
 		for (x=0; x<(25*16); x++) {
 			dirty_blocks[0][x] = 1;
 			dirty_blocks[1][x] = 1;
@@ -349,8 +368,9 @@ void flippage(int page)
 				test_x++;
 			}
 			if (count) {
-				memcpy(	&dest[y*jnb_surface->pitch+(x<<dirty_block_shift)],
-					&src[y*screen_pitch+((x<<dirty_block_shift))],
+				memcpy(
+					&dest[y*jnb_surface->pitch+(x<<dirty_block_shift)],
+					&src [y*screen_pitch+(x<<dirty_block_shift)],
 					((16<<dirty_block_shift)>>4)*count);
 			}
 			x = test_x;
@@ -358,7 +378,13 @@ void flippage(int page)
 	}
 	memset(&dirty_blocks[page], 0, sizeof(int)*25*16);
         SDL_UnlockSurface(jnb_surface);
-	SDL_Flip(jnb_surface);
+
+	SDL_Surface* surface = SDL_ConvertSurfaceFormat(jnb_surface, SDL_PIXELFORMAT_RGB888, 0);
+	SDL_UpdateTexture(jnb_texture, NULL, surface->pixels, screen_width*sizeof(Uint32));
+	SDL_FreeSurface(surface);
+	SDL_RenderClear(sdlRenderer);
+	SDL_RenderCopy(sdlRenderer, jnb_texture, NULL, NULL);
+	SDL_RenderPresent(sdlRenderer);
 }
 
 
@@ -399,8 +425,9 @@ void setpalette(int index, int count, char *palette)
 		colors[i+index].r = palette[i * 3 + 0] << 2;
 		colors[i+index].g = palette[i * 3 + 1] << 2;
 		colors[i+index].b = palette[i * 3 + 2] << 2;
+		colors[i+index].a = 255;
 	}
-	SDL_SetColors(jnb_surface, &colors[index], index, count);
+	SDL_SetPaletteColors(jnb_surface->format->palette, &colors[index], index, count);
 }
 
 
@@ -415,8 +442,9 @@ void fillpalette(int red, int green, int blue)
 		colors[i].r = red << 2;
 		colors[i].g = green << 2;
 		colors[i].b = blue << 2;
+		colors[i].a = 255;
 	}
-	SDL_SetColors(jnb_surface, colors, 0, 256);
+	SDL_SetPaletteColors(jnb_surface->format->palette, colors, 0, 256);
 }
 
 
