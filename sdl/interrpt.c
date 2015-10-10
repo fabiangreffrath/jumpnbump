@@ -309,118 +309,121 @@ int intr_sysupdate()
 
 	while (SDL_PollEvent(&e)) {
 		switch (e.type) {
-		case SDL_MOUSEBUTTONDOWN:
-		case SDL_MOUSEBUTTONUP:
-			if(e.button.state == SDL_PRESSED &&
-					((key_pressed(KEY_PL3_LEFT) && e.button.button == SDL_BUTTON_RIGHT) ||
-					(key_pressed(KEY_PL3_RIGHT) && e.button.button == SDL_BUTTON_LEFT) ||
-					(e.button.button == SDL_BUTTON_LEFT && e.button.button == SDL_BUTTON_RIGHT) ||
-          e.button.button == SDL_BUTTON_MIDDLE))
-				{
-				addkey(KEY_PL3_JUMP & 0x7f);
-				}
-			else if(e.button.state == SDL_RELEASED &&
-					((key_pressed(KEY_PL3_LEFT) && e.button.button == SDL_BUTTON_RIGHT) ||
-					(key_pressed(KEY_PL3_RIGHT) && e.button.button == SDL_BUTTON_LEFT) ||
-          e.button.button == SDL_BUTTON_MIDDLE))
-				{
-				addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
-				}
-
-			if(e.button.button == SDL_BUTTON_LEFT)
-				{
-				SDL_Scancode scancode = KEY_PL3_LEFT;
-				scancode &= 0x7f;
-				if(e.button.state == SDL_RELEASED)
+			case SDL_QUIT:
+				SDL_Quit();
+				exit(1);
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
+				if(e.button.state == SDL_PRESSED &&
+						((key_pressed(KEY_PL3_LEFT) && e.button.button == SDL_BUTTON_RIGHT) ||
+						(key_pressed(KEY_PL3_RIGHT) && e.button.button == SDL_BUTTON_LEFT) ||
+						(e.button.button == SDL_BUTTON_LEFT && e.button.button == SDL_BUTTON_RIGHT) ||
+			  e.button.button == SDL_BUTTON_MIDDLE))
 					{
-					if(key_pressed(KEY_PL3_JUMP) && (SDL_GetMouseState(NULL, NULL)&SDL_BUTTON(SDL_BUTTON_RIGHT)))
-						addkey(KEY_PL3_RIGHT & 0x7f);
-					else
-						scancode |= 0x8000;
+					addkey(KEY_PL3_JUMP & 0x7f);
 					}
-				addkey(scancode);
-				}
-			else if(e.button.button == SDL_BUTTON_RIGHT)
-				{
-				SDL_Scancode scancode = KEY_PL3_RIGHT;
-				scancode &= 0x7f;
-				if (e.button.state == SDL_RELEASED)
+				else if(e.button.state == SDL_RELEASED &&
+						((key_pressed(KEY_PL3_LEFT) && e.button.button == SDL_BUTTON_RIGHT) ||
+						(key_pressed(KEY_PL3_RIGHT) && e.button.button == SDL_BUTTON_LEFT) ||
+			  e.button.button == SDL_BUTTON_MIDDLE))
 					{
-					if(key_pressed(KEY_PL3_JUMP) && (SDL_GetMouseState(NULL, NULL)&SDL_BUTTON(SDL_BUTTON_LEFT)))
-						addkey(KEY_PL3_LEFT & 0x7f);
-					else
-						scancode |= 0x8000;
+					addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
 					}
-				addkey(scancode);
+
+				if(e.button.button == SDL_BUTTON_LEFT)
+					{
+					SDL_Scancode scancode = KEY_PL3_LEFT;
+					scancode &= 0x7f;
+					if(e.button.state == SDL_RELEASED)
+						{
+						if(key_pressed(KEY_PL3_JUMP) && (SDL_GetMouseState(NULL, NULL)&SDL_BUTTON(SDL_BUTTON_RIGHT)))
+							addkey(KEY_PL3_RIGHT & 0x7f);
+						else
+							scancode |= 0x8000;
+						}
+					addkey(scancode);
+					}
+				else if(e.button.button == SDL_BUTTON_RIGHT)
+					{
+					SDL_Scancode scancode = KEY_PL3_RIGHT;
+					scancode &= 0x7f;
+					if (e.button.state == SDL_RELEASED)
+						{
+						if(key_pressed(KEY_PL3_JUMP) && (SDL_GetMouseState(NULL, NULL)&SDL_BUTTON(SDL_BUTTON_LEFT)))
+							addkey(KEY_PL3_LEFT & 0x7f);
+						else
+							scancode |= 0x8000;
+						}
+					addkey(scancode);
+					}
+				break;
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				switch (e.key.keysym.scancode) {
+					case SDL_SCANCODE_F12:
+						if (e.type == SDL_KEYDOWN) {
+							SDL_Quit();
+							exit(1);
+						}
+						break;
+					case SDL_SCANCODE_F10:
+						if (e.type == SDL_KEYDOWN) {
+							fs_toggle();
+						}
+						break;
+					case SDL_SCANCODE_1:
+						if (e.type == SDL_KEYUP)
+							ai[0] = !ai[0];
+
+						/* Release keys, otherwise it will continue moving that way */
+						addkey((KEY_PL1_LEFT & 0x7f) | 0x8000);
+						addkey((KEY_PL1_RIGHT & 0x7f) | 0x8000);
+						addkey((KEY_PL1_JUMP & 0x7f) | 0x8000);
+						break;
+					case SDL_SCANCODE_2:
+						if (e.type == SDL_KEYUP)
+							ai[1] = !ai[1];
+
+						/* Release keys, otherwise it will continue moving that way */
+						addkey((KEY_PL2_LEFT & 0x7f) | 0x8000);
+						addkey((KEY_PL2_RIGHT & 0x7f) | 0x8000);
+						addkey((KEY_PL2_JUMP & 0x7f) | 0x8000);
+						break;
+					case SDL_SCANCODE_3:
+						if (e.type == SDL_KEYUP)
+							ai[2] = !ai[2];
+
+						/* Release keys, otherwise it will continue moving that way */
+						addkey((KEY_PL3_LEFT & 0x7f) | 0x8000);
+						addkey((KEY_PL3_RIGHT & 0x7f) | 0x8000);
+						addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
+						break;
+					case SDL_SCANCODE_4:
+						if (e.type == SDL_KEYUP)
+							ai[3] = !ai[3];
+
+						/* Release keys, otherwise it will continue moving that way */
+						addkey((KEY_PL4_LEFT & 0x7f) | 0x8000);
+						addkey((KEY_PL4_RIGHT & 0x7f) | 0x8000);
+						addkey((KEY_PL4_JUMP & 0x7f) | 0x8000);
+						break;
+					case SDL_SCANCODE_ESCAPE:
+						if (e.type == SDL_KEYUP)
+							addkey(1 | 0x8000);
+						else
+							addkey(1 & 0x7f);
+						break;
+					default:
+						e.key.keysym.scancode &= 0x7f;
+						if (e.type == SDL_KEYUP)
+							e.key.keysym.scancode |= 0x8000;
+						addkey(e.key.keysym.scancode);
+						break;
 				}
-			break;
-		case SDL_KEYDOWN:
-		case SDL_KEYUP:
-			switch (e.key.keysym.scancode) {
-			case SDL_SCANCODE_F12:
-				if (e.type == SDL_KEYDOWN) {
-					SDL_Quit();
-					exit(1);
-				}
-				break;
-			case SDL_SCANCODE_F10:
-				if (e.type == SDL_KEYDOWN) {
-					fs_toggle();
-				}
-				break;
-			case SDL_SCANCODE_1:
-				if (e.type == SDL_KEYUP)
-					ai[0] = !ai[0];
-
-				/* Release keys, otherwise it will continue moving that way */
-				addkey((KEY_PL1_LEFT & 0x7f) | 0x8000);
-				addkey((KEY_PL1_RIGHT & 0x7f) | 0x8000);
-				addkey((KEY_PL1_JUMP & 0x7f) | 0x8000);
-				break;
-			case SDL_SCANCODE_2:
-				if (e.type == SDL_KEYUP)
-					ai[1] = !ai[1];
-
-				/* Release keys, otherwise it will continue moving that way */
-				addkey((KEY_PL2_LEFT & 0x7f) | 0x8000);
-				addkey((KEY_PL2_RIGHT & 0x7f) | 0x8000);
-				addkey((KEY_PL2_JUMP & 0x7f) | 0x8000);
-				break;
-			case SDL_SCANCODE_3:
-				if (e.type == SDL_KEYUP)
-					ai[2] = !ai[2];
-
-				/* Release keys, otherwise it will continue moving that way */
-				addkey((KEY_PL3_LEFT & 0x7f) | 0x8000);
-				addkey((KEY_PL3_RIGHT & 0x7f) | 0x8000);
-				addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
-				break;
-			case SDL_SCANCODE_4:
-				if (e.type == SDL_KEYUP)
-					ai[3] = !ai[3];
-
-				/* Release keys, otherwise it will continue moving that way */
-				addkey((KEY_PL4_LEFT & 0x7f) | 0x8000);
-				addkey((KEY_PL4_RIGHT & 0x7f) | 0x8000);
-				addkey((KEY_PL4_JUMP & 0x7f) | 0x8000);
-				break;
-			case SDL_SCANCODE_ESCAPE:
-				if (e.type == SDL_KEYUP)
-					addkey(1 | 0x8000);
-				else
-					addkey(1 & 0x7f);
 				break;
 			default:
-				e.key.keysym.scancode &= 0x7f;
-				if (e.type == SDL_KEYUP)
-					e.key.keysym.scancode |= 0x8000;
-				addkey(e.key.keysym.scancode);
-
 				break;
-			}
-			break;
-		default:
-			break;
 		}
 		i++;
 	}
