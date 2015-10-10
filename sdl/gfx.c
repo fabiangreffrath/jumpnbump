@@ -181,7 +181,7 @@ void open_screen(void)
 		exit(EXIT_FAILURE);
 	}
 
-	flags = 0;
+	flags = SDL_WINDOW_RESIZABLE;
 	if (fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	SDL_CreateWindowAndRenderer(screen_width, screen_height, flags, &sdlWindow, &sdlRenderer);
@@ -190,6 +190,7 @@ void open_screen(void)
 		fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
+	SDL_RenderSetLogicalSize(sdlRenderer, screen_width, screen_height);
 
 	jnb_texture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
 	if (!jnb_texture) {
