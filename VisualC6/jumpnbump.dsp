@@ -7,19 +7,19 @@
 CFG=jumpnbump - Win32 Debug
 !MESSAGE Dies ist kein gültiges Makefile. Zum Erstellen dieses Projekts mit NMAKE
 !MESSAGE verwenden Sie den Befehl "Makefile exportieren" und führen Sie den Befehl
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "jumpnbump.mak".
-!MESSAGE 
+!MESSAGE
 !MESSAGE Sie können beim Ausführen von NMAKE eine Konfiguration angeben
 !MESSAGE durch Definieren des Makros CFG in der Befehlszeile. Zum Beispiel:
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "jumpnbump.mak" CFG="jumpnbump - Win32 Debug"
-!MESSAGE 
+!MESSAGE
 !MESSAGE Für die Konfiguration stehen zur Auswahl:
-!MESSAGE 
+!MESSAGE
 !MESSAGE "jumpnbump - Win32 Release" (basierend auf  "Win32 (x86) Application")
 !MESSAGE "jumpnbump - Win32 Debug" (basierend auf  "Win32 (x86) Application")
-!MESSAGE 
+!MESSAGE
 
 # Begin Project
 # PROP AllowPerConfigDependencies 0
@@ -128,7 +128,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ENDIF 
+!ENDIF
 
 # Begin Target
 
@@ -140,10 +140,6 @@ BuildCmds= \
 # Begin Source File
 
 SOURCE=..\filter.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\fireworks.c
 # End Source File
 # Begin Source File
 
@@ -211,7 +207,7 @@ InputPath=..\globals.pre
 
 # End Custom Build
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
