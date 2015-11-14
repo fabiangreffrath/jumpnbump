@@ -802,9 +802,15 @@ static int menu_loop(void)
 		put_text(main_info.view_page, 40, 170, "MIJJI", 2);
 
 		for (c1 = 0; c1 < JNB_MAX_PLAYERS; c1++) {
+			if (!player[c1].enabled) {
+				continue;
+			}
 			char str1[100];
 
 			for (c2 = 0; c2 < JNB_MAX_PLAYERS; c2++) {
+				if (!player[c2].enabled) {
+					continue;
+				}
 				if (c2 != c1) {
 					sprintf(str1, "%d", player[c1].bumped[c2]);
 					put_text(main_info.view_page, 100 + c2 * 60, 80 + c1 * 30, str1, 2);
@@ -2038,6 +2044,10 @@ int init_level(int level, char *pal)
 			for (c2 = 0; c2 < JNB_MAX_PLAYERS; c2++)
 				player[c1].bumped[c2] = 0;
 			position_player(c1);
+			add_leftovers(0, 360, 34 + c1 * 64, 0, &number_gobs);
+			add_leftovers(1, 360, 34 + c1 * 64, 0, &number_gobs);
+			add_leftovers(0, 376, 34 + c1 * 64, 0, &number_gobs);
+			add_leftovers(1, 376, 34 + c1 * 64, 0, &number_gobs);
 		}
 	}
 
