@@ -51,11 +51,11 @@ extern int server_said_bye;
 
 typedef struct
 {
-	unsigned long cmd;
-	long arg;
-	long arg2;
-	long arg3;
-	long arg4;
+	Uint32 cmd;
+	Sint32 arg;
+	Sint32 arg2;
+	Sint32 arg3;
+	Sint32 arg4;
 } NetPacket;
 
 void processMovePacket(NetPacket *pkt);
