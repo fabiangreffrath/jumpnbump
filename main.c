@@ -1365,6 +1365,8 @@ void steer_players(void)
 
 				s1 = (player[c1].x >> 16);
 				s2 = (player[c1].y >> 16);
+				if (s2 < 0)
+					s2 = 0;
 				if (GET_BAN_MAP_XY((s1 + 8), (s2 + 15)) == BAN_SPRING || ((GET_BAN_MAP_XY(s1, (s2 + 15)) == BAN_SPRING && GET_BAN_MAP_XY((s1 + 15), (s2 + 15)) != BAN_SOLID) || (GET_BAN_MAP_XY(s1, (s2 + 15)) != BAN_SOLID && GET_BAN_MAP_XY((s1 + 15), (s2 + 15)) == BAN_SPRING))) {
 					player[c1].y = ((player[c1].y >> 16) & 0xfff0) << 16;
 					player[c1].y_add = -400000L;
