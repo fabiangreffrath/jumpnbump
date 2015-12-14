@@ -2656,7 +2656,7 @@ void deinit_program(void)
 #endif
 
 	if (main_info.error_str[0] != 0) {
-		printf(main_info.error_str);
+		printf("%s", main_info.error_str);
 #ifdef _MSC_VER
 		MessageBox(0, main_info.error_str, "Jump'n'Bump", 0);
 #endif
