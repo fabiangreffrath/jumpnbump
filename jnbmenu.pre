@@ -45,7 +45,7 @@ global fullscreen
 
 	set file ""
 	if { [ .top17.lis26 curselection ] != "" } then {
-		set file "%%PREFIX%%/games/jumpnbump/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
+		set file "%%PREFIX%%/bin/jumpnbump/[ .top17.lis26 get [.top17.lis26 curselection] ].dat"
 	}
 	
 	exec jumpnbump $str_fullscreen $str_nosound $str_scaleup $str_mirror $str_nogore -dat $file &
