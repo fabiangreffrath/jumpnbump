@@ -18,4 +18,4 @@ all: $(TARGETS)
 	$(CC) $(CFLAGS) -o ../jnbunpack $(LIBS) jnbunpack.c
 
 clean:
-	rm -f $(TARGETS) $(OBJS)
+	$(RM) $(TARGETS) $(OBJS)

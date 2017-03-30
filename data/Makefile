@@ -21,7 +21,7 @@ jumpbump.dat: $(DATAFILES) ../jnbpack
 	../jnbpack -o jumpbump.dat $(DATAFILES)
 
 ../jnbpack:
-	cd ../modify && make
+	$(MAKE) -C ../modify
 
 clean:
-	rm -f jumpbump.dat $(GOBS)
+	$(RM) jumpbump.dat $(GOBS)

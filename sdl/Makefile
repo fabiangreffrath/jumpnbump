@@ -9,8 +9,8 @@ TARGET = ../sdl.a
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	ar cru $(TARGET) $(OBJS)
+	$(AR) cru $(TARGET) $(OBJS)
 	ranlib $(TARGET)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	$(RM) $(TARGET) $(OBJS)
