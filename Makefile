@@ -46,10 +46,10 @@ install:
 	mkdir -p $(PREFIX)/bin/
 	mkdir -p $(PREFIX)/share/jumpnbump/
 	mkdir -p $(PREFIX)/share/man/man6/
-	install -o root -g root -m 755 $(BINARIES) $(PREFIX)/bin/
-	install -o root -g root -m 644 data/jumpbump.dat \
-	$(PREFIX)/share/jumpnbump/jumpbump.dat
-	install -o root -g root -m 644 jumpnbump.6 $(PREFIX)/share/man/man6/
+	install -m 755 $(BINARIES) $(PREFIX)/bin/
+	install -m 644 data/jumpbump.dat \
+		$(PREFIX)/share/jumpnbump/jumpbump.dat
+	install -m 644 jumpnbump.6 $(PREFIX)/share/man/man6/
 
 uninstall:
 	cd $(PREFIX)/bin && rm -f $(BINARIES)
