@@ -1,0 +1,16 @@
+# Generic files to ignore
+*~
+.directory
+.DS_Store
+
+# Jump'n'bump generated files
+*.o
+data/*.gob
+data/jumpbump.dat
+globals.h
+gobpack
+jnbmenu.tcl
+jnbpack
+jnbunpack
+jumpnbump
+sdl.a
