@@ -1,4 +1,9 @@
+DESTDIR ?=
 PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+DATADIR ?= $(PREFIX)/share
+# Can be overridden to use e.g. /usr/share/games
+GAMEDATADIR ?= $(DATADIR)
 
 CFLAGS ?= -Wall -O2 -ffast-math -funroll-loops
 SDL_CFLAGS = `sdl2-config --cflags`
@@ -34,10 +39,10 @@ $(TARGET): $(OBJS) $(SDL_TARGET) data globals.h
 $(OBJS): globals.h
 
 globals.h: globals.pre
-	sed -e "s#%%PREFIX%%#$(PREFIX)#g" < globals.pre > globals.h
+	sed -e "s#%%DATADIR%%#$(GAMEDATADIR)#g" < globals.pre > globals.h
 
 jnbmenu.tcl: jnbmenu.pre
-	sed -e "s#%%PREFIX%%#$(PREFIX)#g" < jnbmenu.pre > jnbmenu.tcl
+	sed -e "s#%%BINDIR%%#$(BINDIR)#g" -e "s#%%DATADIR%%#$(GAMEDATADIR)#g" < jnbmenu.pre > jnbmenu.tcl
 
 data: jnbpack
 	$(MAKE) -C data
@@ -47,18 +52,18 @@ clean:
 	$(RM) $(TARGET) *.o globals.h jnbmenu.tcl
 
 install:
-	mkdir -p $(PREFIX)/bin/
-	mkdir -p $(PREFIX)/share/jumpnbump/
-	mkdir -p $(PREFIX)/share/man/man6/
-	install -m 755 $(BINARIES) $(PREFIX)/bin/
+	mkdir -p $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(GAMEDATADIR)/jumpnbump/
+	mkdir -p $(DESTDIR)$(DATADIR)/man/man6/
+	install -m 755 $(BINARIES) $(DESTDIR)$(BINDIR)/
 	install -m 644 data/jumpbump.dat \
-		$(PREFIX)/share/jumpnbump/jumpbump.dat
-	install -m 644 jumpnbump.6 $(PREFIX)/share/man/man6/
+		$(DESTDIR)$(GAMEDATADIR)/jumpnbump/jumpbump.dat
+	install -m 644 jumpnbump.6 $(DESTDIR)$(DATADIR)/man/man6/
 
 uninstall:
-	for bin in $(BINARIES); do $(RM) $(PREFIX)/bin/$$bin; done
-	$(RM) -r $(PREFIX)/share/jumpnbump
-	$(RM) $(PREFIX)/share/man/man6/jumpnbump.6
+	for bin in $(BINARIES); do $(RM) $(DESTDIR)$(BINDIR)/$$bin; done
+	$(RM) -r $(DESTDIR)$(GAMEDATADIR)/jumpnbump
+	$(RM) $(DESTDIR)$(DATADIR)/man/man6/jumpnbump.6
 
 doc:
-	rman jumpnbump.6 -f HTML >jumpnbump.html
+	rman jumpnbump.6 -f HTML > jumpnbump.html
