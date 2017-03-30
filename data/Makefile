@@ -1,5 +1,5 @@
-GOBS = numbers.gob objects.gob rabbit.gob
-DATAFILES = bump.mod calib.dat death.smp fly.smp font.gob jump.mod \
+GOBS = font.gob numbers.gob objects.gob rabbit.gob
+DATAFILES = bump.mod calib.dat death.smp fly.smp jump.mod \
 	jump.smp levelmap.txt level.pcx mask.pcx menu.pcx \
 	menumask.pcx $(GOBS) scores.mod splash.smp spring.smp
 
