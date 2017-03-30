@@ -34,7 +34,7 @@ $(MODIFY_TARGET): globals.h
 	$(MAKE) -C modify
 
 $(TARGET): $(OBJS) $(SDL_TARGET) data globals.h
-	$(CC) -o $(TARGET) $(OBJS) $(LDFLAGS) $(LIBS) $(SDL_TARGET)
+	$(CC) -o $(TARGET) $(OBJS) $(LDFLAGS) $(SDL_TARGET) $(LIBS)
 
 $(OBJS): globals.h
 
