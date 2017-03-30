@@ -1,16 +1,22 @@
+PREFIX ?= /usr/local
+
+CFLAGS ?= -Wall -O2 -ffast-math -funroll-loops
 SDL_CFLAGS = `sdl2-config --cflags`
+DEFINES = -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DNDEBUG -DUSE_SDL -DUSE_NET -DZLIB_SUPPORT -DBZLIB_SUPPORT
+INCLUDES = -I.
+CFLAGS += $(DEFINES) $(SDL_CFLAGS) $(INCLUDES)
+export CFLAGS
+
+LDFLAGS ?=
 SDL_LIBS = `sdl2-config --libs`
-CFLAGS = -Wall -O2 -ffast-math -funroll-loops -Dstricmp=strcasecmp \
-	-Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -I. $(SDL_CFLAGS) \
-	-DUSE_NET -DZLIB_SUPPORT -DBZLIB_SUPPORT
 LIBS = -lm $(SDL_LIBS) -lSDL2_mixer -lSDL2_net -lbz2 -lz
+
+TARGET = jumpnbump
 SDL_TARGET = sdl.a
 MODIFY_TARGET = gobpack jnbpack jnbunpack
 OBJS = main.o menu.o filter.o network.o
-TARGET = jumpnbump
 BINARIES = $(TARGET) jumpnbump.svgalib jumpnbump.fbcon $(MODIFY_TARGET) \
 	jnbmenu.tcl
-PREFIX ?= /usr/local
 
 .PHONY: data
 
@@ -23,7 +29,7 @@ $(MODIFY_TARGET): globals.h
 	$(MAKE) -C modify
 
 $(TARGET): $(OBJS) $(SDL_TARGET) data globals.h
-	$(CC) -o $(TARGET) $(OBJS) $(LIBS) $(SDL_TARGET)
+	$(CC) -o $(TARGET) $(OBJS) $(LDFLAGS) $(LIBS) $(SDL_TARGET)
 
 $(OBJS): globals.h
 

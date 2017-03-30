@@ -1,21 +1,20 @@
-CFLAGS = -Wall -ansi -pedantic -O2 -ffast-math -funroll-loops \
-	-Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DNDEBUG \
-	-I. -I.. -DUSE_NET -D_DEFAULT_SOURCE
+CFLAGS += -I..
+# Override libs, SDL2 not needed
 LIBS = -lm
-SRCS = gobpack.c jnbpack.c jnbunpack.c
+
 OBJS = gobpack.o jnbpack.o jnbunpack.o
 TARGETS = ../gobpack ../jnbpack ../jnbunpack
 
 all: $(TARGETS)
 
 ../gobpack: gobpack.c
-	$(CC) $(CFLAGS) -o ../gobpack $(LIBS) gobpack.c
+	$(CC) $(CFLAGS) -o ../gobpack $(LDFLAGS) $(LIBS) gobpack.c
 
 ../jnbpack: jnbpack.c
-	$(CC) $(CFLAGS) -o ../jnbpack $(LIBS) jnbpack.c
+	$(CC) $(CFLAGS) -o ../jnbpack $(LDFLAGS) $(LIBS) jnbpack.c
 
 ../jnbunpack: jnbunpack.c
-	$(CC) $(CFLAGS) -o ../jnbunpack $(LIBS) jnbunpack.c
+	$(CC) $(CFLAGS) -o ../jnbunpack $(LDFLAGS) $(LIBS) jnbunpack.c
 
 clean:
 	$(RM) $(TARGETS) $(OBJS)
