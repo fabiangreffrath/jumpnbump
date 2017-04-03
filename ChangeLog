@@ -1,3 +1,10 @@
+(unreleased) - 1.60
+  - Ported to SDL2
+  - Window can now be resized
+  - Show scores only for enabled players
+  - Removed fireworks mode
+  - Fix warnings and merge some downstream patches
+
 27 Jun 2004 - 1.51
   - refactored code to make it a bit simpler
   - Added AI by Ricardo Cruz
