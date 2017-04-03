@@ -52,7 +52,7 @@ Brainchild Designs members are:
 
 Andreas, Mattias and Martin are old friends from school in
 Nybro, in the south of Sweden. Anders joined a bit later. 
-He's from Malmö, and we met eachother over the internet.
+He's from MalmÃ¶, and we met eachother over the internet.
 Now we really don't know where he is, and we have no contact
 with him. Where are you, Anders?
 
