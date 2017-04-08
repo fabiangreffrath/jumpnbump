@@ -57,7 +57,7 @@ install:
 	install -m 755 $(BINARIES) $(DESTDIR)$(BINDIR)/
 	install -m 644 data/jumpbump.dat \
 		$(DESTDIR)$(GAMEDATADIR)/jumpnbump/jumpbump.dat
-	install -m 644 jumpnbump.6 $(DESTDIR)$(DATADIR)/man/man6/
+	install -m 644 dist/jumpnbump.6 $(DESTDIR)$(DATADIR)/man/man6/
 
 uninstall:
 	for bin in $(BINARIES); do $(RM) $(DESTDIR)$(BINDIR)/$$bin; done
@@ -65,4 +65,4 @@ uninstall:
 	$(RM) $(DESTDIR)$(DATADIR)/man/man6/jumpnbump.6
 
 doc:
-	rman jumpnbump.6 -f HTML > jumpnbump.html
+	rman dist/jumpnbump.6 -f HTML > docs/jumpnbump.html
