@@ -59,3 +59,10 @@ Ulrich Eckhardt <uli@doommachine.dyndns.org>
 
 Ricardo Cruz <rick2@aeiou.pt>
   AI functions
+
+Côme Chilliet <come@chilliet.eu>
+  SDL2 port.
+  Maintenance from 2015-2017.
+
+Rémi Verschelde <remi@verschelde.fr>
+  Packaging fixes and cleanups.
