@@ -8,14 +8,14 @@
  *
  * Copyright (C) 2015 Côme Chilliet <come@chilliet.eu>
  *
- * This file is part of Jump'n'Bump.
+ * This file is part of Jump 'n Bump.
  *
- * Jump'n'Bump is free software; you can redistribute it and/or modify
+ * Jump 'n Bump is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Jump'n'Bump is distributed in the hope that it will be useful,
+ * Jump 'n Bump is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -209,7 +209,7 @@ void open_screen(void)
 	else
 		SDL_ShowCursor(1);
 
-	SDL_SetWindowTitle(sdlWindow, "Jump'n'Bump");
+	SDL_SetWindowTitle(sdlWindow, "Jump 'n Bump");
 
 	icon=load_xpm_from_array(jumpnbump_xpm);
 	if (icon==NULL) {
