@@ -3,6 +3,7 @@
   - Window can now be resized
   - Show scores only for enabled players
   - Removed fireworks mode
+  - Removed obsolete Kaillera network code
   - Fix warnings and merge some downstream patches
 
 27 Jun 2004 - 1.51
