@@ -20,8 +20,7 @@ TARGET = jumpnbump
 SDL_TARGET = sdl.a
 MODIFY_TARGET = gobpack jnbpack jnbunpack
 OBJS = main.o menu.o filter.o network.o
-BINARIES = $(TARGET) jumpnbump.svgalib jumpnbump.fbcon $(MODIFY_TARGET) \
-	jnbmenu.tcl
+BINARIES = $(TARGET) $(MODIFY_TARGET) jnbmenu.tcl
 
 .PHONY: data
 
