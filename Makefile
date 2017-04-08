@@ -53,15 +53,27 @@ clean:
 install:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(GAMEDATADIR)/jumpnbump/
+	mkdir -p $(DESTDIR)$(DATADIR)/appdata/
+	mkdir -p $(DESTDIR)$(DATADIR)/applications/
+	mkdir -p $(DESTDIR)$(DATADIR)/icons/
 	mkdir -p $(DESTDIR)$(DATADIR)/man/man6/
 	install -m 755 $(BINARIES) $(DESTDIR)$(BINDIR)/
 	install -m 644 data/jumpbump.dat \
 		$(DESTDIR)$(GAMEDATADIR)/jumpnbump/jumpbump.dat
+	install -m 644 dist/jumpnbump.appdata.xml \
+		$(DESTDIR)$(DATADIR)/appdata/jumpnbump.appdata.xml
+	install -m 644 dist/jumpnbump.desktop \
+		$(DESTDIR)$(DATADIR)/applications/jumpnbump.desktop
+	install -m 644 dist/jumpnbump.png \
+		$(DESTDIR)$(DATADIR)/icons/jumpnbump.png
 	install -m 644 dist/jumpnbump.6 $(DESTDIR)$(DATADIR)/man/man6/
 
 uninstall:
 	for bin in $(BINARIES); do $(RM) $(DESTDIR)$(BINDIR)/$$bin; done
 	$(RM) -r $(DESTDIR)$(GAMEDATADIR)/jumpnbump
+	$(RM) $(DESTDIR)$(DATADIR)/appdata/jumpnbump.appdata.xml
+	$(RM) $(DESTDIR)$(DATADIR)/applications/jumpnbump.desktop
+	$(RM) $(DESTDIR)$(DATADIR)/icons/jumpnbump.png
 	$(RM) $(DESTDIR)$(DATADIR)/man/man6/jumpnbump.6
 
 doc:

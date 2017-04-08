@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Jump 'n Bump
+Comment=Cute multiplayer platform game with exploding fluffy bunnies
+GenericName=Arcade game with bunnies
+Exec=jumpnbump
+Icon=jumpnbump
+Terminal=false
+Type=Application
+Categories=Game;ArcadeGame;

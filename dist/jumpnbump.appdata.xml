@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2017 Rémi Verschelde <remi@verschelde.fr> -->
+<component type="desktop">
+  <id>jumpnbump.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  <name>Jump 'n Bump</name>
+  <summary>Cute multiplayer platform game with exploding fluffy bunnies</summary>
+  <description>
+    <p>
+      Jump 'n Bump is an arcade multiplayer game for the whole family.
+      You play cute fluffy little bunnies and hop on each other's heads.
+    </p>
+
+    <p>
+      At the beginning you are in the menu, where you have to let each active player
+      jump over the tree trunk to enter the play area, and then walk to the right.
+      You will then enter the arena. The aim is to jump on the other bunnies' heads...
+    </p>
+  </description>
+  <content_rating type="oars-1.0">
+    <content_attribute id="violence-cartoon">intense</content_attribute>
+    <content_attribute id="violence-fantasy">intense</content_attribute>
+    <content_attribute id="violence-realistic">none</content_attribute>
+    <content_attribute id="violence-bloodshed">mild</content_attribute>
+    <content_attribute id="violence-sexual">none</content_attribute>
+    <content_attribute id="drugs-alcohol">none</content_attribute>
+    <content_attribute id="drugs-narcotics">none</content_attribute>
+    <content_attribute id="drugs-tobacco">none</content_attribute>
+    <content_attribute id="sex-nudity">none</content_attribute>
+    <content_attribute id="sex-themes">none</content_attribute>
+    <content_attribute id="language-profanity">none</content_attribute>
+    <content_attribute id="language-humor">none</content_attribute>
+    <content_attribute id="language-discrimination">none</content_attribute>
+    <content_attribute id="social-chat">none</content_attribute>
+    <content_attribute id="social-info">none</content_attribute>
+    <content_attribute id="social-audio">none</content_attribute>
+    <content_attribute id="social-location">none</content_attribute>
+    <content_attribute id="social-contacts">none</content_attribute>
+    <content_attribute id="money-purchasing">none</content_attribute>
+    <content_attribute id="money-gambling">none</content_attribute>
+  </content_rating>
+  <screenshots>
+    <screenshot type="default" width="800" height="512">
+      https://raw.githubusercontent.com/MCMic/jumpnbump/master/dist/screenshot.png
+    </screenshot>
+  </screenshots>
+  <translation/>
+  <url type="homepage">https://github.com/MCMic/jumpnbump</url>
+  <update_contact>remi_AT_verschelde.fr</update_contact>
+</component>
