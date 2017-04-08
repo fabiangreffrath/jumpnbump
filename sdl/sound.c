@@ -25,7 +25,7 @@
 
 #include "globals.h"
 #include <limits.h>
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #include "SDL.h"
@@ -463,7 +463,7 @@ char dj_ready_mod(char mod_num)
 {
 #ifndef NO_SDL_MIXER
 	FILE *tmp;
-# if ((defined _MSC_VER) || (defined __MINGW32__))
+# ifdef _WIN32
 	char filename[] = "jnb.tmpmusic.mod";
 # else
 	char filename[] = "/tmp/jnb.tmpmusic.mod";

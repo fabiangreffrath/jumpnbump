@@ -4,21 +4,24 @@ BINDIR ?= $(PREFIX)/bin
 DATADIR ?= $(PREFIX)/share
 # Can be overridden to use e.g. /usr/share/games
 GAMEDATADIR ?= $(DATADIR)
+EXE ?=
 
 CFLAGS ?= -Wall -O2 -ffast-math -funroll-loops
 SDL_CFLAGS = `sdl2-config --cflags`
 DEFINES = -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DNDEBUG -DUSE_SDL -DUSE_NET -DZLIB_SUPPORT -DBZLIB_SUPPORT
 INCLUDES = -I.
 CFLAGS += $(DEFINES) $(SDL_CFLAGS) $(INCLUDES)
-export CFLAGS
+export SDL_CFLAGS
+export DEFINES
+export INCLUDES
 
 LDFLAGS ?=
 SDL_LIBS = `sdl2-config --libs`
 LIBS = -lm $(SDL_LIBS) -lSDL2_mixer -lSDL2_net -lbz2 -lz
 
-TARGET = jumpnbump
+TARGET = jumpnbump$(EXE)
 SDL_TARGET = sdl.a
-MODIFY_TARGET = gobpack jnbpack jnbunpack
+MODIFY_TARGET = gobpack$(EXE) jnbpack$(EXE) jnbunpack$(EXE)
 OBJS = main.o menu.o filter.o network.o
 BINARIES = $(TARGET) $(MODIFY_TARGET) jnbmenu.tcl
 
@@ -43,12 +46,12 @@ globals.h: globals.pre
 jnbmenu.tcl: jnbmenu.pre
 	sed -e "s#%%BINDIR%%#$(BINDIR)#g" -e "s#%%DATADIR%%#$(GAMEDATADIR)#g" < jnbmenu.pre > jnbmenu.tcl
 
-data: jnbpack
+data: jnbpack$(EXE)
 	$(MAKE) -C data
 
 clean:
 	for dir in data modify sdl; do $(MAKE) clean -C $$dir; done
-	$(RM) $(TARGET) *.o globals.h jnbmenu.tcl
+	$(RM) $(TARGET) *.exe *.o globals.h jnbmenu.tcl
 
 install:
 	mkdir -p $(DESTDIR)$(BINDIR)

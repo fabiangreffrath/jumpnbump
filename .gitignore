@@ -3,7 +3,9 @@
 .directory
 .DS_Store
 
-# Jump'n'bump generated files
+# Jump 'n Bump generated files
+*.dll
+*.exe
 *.o
 data/*.gob
 data/jumpbump.dat
