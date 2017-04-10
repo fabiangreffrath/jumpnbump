@@ -1123,7 +1123,7 @@ void cpu_move(void)
 				else
 					key = KEY_PL4_LEFT;
 
-				key &= 0x7f;
+				key &= 0x7fff;
 				addkey(key);
 				}
 			else
@@ -1138,7 +1138,7 @@ void cpu_move(void)
 				else
 					key = KEY_PL4_LEFT;
 
-				key &= 0x7f;
+				key &= 0x7fff;
 				addkey(key | 0x8000);
 				}
 
@@ -1154,7 +1154,7 @@ void cpu_move(void)
 				else
 					key = KEY_PL4_RIGHT;
 
-				key &= 0x7f;
+				key &= 0x7fff;
 				addkey(key);
 				}
 			else
@@ -1169,7 +1169,7 @@ void cpu_move(void)
 				else
 					key = KEY_PL4_RIGHT;
 
-				key &= 0x7f;
+				key &= 0x7fff;
 				addkey(key | 0x8000);
 				}
 
@@ -1185,7 +1185,7 @@ void cpu_move(void)
 				else
 					key = KEY_PL4_JUMP;
 
-				key &= 0x7f;
+				key &= 0x7fff;
 				addkey(key);
 				}
 			else
@@ -1200,7 +1200,7 @@ void cpu_move(void)
 				else
 					key = KEY_PL4_JUMP;
 
-				key &= 0x7f;
+				key &= 0x7fff;
 				addkey(key | 0x8000);
 				}
 			}

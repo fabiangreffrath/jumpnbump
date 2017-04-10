@@ -82,20 +82,20 @@ int menu(void)
 
 	/* After a game, we have to release the keys, cause AI player
 	 * can still be using them */
-	addkey((KEY_PL1_LEFT & 0x7f) | 0x8000);
-	addkey((KEY_PL2_LEFT & 0x7f) | 0x8000);
-	addkey((KEY_PL3_LEFT & 0x7f) | 0x8000);
-	addkey((KEY_PL4_LEFT & 0x7f) | 0x8000);
+	addkey((KEY_PL1_LEFT & 0x7fff) | 0x8000);
+	addkey((KEY_PL2_LEFT & 0x7fff) | 0x8000);
+	addkey((KEY_PL3_LEFT & 0x7fff) | 0x8000);
+	addkey((KEY_PL4_LEFT & 0x7fff) | 0x8000);
 
-	addkey((KEY_PL1_RIGHT & 0x7f) | 0x8000);
-	addkey((KEY_PL2_RIGHT & 0x7f) | 0x8000);
-	addkey((KEY_PL3_RIGHT & 0x7f) | 0x8000);
-	addkey((KEY_PL4_RIGHT & 0x7f) | 0x8000);
+	addkey((KEY_PL1_RIGHT & 0x7fff) | 0x8000);
+	addkey((KEY_PL2_RIGHT & 0x7fff) | 0x8000);
+	addkey((KEY_PL3_RIGHT & 0x7fff) | 0x8000);
+	addkey((KEY_PL4_RIGHT & 0x7fff) | 0x8000);
 
-	addkey((KEY_PL1_JUMP & 0x7f) | 0x8000);
-	addkey((KEY_PL2_JUMP & 0x7f) | 0x8000);
-	addkey((KEY_PL3_JUMP & 0x7f) | 0x8000);
-	addkey((KEY_PL4_JUMP & 0x7f) | 0x8000);
+	addkey((KEY_PL1_JUMP & 0x7fff) | 0x8000);
+	addkey((KEY_PL2_JUMP & 0x7fff) | 0x8000);
+	addkey((KEY_PL3_JUMP & 0x7fff) | 0x8000);
+	addkey((KEY_PL4_JUMP & 0x7fff) | 0x8000);
 
 	mod_vol = 0;
 	mod_fade_direction = 1;
