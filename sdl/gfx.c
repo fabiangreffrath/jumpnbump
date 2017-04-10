@@ -29,7 +29,7 @@
 #include "SDL_endian.h"
 #include "filter.h"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
     #include "jumpnbump32.xpm"
 #elif __APPLE__
     #include "jumpnbump128.xpm"

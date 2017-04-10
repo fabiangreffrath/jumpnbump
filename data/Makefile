@@ -1,3 +1,7 @@
+EXEC ?= exec
+
+GOBPACK = ../gobpack$(EXE)
+JNBPACK = ../jnbpack$(EXE)
 GOBS = font.gob numbers.gob objects.gob rabbit.gob
 DATAFILES = bump.mod calib.dat death.smp fly.smp jump.mod \
 	jump.smp levelmap.txt level.pcx mask.pcx menu.pcx \
@@ -6,21 +10,21 @@ DATAFILES = bump.mod calib.dat death.smp fly.smp jump.mod \
 all: jumpbump.dat
 
 font.gob:
-	../gobpack font
+	$(EXEC) $(GOBPACK) font
 
 rabbit.gob:
-	../gobpack rabbit
+	$(EXEC) $(GOBPACK) rabbit
 
 numbers.gob:
-	../gobpack numbers
+	$(EXEC) $(GOBPACK) numbers
 
 objects.gob:
-	../gobpack objects
+	$(EXEC) $(GOBPACK) objects
 
-jumpbump.dat: $(DATAFILES) ../jnbpack
-	../jnbpack -o jumpbump.dat $(DATAFILES)
+jumpbump.dat: $(DATAFILES) $(JNBPACK)
+	$(EXEC) $(JNBPACK) -o jumpbump.dat $(DATAFILES)
 
-../jnbpack:
+$(JNBPACK):
 	$(MAKE) -C ../modify
 
 clean:

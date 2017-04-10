@@ -27,7 +27,7 @@
 
 #include "globals.h"
 #include <fcntl.h>
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
@@ -237,7 +237,7 @@ int pogostick, bunnies_in_space, jetpack, lord_of_the_flies, blood_is_thicker_th
 
 int client_player_num = -1;
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 int filelength(int handle)
 {
 	struct stat buf;
@@ -2659,7 +2659,7 @@ void deinit_program(void)
 
 	if (main_info.error_str[0] != 0) {
 		printf("%s", main_info.error_str);
-#ifdef _MSC_VER
+#ifdef _WIN32
 		MessageBox(0, main_info.error_str, "Jump 'n Bump", 0);
 #endif
 		exit(1);
