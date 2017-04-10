@@ -20,8 +20,7 @@ TARGET = jumpnbump
 SDL_TARGET = sdl.a
 MODIFY_TARGET = gobpack jnbpack jnbunpack
 OBJS = main.o menu.o filter.o network.o
-BINARIES = $(TARGET) jumpnbump.svgalib jumpnbump.fbcon $(MODIFY_TARGET) \
-	jnbmenu.tcl
+BINARIES = $(TARGET) $(MODIFY_TARGET) jnbmenu.tcl
 
 .PHONY: data
 
@@ -54,16 +53,28 @@ clean:
 install:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(GAMEDATADIR)/jumpnbump/
+	mkdir -p $(DESTDIR)$(DATADIR)/appdata/
+	mkdir -p $(DESTDIR)$(DATADIR)/applications/
+	mkdir -p $(DESTDIR)$(DATADIR)/icons/
 	mkdir -p $(DESTDIR)$(DATADIR)/man/man6/
 	install -m 755 $(BINARIES) $(DESTDIR)$(BINDIR)/
 	install -m 644 data/jumpbump.dat \
 		$(DESTDIR)$(GAMEDATADIR)/jumpnbump/jumpbump.dat
-	install -m 644 jumpnbump.6 $(DESTDIR)$(DATADIR)/man/man6/
+	install -m 644 dist/jumpnbump.appdata.xml \
+		$(DESTDIR)$(DATADIR)/appdata/jumpnbump.appdata.xml
+	install -m 644 dist/jumpnbump.desktop \
+		$(DESTDIR)$(DATADIR)/applications/jumpnbump.desktop
+	install -m 644 dist/jumpnbump.png \
+		$(DESTDIR)$(DATADIR)/icons/jumpnbump.png
+	install -m 644 dist/jumpnbump.6 $(DESTDIR)$(DATADIR)/man/man6/
 
 uninstall:
 	for bin in $(BINARIES); do $(RM) $(DESTDIR)$(BINDIR)/$$bin; done
 	$(RM) -r $(DESTDIR)$(GAMEDATADIR)/jumpnbump
+	$(RM) $(DESTDIR)$(DATADIR)/appdata/jumpnbump.appdata.xml
+	$(RM) $(DESTDIR)$(DATADIR)/applications/jumpnbump.desktop
+	$(RM) $(DESTDIR)$(DATADIR)/icons/jumpnbump.png
 	$(RM) $(DESTDIR)$(DATADIR)/man/man6/jumpnbump.6
 
 doc:
-	rman jumpnbump.6 -f HTML > jumpnbump.html
+	rman dist/jumpnbump.6 -f HTML > docs/jumpnbump.html

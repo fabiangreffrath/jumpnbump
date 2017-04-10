@@ -4,6 +4,8 @@
   - Show scores only for enabled players
   - Removed fireworks mode
   - Fix warnings and merge some downstream patches
+  - Add desktop file, icon and appdata file (Linux)
+  - Packaging fixes and cleanups
 
 27 Jun 2004 - 1.51
   - refactored code to make it a bit simpler
