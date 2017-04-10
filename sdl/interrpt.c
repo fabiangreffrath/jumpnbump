@@ -126,15 +126,18 @@ int intr_sysupdate()
 				break;
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
+				if (e.key.repeat != 0) {
+					continue;
+				}
 				switch (e.key.keysym.scancode) {
 					case SDL_SCANCODE_F12:
-						if (e.type == SDL_KEYDOWN && e.key.repeat == 0) {
+						if (e.type == SDL_KEYDOWN) {
 							SDL_Quit();
 							exit(1);
 						}
 						break;
 					case SDL_SCANCODE_F10:
-						if (e.type == SDL_KEYDOWN && e.key.repeat == 0) {
+						if (e.type == SDL_KEYDOWN) {
 							fs_toggle();
 						}
 						break;
