@@ -3,6 +3,7 @@
   - Window can now be resized
   - Show scores only for enabled players
   - Removed fireworks mode
+  - Removed obsolete Kaillera network code
   - Fix warnings and merge some downstream patches
   - Add desktop file, icon and appdata file (Linux)
   - Packaging fixes and cleanups
