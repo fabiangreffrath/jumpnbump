@@ -9,16 +9,16 @@ DATAFILES = bump.mod calib.dat death.smp fly.smp jump.mod \
 
 all: jumpbump.dat
 
-font.gob:
+font.gob: $(GOBPACK)
 	$(EXEC) $(GOBPACK) font
 
-rabbit.gob:
+rabbit.gob: $(GOBPACK)
 	$(EXEC) $(GOBPACK) rabbit
 
-numbers.gob:
+numbers.gob: $(GOBPACK)
 	$(EXEC) $(GOBPACK) numbers
 
-objects.gob:
+objects.gob: $(GOBPACK)
 	$(EXEC) $(GOBPACK) objects
 
 jumpbump.dat: $(DATAFILES) $(JNBPACK)

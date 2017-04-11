@@ -11,14 +11,14 @@ TARGETS = $(GOBPACK) $(JNBPACK) $(JNBUNPACK)
 
 all: $(TARGETS)
 
-$(GOBPACK): gobpack.c
-	$(CC) $(CFLAGS) -o $(GOBPACK) $(LDFLAGS) $(LIBS) gobpack.c
+$(GOBPACK): gobpack.o
+	$(CC) $(CFLAGS) -o $(GOBPACK) gobpack.o $(LDFLAGS) $(LIBS)
 
-$(JNBPACK): jnbpack.c
-	$(CC) $(CFLAGS) -o $(JNBPACK) $(LDFLAGS) $(LIBS) jnbpack.c
+$(JNBPACK): jnbpack.o
+	$(CC) $(CFLAGS) -o $(JNBPACK) jnbpack.o $(LDFLAGS) $(LIBS)
 
-$(JNBUNPACK): jnbunpack.c
-	$(CC) $(CFLAGS) -o $(JNBUNPACK) $(LDFLAGS) $(LIBS) jnbunpack.c
+$(JNBUNPACK): jnbunpack.o
+	$(CC) $(CFLAGS) -o $(JNBUNPACK) jnbunpack.o $(LDFLAGS) $(LIBS)
 
 clean:
 	$(RM) $(TARGETS) $(OBJS)

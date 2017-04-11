@@ -46,7 +46,7 @@ globals.h: globals.pre
 jnbmenu.tcl: jnbmenu.pre
 	sed -e "s#%%BINDIR%%#$(BINDIR)#g" -e "s#%%DATADIR%%#$(GAMEDATADIR)#g" < jnbmenu.pre > jnbmenu.tcl
 
-data: jnbpack$(EXE)
+data: $(MODIFY_TARGET)
 	$(MAKE) -C data
 
 clean:
