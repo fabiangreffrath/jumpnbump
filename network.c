@@ -123,6 +123,9 @@ void processKillPacket(NetPacket *pkt)
 		}
 		dj_play_sfx(SFX_DEATH, (unsigned short)(SFX_DEATH_FREQ + rnd(2000) - 1000), 64, 0, 0, -1);
 		player[c1].bumps++;
+		if (player[c1].bumps >= JNB_END_SCORE) {
+			endscore_reached = 1;
+		}
 		player[c1].bumped[c2]++;
 		s1 = player[c1].bumps % 100;
 		add_leftovers(0, 360, 34 + c1 * 64, s1 / 10, &number_gobs);

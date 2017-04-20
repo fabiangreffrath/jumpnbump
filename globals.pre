@@ -73,6 +73,8 @@ extern "C" {
 
 #define JNB_MAX_PLAYERS 4
 
+#define JNB_END_SCORE 100
+
 #define JNB_INETPORT 11111
 
 extern int client_player_num;
@@ -264,6 +266,8 @@ extern gob_t number_gobs;
 
 
 /* main.c */
+
+int endscore_reached;
 
 void steer_players(void);
 void position_player(int player_num);

@@ -522,10 +522,11 @@ static void game_loop(void) {
 
 	intr_sysupdate();
 
+	endscore_reached = 0;
 	while (1) {
 		while (update_count) {
 
-			if (key_pressed(1) == 1) {
+			if (endscore_reached || (key_pressed(1) == 1)) {
 #ifdef USE_NET
 				if (is_net) {
 					if (is_server) {
