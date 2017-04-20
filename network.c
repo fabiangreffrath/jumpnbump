@@ -415,7 +415,7 @@ int update_players_from_server(void)
 		} else if (pkt.cmd == NETCMD_KILL) {
 			processKillPacket(&pkt);
 		} else {
-			printf("CLIENT: Got an unknown packet: 0x%lX.\n", pkt.cmd);
+			printf("CLIENT: Got an unknown packet: 0x%X.\n", pkt.cmd);
 		}
 	}
 
@@ -466,7 +466,7 @@ void update_players_from_clients(void)
 			processMovePacket(&pkt);
 			sendPacketToAll(&pkt);
 		} else {
-			printf("SERVER: Got unknown packet (0x%lX).\n", pkt.cmd);
+			printf("SERVER: Got unknown packet (0x%X).\n", pkt.cmd);
 		}
 	}
 }
@@ -558,7 +558,7 @@ void init_server(const char *netarg)
 			continue;
 		}
 
-		printf("SERVER: Client claims to be player #%ld.\n", pkt.arg);
+		printf("SERVER: Client claims to be player #%d.\n", pkt.arg);
 
 		if (-1 == pkt.arg) {
 			int i;
@@ -686,7 +686,7 @@ void connect_to_server(char *netarg)
 	}
 
 	if (pkt.cmd != NETCMD_ACK) {
-		printf("CLIENT: Unexpected packet (cmd=0x%lX).\n", pkt.cmd);
+		printf("CLIENT: Unexpected packet (cmd=0x%X).\n", pkt.cmd);
 		SDLNet_FreeSocketSet(socketset);
 		SDLNet_TCP_Close(sock);
 		exit(42);
