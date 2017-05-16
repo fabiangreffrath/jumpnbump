@@ -37,6 +37,7 @@ if [ "${BITS}" == "32" ]; then
     LIBS="libgcc_s_sjlj-1 "
 else
     MINGW=x86_64-w64-mingw32
+    LIBS="libgcc_s_seh-1 "
 fi
 
 MINGW_PATH=/usr/${MINGW}
