@@ -10,6 +10,7 @@ if [[ $# -ge 1 ]]; then
     echo -e "\t--help, -h\tThis usage explanation."
     echo -e "\t--32\t\tBuild 32-bit binary with MinGW-w64."
     echo -e "\t--64\t\tBuild 64-bit binary with MinGW-w64."
+    echo -e "\t--clean, -c\tClean build artifacts."
     echo ""
     exit 0
     ;;
@@ -18,6 +19,11 @@ if [[ $# -ge 1 ]]; then
     ;;
     --64)
     BITS=64
+    ;;
+    --clean|-c)
+    make clean
+    rm -f *.dll
+    exit 0
     ;;
     *)
     echo "Unknown option, use --help for usage instructions."
@@ -36,6 +42,10 @@ fi
 MINGW_PATH=/usr/${MINGW}
 PATH=${MINGW_PATH}/bin:${MINGW_PATH}/sys-root/mingw/bin:${PATH}; echo ${PATH}
 CC=${MINGW}-gcc
+
+# Clean previous build artifacts
+make clean
+rm -f *.dll
 
 make CC=${CC} EXEC=wine EXE=.exe $@
 
