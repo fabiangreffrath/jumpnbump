@@ -1,7 +1,7 @@
 INCLUDES += -I..
 CFLAGS += $(DEFINES) $(INCLUDES)
 # Override libs, SDL2 not needed
-LIBS = -lm
+LIBS =
 
 OBJS = gobpack.o jnbpack.o jnbunpack.o
 GOBPACK = ../gobpack$(EXE)

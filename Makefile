@@ -17,7 +17,7 @@ export INCLUDES
 
 LDFLAGS ?=
 SDL_LIBS = `sdl2-config --libs`
-LIBS = -lm $(SDL_LIBS) -lSDL2_mixer -lSDL2_net -lbz2 -lz
+LIBS = $(SDL_LIBS) -lSDL2_mixer -lSDL2_net -lbz2 -lz -lm
 
 TARGET = jumpnbump$(EXE)
 SDL_TARGET = sdl.a
@@ -36,7 +36,7 @@ $(MODIFY_TARGET): globals.h
 	$(MAKE) -C modify
 
 $(TARGET): $(OBJS) $(SDL_TARGET) data globals.h
-	$(CC) -o $(TARGET) $(OBJS) $(LDFLAGS) $(SDL_TARGET) $(LIBS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS) $(SDL_TARGET) $(LIBS)
 
 $(OBJS): globals.h
 
