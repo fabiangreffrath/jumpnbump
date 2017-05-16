@@ -2331,7 +2331,7 @@ int init_program(int argc, char *argv[], char *pal)
 #endif
 			}
 			else if (strstr(argv[1],"-v")) {
-				printf("jumpnbump %s compiled %s at %s with",JNB_VERSION,__DATE__,__TIME__);
+				printf("jumpnbump %s compiled with", JNB_VERSION);
 #ifndef USE_NET
 				printf("out");
 #endif
